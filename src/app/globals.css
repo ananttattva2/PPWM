@@ -119,26 +119,11 @@ p {
   gap: 4px;
   line-height: 1;
 }
-.brand-mark {
-  font-size: 48px;
-  color: var(--orange);
-  line-height: 0.9;
-}
-.brand strong {
+.brand-image {
   display: block;
-  color: var(--orange);
-  font-size: 26px;
-  letter-spacing: 2px;
-  font-weight: 500;
-}
-.brand small {
-  display: block;
-  font-size: 16px;
-  letter-spacing: 5px;
-  margin-top: 4px;
-}
-.brand-light small {
-  color: white;
+  width: 178px;
+  height: auto;
+  flex-shrink: 0;
 }
 .marketing-nav {
   height: 94px;
@@ -2073,15 +2058,8 @@ td .mantine-Select-root {
     padding: 0 19px;
     gap: 14px;
   }
-  .brand-mark {
-    font-size: 40px;
-  }
-  .brand strong {
-    font-size: 21px;
-  }
-  .brand small {
-    font-size: 13px;
-    letter-spacing: 4px;
+  .brand-image {
+    width: 145px;
   }
   .nav-actions .btn {
     font-size: 10px;

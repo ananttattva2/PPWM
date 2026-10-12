@@ -66,4 +66,5 @@ npm start
 
 Deploy to a Node.js-capable Next.js host. Set `BETTER_AUTH_URL` to the HTTPS site origin and configure every `.env.example` value through your host's secret settings. MongoDB's native driver requires Node.js; this application is not a static export or a Cloudflare Workers deployment.
 
-Marketing charts are labelled illustrative. This release manages clients and team access; it does not implement regulatory calculations, EPR filing or certification. Demo/contact buttons open email requests. The brand mark is a text approximation of the supplied reference; replace it with the original asset for exact fidelity.
+Marketing charts are labelled illustrative. This release manages clients and team access; it does not implement regulatory calculations, EPR filing or certification. Demo/contact buttons open email requests. The brand uses local SVG assets recreated from the second supplied logo reference, including a light variant for the login panel. The original source image is not present locally; use it if exact pixel fidelity is required.
+

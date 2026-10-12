@@ -10,6 +10,7 @@ Verified locally on 12 October 2026.
 - `npm audit` reports zero known vulnerabilities across installed dependencies.
 - `.env.local` is ignored and excluded from commits.
 
-Screenshots in `artifacts/` are QA captures; any displayed QA account/client is temporary test data. The original logo image is not a local asset, so the current logo is a text approximation.
+Screenshots in `artifacts/` are QA captures; any displayed QA account/client is temporary test data. The logo uses local SVG assets recreated from the second supplied reference; the former Om text mark has been removed.
 
 No live hosting deployment was requested or created. Run `npm run dev` for local access; Node.js deployment instructions are in README.md.
+

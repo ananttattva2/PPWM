@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 export default function Brand({ light = false }: { light?: boolean }) {
   return (
     <Link
@@ -6,11 +7,16 @@ export default function Brand({ light = false }: { light?: boolean }) {
       className={`brand ${light ? "brand-light" : ""}`}
       aria-label="Anant Tattva home"
     >
-      <span className="brand-mark">ॐ</span>
-      <span>
-        <strong>ANANT</strong>
-        <small>TATTVA</small>
-      </span>
+      <Image
+        src={
+          light ? "/brand/anant-tattva-light.svg" : "/brand/anant-tattva.svg"
+        }
+        alt="ANANT TATTVA"
+        width={283}
+        height={90}
+        className="brand-image"
+        priority
+      />
     </Link>
   );
 }
