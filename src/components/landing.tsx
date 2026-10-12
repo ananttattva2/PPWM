@@ -6,7 +6,6 @@ import {
   ArrowRight,
   ArrowUpRight,
   Leaf,
-  Database,
   FileCheck2,
   Recycle,
   Layers3,
@@ -21,6 +20,7 @@ import {
 } from "lucide-react";
 import Brand from "./brand";
 import ThemeToggle from "./theme-toggle";
+import ComplianceSection from "./compliance-section";
 import { Button } from "./ui/button";
 import { BorderBeam } from "./magicui/border-beam";
 import { Spotlight } from "./ui/spotlight";
@@ -248,94 +248,7 @@ export default function Landing() {
           );
         })}
       </section>
-      <section className="section platform-section" id="platform">
-        <motion.div {...fade} className="section-heading">
-          <div className="eyebrow">
-            <Leaf size={14} /> THE PLATFORM
-          </div>
-          <h2>
-            Everything connects.
-            <br />
-            <span>Compliance gets simpler.</span>
-          </h2>
-          <p>
-            Move from scattered spreadsheets to an organised packaging
-            workspace.
-            <br />
-            Turn the information you have into the clarity you need.
-          </p>
-        </motion.div>
-        <div className="platform-grid">
-          <motion.div {...fade} className="flow-diagram">
-            <div className="flow-source">
-              <Layers3 />
-              <b>Your packaging data</b>
-              <div>
-                <span>Materials</span>
-                <span>Components</span>
-                <span>Weights</span>
-              </div>
-            </div>
-            <div className="flow-lines">
-              ↓ <span>↓</span> ↓
-            </div>
-            <div className="flow-core">
-              <Leaf size={35} />
-              <strong>PPWM</strong>
-              <small>Compliance made simple</small>
-            </div>
-            <div className="flow-lines">
-              ↓ <span>↓</span> ↓
-            </div>
-            <div className="flow-source">
-              <Globe2 />
-              <b>A world of requirements</b>
-              <div>
-                <span>PPWR</span>
-                <span>EPR</span>
-                <span>Recyclability</span>
-              </div>
-            </div>
-          </motion.div>
-          <div className="steps">
-            {[
-              [
-                Database,
-                "01",
-                "Bring your data together",
-                "Organise materials, components, weights and product information in one shared workspace.",
-              ],
-              [
-                Recycle,
-                "02",
-                "Understand your packaging",
-                "Give your team a clear starting point for material analysis and compliance assessments.",
-              ],
-              [
-                FileCheck2,
-                "03",
-                "Prepare with confidence",
-                "Keep client information and the people responsible connected to your compliance journey.",
-              ],
-            ].map(([Icon, n, title, desc]) => {
-              const I = Icon as typeof Leaf;
-              return (
-                <motion.article {...fade} key={n as string}>
-                  <span key="number" className="step-number">
-                    {n as string}
-                  </span>
-                  <div key="content">
-                    <I key="icon" />
-                    <h3>{title as string}</h3>
-                    <p>{desc as string}</p>
-                  </div>
-                  <ArrowUpRight key="arrow" />
-                </motion.article>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+      <ComplianceSection />
       <section className="section solutions-section" id="solutions">
         <div className="section-top">
           <div>

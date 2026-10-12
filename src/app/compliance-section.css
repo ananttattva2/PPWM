@@ -1,0 +1,1012 @@
+.compliance-section {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 52px 30px 55px;
+  background:
+    radial-gradient(ellipse at 35% 50%, #eaf9f88c, transparent 42%),
+    radial-gradient(ellipse at 77% 75%, #fff5e5a6, transparent 42%),
+    linear-gradient(130deg, #fbfcfd, #fff 45%, #fffcf7);
+  color: #132b4f;
+  min-height: 760px;
+}
+.compliance-wash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    linear-gradient(143deg, transparent 12%, #eff4f740 12.2%, transparent 28%),
+    linear-gradient(150deg, transparent 48%, #f7f4ef6b 49%, transparent 63%);
+}
+.compliance-wash:before {
+  content: "";
+  position: absolute;
+  width: 330px;
+  height: 330px;
+  left: -220px;
+  top: 280px;
+  background: linear-gradient(140deg, #ffba6e, #ffe8c6);
+  border-radius: 50%;
+}
+.compliance-wash:after {
+  content: "";
+  position: absolute;
+  right: -35px;
+  top: -65px;
+  width: 190px;
+  height: 390px;
+  transform: rotate(-20deg);
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 8px,
+    #f9d9a738 9px 10px
+  );
+}
+.compliance-heading {
+  position: relative;
+  max-width: 1220px;
+  margin: 0 auto;
+  text-align: center;
+}
+.compliance-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff0e4;
+  border-radius: 50px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ff6906;
+  margin-bottom: 18px;
+}
+.compliance-heading h2 {
+  font-size: clamp(30px, 3.05vw, 46px);
+  font-weight: 750;
+  letter-spacing: -1.2px;
+  line-height: 1.14;
+  margin: 0 auto 16px;
+  max-width: 1150px;
+  color: #132b4f;
+}
+.compliance-heading h2 span {
+  background: linear-gradient(135deg, #ff4910, #ff9b14);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+.compliance-heading p {
+  font-size: 16px;
+  line-height: 1.5;
+  color: #778298;
+  margin: 0 auto;
+  max-width: 1120px;
+  letter-spacing: -0.2px;
+}
+.compliance-recycle {
+  position: absolute;
+  right: 25px;
+  top: 5px;
+  width: 150px;
+  height: 150px;
+  color: #ffc58a;
+  opacity: 0.45;
+  transform: rotate(9deg);
+  z-index: -1;
+}
+.decorative-leaf {
+  position: absolute;
+  width: 45px;
+  height: 20px;
+  background: linear-gradient(140deg, #abc97b, #5f971f);
+  border-radius: 100% 0 100% 0;
+  box-shadow:
+    inset 0 -1px 4px #f4ffc06b,
+    0 7px 14px #4d7c151f;
+  z-index: -1;
+}
+.decorative-leaf:after {
+  content: "";
+  position: absolute;
+  left: 6%;
+  top: 50%;
+  width: 85%;
+  height: 1px;
+  background: #d2e7a6;
+  transform: rotate(-20deg);
+}
+.leaf-top {
+  top: 33px;
+  right: 205px;
+  transform: rotate(-31deg);
+  filter: blur(1.5px);
+}
+.leaf-left {
+  top: 255px;
+  left: 38px;
+  transform: rotate(-45deg);
+  filter: blur(1.4px);
+}
+.leaf-right {
+  right: 157px;
+  top: 118px;
+  transform: rotate(40deg);
+  width: 60px;
+  height: 25px;
+  filter: blur(1px);
+}
+.compliance-content {
+  max-width: 1300px;
+  margin: 47px auto 0;
+  display: grid;
+  grid-template-columns: minmax(0, 0.97fr) minmax(0, 1.13fr);
+  gap: 37px;
+  align-items: center;
+}
+.compliance-diagram {
+  position: relative;
+  min-width: 0;
+  height: 490px;
+}
+.compliance-ribbons {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.diagram-card {
+  position: absolute;
+  z-index: 2;
+  width: 330px;
+  background: #ffffffed;
+  border: 1px solid #fff;
+  border-radius: 18px;
+  padding: 13px 20px 14px;
+  box-shadow: 0 12px 35px #3a706619;
+  backdrop-filter: blur(10px);
+}
+.packaging-data {
+  left: 26%;
+  top: 0;
+}
+.diagram-card h3 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 18px;
+  letter-spacing: -0.6px;
+  margin: 0 0 12px;
+  font-weight: 700;
+}
+.diagram-card h3 > span {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background: #d5fff0;
+  color: #07ac71;
+}
+.diagram-items {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.diagram-items > div {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  flex: 1;
+  gap: 7px;
+  min-width: 0;
+}
+.diagram-items > div > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 47px;
+  height: 47px;
+  border-radius: 13px;
+  background: #f0f4f8;
+  color: #173556;
+}
+.diagram-items > div:first-child > span {
+  color: #ff8a0e;
+  background: #fff8ee;
+}
+.diagram-items small {
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.diagram-core {
+  position: absolute;
+  left: 30%;
+  top: 185px;
+  width: 290px;
+  padding: 20px 18px 18px;
+  border-radius: 20px;
+  background: linear-gradient(125deg, #00b59b 0%, #075569 40%, #142e4c 90%);
+  border: 6px solid #ffffff82;
+  box-shadow:
+    0 15px 34px #08948729,
+    inset 0 1px 0 #93ffca3d;
+  color: white;
+  z-index: 3;
+}
+.diagram-core > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+}
+.diagram-core > div > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5adecf99, #0e5e6255);
+  box-shadow: 0 5px 15px #072c4766;
+}
+.diagram-core strong {
+  font-size: 39px;
+  font-weight: 750;
+  letter-spacing: -1px;
+}
+.diagram-core p {
+  color: #fff;
+  font-size: 15px;
+  text-align: center;
+  line-height: 1.2;
+  margin: 11px 0 0;
+}
+.regulations-data {
+  top: 350px;
+  left: 29%;
+  width: 310px;
+}
+.regulations-data h3 > span {
+  background: #d8fff6;
+  color: #0abb98;
+}
+.regulations-data .diagram-items > div > span {
+  color: #153754;
+  background: #f0f4f8;
+}
+.regulations-data .diagram-items > div > span {
+  width: 53px;
+  height: 53px;
+}
+.diagram-orb {
+  position: absolute;
+  z-index: 3;
+  width: 47px;
+  height: 47px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid white;
+  color: white;
+  box-shadow: 0 6px 13px #258d8126;
+}
+.orb-chart {
+  left: 9%;
+  top: 184px;
+  background: linear-gradient(135deg, #2dd797, #009d71);
+}
+.orb-database {
+  left: 9%;
+  top: 275px;
+  background: linear-gradient(135deg, #ffc677, #ed920d);
+}
+.orb-file {
+  right: 1%;
+  top: 155px;
+  background: linear-gradient(135deg, #ffdc92, #e8a032);
+}
+.orb-pie {
+  right: 0;
+  top: 280px;
+  background: linear-gradient(135deg, #73e6e8, #09aab0);
+}
+.packaging-still-life {
+  position: absolute;
+  bottom: -15px;
+  left: -91px;
+  width: 250px;
+  height: auto;
+  z-index: 4;
+  filter: drop-shadow(0 9px 15px #59552c19);
+}
+.compliance-process {
+  position: relative;
+  z-index: 2;
+  padding: 3px 0 6px;
+}
+.compliance-process > h3 {
+  font-size: 28px;
+  font-weight: 750;
+  letter-spacing: -1px;
+  line-height: 1.2;
+  margin: 0 0 26px;
+  color: #142b4e;
+}
+.teal-text {
+  color: #02abb1;
+}
+.orange-text {
+  color: #ff6808;
+}
+.compliance-step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.compliance-step {
+  --step-color: #ff710a;
+  --step-bg: #fff0e6;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  background: #ffffffec;
+  border-radius: 18px;
+  padding: 22px 19px;
+  min-height: 125px;
+  box-shadow: 0 10px 27px #5d503e09;
+  border: 1px solid #fff;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+.compliance-step:before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--step-color);
+}
+.compliance-step.teal {
+  --step-color: #02acb2;
+  --step-bg: #def9f8;
+}
+.compliance-step.blue {
+  --step-color: #3e57df;
+  --step-bg: #eaefff;
+}
+.compliance-step-number {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--step-color);
+  background: var(--step-bg);
+  font-size: 19px;
+  font-weight: 700;
+}
+.compliance-step-icon {
+  width: 65px;
+  height: 69px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 13px;
+  background: var(--step-bg);
+  color: var(--step-color);
+}
+.compliance-step > div {
+  flex: 1;
+  min-width: 0;
+}
+.compliance-step h4 {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.55px;
+  color: #142c50;
+  margin: 0 0 7px;
+}
+.compliance-step p {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #788398;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+.compliance-step-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 37px;
+  height: 37px;
+  border-radius: 50%;
+  background: var(--step-bg);
+  color: var(--step-color);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+.compliance-step-arrow:hover {
+  transform: translateX(3px);
+  box-shadow: 0 4px 15px #edaa6320;
+}
+.ribbon-dashes {
+  animation: compliance-flow 9s linear infinite;
+}
+@keyframes compliance-flow {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+[data-mantine-color-scheme="dark"] .compliance-section {
+  background:
+    radial-gradient(ellipse at 30% 55%, #143d3799, transparent 55%),
+    radial-gradient(ellipse at 85% 75%, #44302155, transparent 48%), #111b2a;
+  color: #dce8f8;
+}
+[data-mantine-color-scheme="dark"] .compliance-heading h2,
+[data-mantine-color-scheme="dark"] .compliance-process > h3,
+[data-mantine-color-scheme="dark"] .compliance-step h4 {
+  color: #dfebfc;
+}
+[data-mantine-color-scheme="dark"] .compliance-heading p,
+[data-mantine-color-scheme="dark"] .compliance-step p {
+  color: #a0b0c5;
+}
+[data-mantine-color-scheme="dark"] .compliance-badge {
+  background: #403026;
+  color: #ffb274;
+}
+[data-mantine-color-scheme="dark"] .compliance-step,
+[data-mantine-color-scheme="dark"] .diagram-card {
+  background: #1c2a3ded;
+  border-color: #304156;
+  box-shadow: 0 12px 25px #0002;
+}
+[data-mantine-color-scheme="dark"] .compliance-step {
+  --step-bg: #453025;
+}
+[data-mantine-color-scheme="dark"] .compliance-step.teal {
+  --step-bg: #173e42;
+}
+[data-mantine-color-scheme="dark"] .compliance-step.blue {
+  --step-bg: #2b3255;
+}
+[data-mantine-color-scheme="dark"] .diagram-items > div > span {
+  background: #2c3b50;
+  color: #bfd5f3;
+}
+[data-mantine-color-scheme="dark"] .diagram-items > div:first-child > span {
+  background: #403026;
+  color: #ffa763;
+}
+[data-mantine-color-scheme="dark"] .diagram-core {
+  border-color: #2b5357;
+}
+[data-mantine-color-scheme="dark"] .compliance-wash {
+  opacity: 0.12;
+}
+[data-mantine-color-scheme="dark"] .compliance-recycle {
+  opacity: 0.15;
+}
+@media (min-width: 1550px) {
+  .compliance-section {
+    padding-top: 60px;
+    padding-bottom: 65px;
+  }
+  .compliance-content {
+    gap: 55px;
+  }
+  .packaging-still-life {
+    left: -125px;
+    width: 280px;
+  }
+  .compliance-step {
+    padding: 25px 22px;
+    min-height: 137px;
+  }
+  .compliance-step h4 {
+    font-size: 20px;
+  }
+  .compliance-step p {
+    font-size: 14px;
+  }
+}
+@media (max-width: 1150px) {
+  .compliance-section {
+    padding: 40px 24px 50px;
+    min-height: 690px;
+  }
+  .compliance-heading h2 {
+    font-size: 35px;
+  }
+  .compliance-heading p {
+    font-size: 14px;
+  }
+  .compliance-content {
+    gap: 26px;
+    margin-top: 38px;
+    grid-template-columns: minmax(0, 0.96fr) minmax(0, 1.04fr);
+  }
+  .compliance-diagram {
+    height: 430px;
+  }
+  .diagram-card {
+    width: 270px;
+    padding: 13px 15px;
+  }
+  .packaging-data {
+    left: 24%;
+    top: 0;
+  }
+  .diagram-card h3 {
+    font-size: 16px;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .diagram-card h3 > span {
+    width: 34px;
+    height: 34px;
+  }
+  .diagram-items > div > span {
+    width: 39px;
+    height: 39px;
+    border-radius: 10px;
+  }
+  .diagram-items small {
+    font-size: 8px;
+  }
+  .diagram-core {
+    left: 28%;
+    width: 250px;
+    top: 160px;
+    padding: 20px 14px 17px;
+  }
+  .diagram-core strong {
+    font-size: 33px;
+  }
+  .diagram-core > div > span {
+    width: 40px;
+    height: 40px;
+  }
+  .diagram-core p {
+    font-size: 13px;
+  }
+  .regulations-data {
+    top: 305px;
+    left: 26%;
+    width: 255px;
+  }
+  .regulations-data .diagram-items > div > span {
+    width: 44px;
+    height: 44px;
+  }
+  .packaging-still-life {
+    width: 215px;
+    left: -69px;
+    bottom: -12px;
+  }
+  .diagram-orb {
+    height: 38px;
+    width: 38px;
+  }
+  .diagram-orb svg {
+    width: 21px;
+  }
+  .orb-chart {
+    top: 158px;
+    left: 8%;
+  }
+  .orb-database {
+    top: 230px;
+    left: 9%;
+  }
+  .orb-file {
+    top: 133px;
+    right: -1%;
+  }
+  .orb-pie {
+    top: 242px;
+    right: -1%;
+  }
+  .compliance-process > h3 {
+    font-size: 24px;
+    margin-bottom: 21px;
+  }
+  .compliance-step-list {
+    gap: 16px;
+  }
+  .compliance-step {
+    padding: 18px 14px;
+    gap: 12px;
+    min-height: 113px;
+    border-radius: 15px;
+  }
+  .compliance-step-number {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+  }
+  .compliance-step-icon {
+    width: 51px;
+    height: 55px;
+    border-radius: 10px;
+  }
+  .compliance-step-icon svg {
+    width: 29px;
+  }
+  .compliance-step h4 {
+    font-size: 15px;
+  }
+  .compliance-step p {
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .compliance-step-arrow {
+    width: 30px;
+    height: 30px;
+  }
+  .compliance-step-arrow svg {
+    width: 20px;
+  }
+  .compliance-recycle {
+    width: 120px;
+    height: 120px;
+    right: 5px;
+  }
+  .leaf-top {
+    right: 147px;
+  }
+  .leaf-right {
+    right: 103px;
+    top: 100px;
+  }
+}
+@media (max-width: 850px) {
+  .compliance-content {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    max-width: 620px;
+    margin-top: 35px;
+  }
+  .compliance-heading h2 {
+    font-size: 32px;
+    max-width: 670px;
+  }
+  .compliance-heading p {
+    font-size: 12px;
+    max-width: 660px;
+  }
+  .compliance-title-break {
+    display: none;
+  }
+  .compliance-diagram {
+    width: 550px;
+    max-width: 100%;
+    margin: auto;
+    height: 475px;
+  }
+  .diagram-card {
+    width: 310px;
+  }
+  .packaging-data {
+    left: 29%;
+  }
+  .diagram-card h3 {
+    font-size: 17px;
+  }
+  .diagram-items small {
+    font-size: 9px;
+  }
+  .diagram-items > div > span {
+    width: 45px;
+    height: 45px;
+  }
+  .diagram-core {
+    top: 180px;
+    left: 32%;
+    width: 275px;
+    padding: 24px 14px 20px;
+  }
+  .regulations-data {
+    top: 339px;
+    left: 30%;
+    width: 290px;
+  }
+  .packaging-still-life {
+    width: 225px;
+    left: -12px;
+    bottom: -8px;
+  }
+  .orb-chart {
+    top: 177px;
+    left: 11%;
+  }
+  .orb-database {
+    top: 250px;
+    left: 11%;
+  }
+  .orb-file {
+    top: 146px;
+    right: 1%;
+  }
+  .orb-pie {
+    top: 265px;
+    right: 1%;
+  }
+  .compliance-process > h3 {
+    font-size: 28px;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .compliance-step {
+    padding: 22px 19px;
+    gap: 17px;
+  }
+  .compliance-step-icon {
+    width: 60px;
+    height: 62px;
+  }
+  .compliance-step h4 {
+    font-size: 18px;
+  }
+  .compliance-step p {
+    font-size: 13px;
+  }
+  .compliance-step-number {
+    width: 35px;
+    height: 35px;
+  }
+  .compliance-recycle {
+    opacity: 0.23;
+    width: 100px;
+    height: 100px;
+  }
+  .leaf-top,
+  .leaf-right {
+    display: none;
+  }
+}
+@media (max-width: 540px) {
+  .compliance-section {
+    padding: 35px 17px 42px;
+  }
+  .compliance-badge {
+    font-size: 11px;
+    padding: 9px 17px;
+    gap: 7px;
+    margin-bottom: 15px;
+  }
+  .compliance-badge svg {
+    width: 15px;
+  }
+  .compliance-heading h2 {
+    font-size: 28px;
+    letter-spacing: -0.8px;
+    line-height: 1.16;
+    margin-bottom: 13px;
+  }
+  .compliance-heading p {
+    font-size: 11px;
+    line-height: 1.65;
+  }
+  .compliance-content {
+    margin-top: 26px;
+    gap: 24px;
+  }
+  .compliance-diagram {
+    height: 363px;
+    width: 355px;
+  }
+  .diagram-card {
+    width: 224px;
+    border-radius: 13px;
+    padding: 11px 12px;
+  }
+  .packaging-data {
+    left: 31%;
+    top: 0;
+  }
+  .diagram-card h3 {
+    font-size: 13px;
+    gap: 8px;
+    margin-bottom: 9px;
+  }
+  .diagram-card h3 > span {
+    height: 28px;
+    width: 28px;
+  }
+  .diagram-card h3 svg {
+    width: 19px;
+  }
+  .diagram-items {
+    gap: 5px;
+  }
+  .diagram-items > div {
+    gap: 6px;
+  }
+  .diagram-items > div > span {
+    width: 33px;
+    height: 33px;
+    border-radius: 8px;
+  }
+  .diagram-items svg {
+    width: 19px;
+    height: 19px;
+  }
+  .diagram-items small {
+    font-size: 7px;
+  }
+  .diagram-core {
+    width: 208px;
+    left: 33%;
+    top: 135px;
+    border-width: 4px;
+    border-radius: 14px;
+    padding: 18px 12px 15px;
+  }
+  .diagram-core strong {
+    font-size: 28px;
+  }
+  .diagram-core > div {
+    gap: 9px;
+  }
+  .diagram-core > div > span {
+    width: 35px;
+    height: 35px;
+  }
+  .diagram-core svg {
+    width: 28px;
+  }
+  .diagram-core p {
+    font-size: 11px;
+    margin-top: 8px;
+  }
+  .regulations-data {
+    width: 215px;
+    left: 31%;
+    top: 258px;
+  }
+  .regulations-data .diagram-items > div > span {
+    height: 37px;
+    width: 37px;
+  }
+  .packaging-still-life {
+    width: 146px;
+    bottom: 0;
+    left: -9px;
+  }
+  .diagram-orb {
+    width: 31px;
+    height: 31px;
+    border-width: 2px;
+  }
+  .diagram-orb svg {
+    width: 17px;
+    height: 17px;
+  }
+  .orb-chart {
+    left: 14%;
+    top: 128px;
+  }
+  .orb-database {
+    left: 16%;
+    top: 188px;
+  }
+  .orb-file {
+    right: -1%;
+    top: 101px;
+  }
+  .orb-pie {
+    right: -1%;
+    top: 204px;
+  }
+  .compliance-ribbons {
+    width: 100%;
+    height: 363px;
+  }
+  .compliance-process > h3 {
+    font-size: 23px;
+    letter-spacing: -0.6px;
+    margin-bottom: 19px;
+  }
+  .compliance-step {
+    padding: 18px 13px;
+    gap: 10px;
+    border-radius: 13px;
+    min-height: 122px;
+  }
+  .compliance-step-number {
+    width: 25px;
+    height: 25px;
+    font-size: 14px;
+  }
+  .compliance-step-icon {
+    height: 43px;
+    width: 42px;
+    border-radius: 9px;
+  }
+  .compliance-step-icon svg {
+    width: 25px;
+    height: 25px;
+  }
+  .compliance-step h4 {
+    font-size: 14px;
+    letter-spacing: -0.3px;
+    margin-bottom: 6px;
+  }
+  .compliance-step p {
+    font-size: 10px;
+    line-height: 1.55;
+  }
+  .compliance-step-arrow {
+    height: 25px;
+    width: 25px;
+  }
+  .compliance-step-arrow svg {
+    width: 17px;
+  }
+  .compliance-recycle {
+    width: 75px;
+    height: 75px;
+    right: -10px;
+    top: 13px;
+    opacity: 0.2;
+  }
+  .leaf-left {
+    top: 238px;
+    left: 7px;
+    width: 26px;
+    height: 13px;
+  }
+  .compliance-wash:before {
+    top: 325px;
+    width: 200px;
+    height: 200px;
+    left: -155px;
+  }
+}
+@media (max-width: 370px) {
+  .compliance-diagram {
+    transform: scale(0.93);
+    transform-origin: center top;
+    margin-bottom: -20px;
+  }
+  .compliance-step {
+    gap: 8px;
+    padding: 16px 11px;
+  }
+  .compliance-step-icon {
+    width: 35px;
+    height: 38px;
+  }
+  .compliance-step h4 {
+    font-size: 13px;
+  }
+  .compliance-step p {
+    font-size: 9px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ribbon-dashes {
+    animation: none;
+  }
+  .compliance-step-arrow {
+    transition: none;
+  }
+}

@@ -37,6 +37,62 @@ test("OTP login and administrative portals", async ({ page }) => {
   }
   await page.screenshot({ path: "artifacts/login.png", fullPage: true });
 });
+test("packaging compliance section follows the reference on desktop and mobile", async ({
+  page,
+  request,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.goto("/");
+  const section = page.locator("#platform");
+  await expect(section.getByRole("heading", { level: 2 })).toContainText(
+    "Without Digging Through Hundreds of Pages",
+  );
+  await expect(
+    section.getByText("Systematically Approach the Data Chaos", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    section.getByText("Assess and Calculate", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    section.getByRole("heading", { name: "Report", exact: true }),
+  ).toBeVisible();
+  const image = section.getByRole("img", { name: /Recyclable packaging:/ });
+  await expect
+    .poll(() =>
+      image.evaluate(
+        (img: HTMLImageElement) => img.complete && img.naturalWidth > 0,
+      ),
+    )
+    .toBe(true);
+  expect(
+    (await request.get("/images/packaging-still-life.webp")).status(),
+  ).toBe(200);
+  await section.screenshot({
+    path: "artifacts/packaging-compliance-desktop.png",
+  });
+  await page
+    .getByRole("button", { name: "Switch to dark mode", exact: true })
+    .click();
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-mantine-color-scheme",
+    "dark",
+  );
+  await section.screenshot({ path: "artifacts/packaging-compliance-dark.png" });
+  await page
+    .getByRole("button", { name: "Switch to light mode", exact: true })
+    .click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await section.screenshot({
+    path: "artifacts/packaging-compliance-mobile.png",
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+});
 test("unauthenticated access is denied", async ({ page, request }) => {
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/login$/);
