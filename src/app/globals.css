@@ -2454,3 +2454,257 @@ td .mantine-Select-root {
 .hero h1 > .split-parent {
   color: var(--ink);
 }
+.onboarding-intro {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin: 8px 0 28px;
+}
+.onboarding-intro h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+.onboarding-intro p {
+  font-size: 11px;
+  margin: 0;
+}
+.required-note {
+  margin-left: auto;
+  font-size: 9px;
+  color: #a3a9b1;
+  white-space: nowrap;
+}
+.onboarding-section {
+  border: 0;
+  margin: 0 0 26px;
+  padding: 22px;
+  background: #fafbfc;
+  border-radius: 12px;
+  min-width: 0;
+}
+.onboarding-section legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  float: left;
+  width: 100%;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 19px;
+  color: #3e5064;
+}
+.onboarding-section legend svg {
+  color: #e88632;
+}
+.onboarding-section > .form-grid {
+  clear: both;
+  padding: 0;
+  gap: 20px;
+}
+.onboarding-section > .mantine-InputWrapper-root {
+  clear: both;
+}
+.document-count {
+  margin-left: auto;
+  color: #a0a8b1;
+  font-size: 10px;
+}
+.document-description {
+  clear: both;
+  font-size: 11px;
+  margin-bottom: 16px;
+}
+.document-dropzone {
+  border: 1.5px dashed #e2cdb7;
+  border-radius: 10px;
+  background: #fffdf9;
+  padding: 28px 15px;
+  text-align: center;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.document-dropzone.dragging {
+  background: #fff0df;
+  border-color: #f58220;
+}
+.document-dropzone.invalid {
+  border-color: #db6b60;
+}
+.document-dropzone > svg {
+  margin: 0 auto 12px;
+  color: #e9a066;
+}
+.document-dropzone b {
+  font-size: 13px;
+  display: block;
+}
+.document-dropzone p {
+  font-size: 10px;
+  margin: 9px 0 17px;
+}
+.document-dropzone .btn {
+  padding: 10px 16px;
+  font-size: 10px;
+}
+.document-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+}
+.document-list > div {
+  background: white;
+  border: 1px solid #e7ebef;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px;
+}
+.document-file-icon {
+  background: #fff0e3;
+  color: #e98939;
+  padding: 9px;
+  border-radius: 8px;
+}
+.document-list > div > div {
+  flex: 1;
+  min-width: 0;
+}
+.document-list b {
+  font-size: 11px;
+  display: block;
+  overflow-wrap: anywhere;
+}
+.document-list small {
+  display: block;
+  font-size: 9px;
+  color: #9da6b1;
+  margin-top: 5px;
+}
+.document-list button {
+  border: 0;
+  background: transparent;
+  color: #a1a8b0;
+  padding: 8px;
+}
+.document-list button:hover {
+  color: #cc554a;
+}
+.document-privacy {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  color: #90a293;
+  margin-top: 15px;
+  line-height: 1.6;
+}
+.document-privacy svg {
+  flex-shrink: 0;
+}
+.document-error {
+  font-size: 11px;
+  color: #ca4747;
+  margin-top: 10px;
+}
+.materials-heading {
+  font-size: 13px !important;
+  margin-top: 26px;
+  margin-bottom: 15px;
+}
+.materials-heading span {
+  color: #de7541;
+}
+.onboarding-actions > span {
+  margin-right: auto;
+  font-size: 9px;
+  color: #9ca7ad;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.review-documents {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.review-documents > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11px;
+  background: #fafbfc;
+  border-radius: 8px;
+  padding: 12px;
+  color: #637486;
+}
+.review-documents svg {
+  color: #dc893e;
+  flex-shrink: 0;
+}
+.review-documents span {
+  overflow-wrap: anywhere;
+}
+.review-documents small {
+  margin-left: auto;
+  font-size: 9px;
+  white-space: nowrap;
+}
+.review-card dd {
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+.review-card dl > div {
+  grid-template-columns: 165px 1fr;
+}
+.client-document-links {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  max-width: 180px;
+}
+.client-document-links a {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 10px;
+  color: #c7803c;
+  overflow-wrap: anywhere;
+}
+.client-document-links svg {
+  flex-shrink: 0;
+}
+@media (max-width: 540px) {
+  .onboarding-intro {
+    align-items: flex-start;
+  }
+  .onboarding-intro h3 {
+    font-size: 16px;
+  }
+  .required-note {
+    display: none;
+  }
+  .onboarding-section {
+    padding: 17px;
+  }
+  .onboarding-section .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .onboarding-actions > span {
+    display: none;
+  }
+  .review-card dl > div {
+    grid-template-columns: 115px 1fr;
+  }
+  .document-dropzone {
+    padding: 22px 10px;
+  }
+  .document-privacy {
+    font-size: 8px;
+  }
+  .onboarding-panel .panel-heading .text-button {
+    font-size: 9px;
+  }
+}

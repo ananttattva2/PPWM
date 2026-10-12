@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "@mantine/core/styles.css";
 import "./globals.css";
 import Providers from "@/components/providers";
+import ToastProvider from "@/components/toast-provider";
 export const metadata: Metadata = {
   title: {
     default: "ANANT TATTVA | Packaging compliance, simplified",
@@ -18,7 +19,10 @@ export default function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <ToastProvider />
+        </Providers>
       </body>
     </html>
   );

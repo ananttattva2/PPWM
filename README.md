@@ -49,6 +49,12 @@ tests/                   Browser and authorization regression checks
 
 UI uses Tailwind, shadcn/ui, Mantine form/stepper/progress components and HeroUI avatars/providers. Aceternity Spotlight, Magic UI Border Beam, React Bits SplitText, GSAP and Motion provide animation. Third-party source components retain their upstream licenses.
 
+## Client onboarding
+
+The organisation step captures legal name, trade name, GST number, an optional registration/user reference, one organisation role, registered address, country, email, telephone and authorised person. All eight organisation roles are available in a searchable single-select dropdown. Next validates these fields and at least one supporting document before continuing to packaging details and final review.
+
+Uploads accept PDF, PNG and JPEG files, up to five files at 2 MB each. Metadata and document bytes are stored atomically in the MongoDB client record with creator/upload timestamps. List and dashboard responses exclude document bytes. Files are downloaded through an authenticated API route; the server validates file type, size and signatures. Existing client records remain readable. Success, validation and upload failures display toast notifications.
+
 ## Email and database setup
 
 Microsoft Entra app needs Microsoft Graph **Mail.Send application permission with admin consent**, and access to the sender mailbox. Configure Atlas network access for the deployment's outbound IP. Keep all credentials server-side in environment variables.
@@ -67,4 +73,3 @@ npm start
 Deploy to a Node.js-capable Next.js host. Set `BETTER_AUTH_URL` to the HTTPS site origin and configure every `.env.example` value through your host's secret settings. MongoDB's native driver requires Node.js; this application is not a static export or a Cloudflare Workers deployment.
 
 Marketing charts are labelled illustrative. This release manages clients and team access; it does not implement regulatory calculations, EPR filing or certification. Demo/contact buttons open email requests. The brand uses local SVG assets recreated from the second supplied logo reference, including a light variant for the login panel. The original source image is not present locally; use it if exact pixel fidelity is required.
-

@@ -6,6 +6,7 @@ export default async function Page() {
   const clients = await db()
     .collection("clients")
     .find({})
+    .project({ company: 1, country: 1, status: 1, materials: 1 })
     .sort({ createdAt: -1 })
     .limit(5)
     .toArray();

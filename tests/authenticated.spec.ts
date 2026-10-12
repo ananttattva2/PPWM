@@ -61,18 +61,87 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       .getByRole("link", { name: "Client onboarding", exact: true })
       .click();
     await page.getByRole("button", { name: "New client" }).click();
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(
+      page.getByText("Please complete the required organisation details.", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Upload at least one supporting document.", {
+        exact: true,
+      }),
+    ).toBeVisible();
     await page
-      .getByRole("textbox", { name: "Company name", exact: true })
+      .getByRole("textbox", { name: "Legal name", exact: true })
       .fill(company);
     await page
-      .getByRole("textbox", { name: "Contact name", exact: true })
+      .getByRole("textbox", { name: "Authorised person", exact: true })
       .fill("QA Contact");
+    await page.getByRole("textbox", { name: "Email", exact: true }).fill(email);
     await page
-      .getByRole("textbox", { name: "Contact email", exact: true })
-      .fill(email);
-    await page.getByRole("button", { name: "Continue", exact: true }).click();
+      .getByRole("textbox", { name: "Trade name", exact: true })
+      .fill("QA Packaging");
+    await page
+      .getByRole("textbox", { name: "GST number", exact: true })
+      .fill("27ABCDE1234F1Z5");
+    await page
+      .getByRole("textbox", { name: "Registration / user number", exact: true })
+      .fill("QA-REG-001");
+    await page
+      .getByRole("textbox", { name: "Registered address", exact: true })
+      .fill("12 Test Street, Mumbai, Maharashtra 400001");
+    await page
+      .getByRole("textbox", { name: "Telephone", exact: true })
+      .fill("+91 98765 43210");
+    await page
+      .getByRole("combobox", { name: "Organisation role", exact: true })
+      .click();
+    for (const role of [
+      "Producer",
+      "Manufacturer",
+      "Supplier",
+      "Importer",
+      "Distributor",
+      "Final Distributor",
+      "Fulfilment Service Provider",
+      "Authorised Representative",
+    ])
+      await expect(
+        page.getByRole("option", { name: role, exact: true }),
+      ).toBeVisible();
+    await page.getByRole("option", { name: "Producer", exact: true }).click();
+    const fileBytes = Buffer.from(
+      "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF",
+    );
+    await page
+      .getByLabel("Supporting documents", { exact: true })
+      .setInputFiles({
+        name: "registration.pdf",
+        mimeType: "application/pdf",
+        buffer: fileBytes,
+      });
+    await expect(
+      page.getByText("registration.pdf", { exact: true }),
+    ).toBeVisible();
+    await page.screenshot({
+      path: "artifacts/client-onboarding.png",
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: "artifacts/client-onboarding-mobile.png",
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.getByRole("button", { name: "Next", exact: true }).click();
     await page.getByLabel("Plastic", { exact: true }).check();
-    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await page.getByRole("button", { name: "Next", exact: true }).click();
     const savedClient = page.waitForResponse(
       (r) =>
         r.url().endsWith("/api/clients") && r.request().method() === "POST",
@@ -82,6 +151,60 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       .click();
     expect((await savedClient).status()).toBe(201);
     await expect(page.getByText(company, { exact: true })).toBeVisible();
+    expect(await db.collection("clients").countDocuments({ company })).toBe(1);
+    await expect(
+      page.getByText("Client created successfully", { exact: true }),
+    ).toBeVisible();
+    const storedClient = await db.collection("clients").findOne({ company });
+    expect(storedClient?.legalName).toBe(company);
+    expect(storedClient?.tradeName).toBe("QA Packaging");
+    expect(storedClient?.gstNumber).toBe("27ABCDE1234F1Z5");
+    expect(storedClient?.registrationNumber).toBe("QA-REG-001");
+    expect(storedClient?.organisationRole).toBe("Producer");
+    expect(storedClient?.registeredAddress).toBe(
+      "12 Test Street, Mumbai, Maharashtra 400001",
+    );
+    expect(storedClient?.telephone).toBe("+91 98765 43210");
+    expect(storedClient?.authorisedPerson).toBe("QA Contact");
+    expect(
+      Buffer.from(storedClient?.documents[0].data.buffer).equals(fileBytes),
+    ).toBe(true);
+    const downloadPath = `/api/clients/${storedClient?._id}/documents/0`;
+    const download = await page.request.get(downloadPath);
+    expect(download.status()).toBe(200);
+    expect((await download.body()).equals(fileBytes)).toBe(true);
+    expect((await request.get(downloadPath)).status()).toBe(401);
+    const clientList = await page.request.get("/api/clients");
+    const listed = (await clientList.json()).find(
+      (c: { _id: string }) => c._id === String(storedClient?._id),
+    );
+    expect(listed.documents[0].data).toBeUndefined();
+    const invalidUpload = await page.request.post("/api/clients", {
+      headers: { Origin: "http://localhost:3000" },
+      multipart: {
+        data: JSON.stringify({
+          legalName: company,
+          tradeName: "QA Packaging",
+          gstNumber: "27ABCDE1234F1Z5",
+          registrationNumber: "",
+          organisationRole: "Producer",
+          registeredAddress: "12 Test Street, Mumbai 400001",
+          email,
+          telephone: "+91 9876543210",
+          authorisedPerson: "QA Contact",
+          country: "India",
+          industry: "Retail",
+          materials: ["Plastic"],
+          notes: "",
+        }),
+        documents: {
+          name: "fake.pdf",
+          mimeType: "application/pdf",
+          buffer: Buffer.from("not-a-pdf"),
+        },
+      },
+    });
+    expect(invalidUpload.status()).toBe(400);
     expect(await db.collection("clients").countDocuments({ company })).toBe(1);
     await page
       .getByRole("link", { name: "User management", exact: true })
