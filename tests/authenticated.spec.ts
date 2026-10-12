@@ -12,6 +12,8 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
   request,
 }) => {
   test.setTimeout(90000);
+  const browserErrors: string[] = [];
+  page.on("pageerror", (e) => browserErrors.push(e.message));
   const client = new MongoClient(process.env.MONGODB_URI!);
   await client.connect();
   const db = client.db(process.env.MONGODB_DB);
@@ -124,11 +126,42 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await expect(
       page.getByText("registration.pdf", { exact: true }),
     ).toBeVisible();
+    const detailsBox = await page
+      .getByRole("textbox", { name: "Legal name", exact: true })
+      .boundingBox();
+    const documentBox = await page.locator(".document-dropzone").boundingBox();
+    expect(documentBox!.x).toBeGreaterThan(detailsBox!.x);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollHeight),
+    ).toBeLessThan(1400);
+    await page.evaluate(() => {
+      document
+        .querySelectorAll<HTMLButtonElement>("[data-close-button]")
+        .forEach((b) => b.click());
+      window.scrollTo({ top: 0, behavior: "instant" });
+    });
+    await page.waitForTimeout(300);
     await page.screenshot({
       path: "artifacts/client-onboarding.png",
       fullPage: true,
     });
     await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(350);
+    await expect
+      .poll(
+        async () =>
+          (await page.locator(".sidebar").boundingBox())!.x +
+          (await page.locator(".sidebar").boundingBox())!.width,
+      )
+      .toBeLessThanOrEqual(1);
+    await page
+      .getByRole("button", { name: "Open sidebar", exact: true })
+      .click();
+    await expect(page.locator(".sidebar")).toHaveClass(/sidebar-open/);
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".sidebar")).not.toHaveClass(/sidebar-open/);
+    await page.waitForTimeout(350);
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -152,6 +185,22 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     expect((await savedClient).status()).toBe(201);
     await expect(page.getByText(company, { exact: true })).toBeVisible();
     expect(await db.collection("clients").countDocuments({ company })).toBe(1);
+    await page
+      .getByRole("textbox", { name: "Search workspace clients", exact: true })
+      .fill("no-matching-client");
+    await page
+      .getByRole("textbox", { name: "Search workspace clients", exact: true })
+      .press("Enter");
+    await expect(
+      page.getByRole("heading", { name: "No matching clients.", exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("textbox", { name: "Search workspace clients", exact: true })
+      .fill(company);
+    await page
+      .getByRole("textbox", { name: "Search workspace clients", exact: true })
+      .press("Enter");
+    await expect(page.getByText(company, { exact: true })).toBeVisible();
     await expect(
       page.getByText("Client created successfully", { exact: true }),
     ).toBeVisible();
@@ -251,6 +300,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       .collection("user")
       .updateOne({ _id: id }, { $set: { active: false } });
     expect((await page.request.get("/api/clients")).status()).toBe(401);
+    expect(browserErrors).toEqual([]);
   } finally {
     const child = createdUserEmail
       ? await db.collection("user").findOne({ email: createdUserEmail })

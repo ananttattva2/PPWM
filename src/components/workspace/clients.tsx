@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { TextInput, Select, Textarea, Checkbox, Stepper } from "@mantine/core";
 import { motion } from "motion/react";
 import { toast } from "sonner";
@@ -59,6 +60,7 @@ const initial = {
   notes: "",
 };
 export default function Clients({ canEdit }: { canEdit: boolean }) {
+  const searchParams = useSearchParams();
   const [list, setList] = useState<Client[]>([]),
     [form, setForm] = useState(initial),
     [files, setFiles] = useState<File[]>([]),
@@ -87,6 +89,9 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
   useEffect(() => {
     void load();
   }, []);
+  useEffect(() => {
+    setSearch(searchParams.get("q") || "");
+  }, [searchParams]);
   function update(key: keyof typeof initial, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setFieldErrors((prev) => ({ ...prev, [key]: "" }));
@@ -206,7 +211,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
           <h1>Client onboarding</h1>
           <p>Start with the right details. Build a stronger partnership.</p>
         </div>
-        {canEdit && (
+        {canEdit && !show && (
           <Button
             disabled={busy}
             onClick={() => {
@@ -222,9 +227,10 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
         <section className="panel onboarding-panel">
           <div className="panel-heading">
             <div>
-              <h3>Let’s build your client profile.</h3>
+              <h3>New client profile</h3>
               <p>
-                Organisation details, packaging portfolio, then a final review.
+                Add organisation details and supporting documents to get
+                started.
               </p>
             </div>
             <button
@@ -262,7 +268,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
               key={step}
               initial={{ opacity: 1, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="onboarding-fields"
+              className={`onboarding-fields ${step === 0 ? "organisation-layout" : ""}`}
             >
               {step === 0 ? (
                 <>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "@mantine/core/styles.css";
 import "./globals.css";
+import "./workspace.css";
 import Providers from "@/components/providers";
 import ToastProvider from "@/components/toast-provider";
 export const metadata: Metadata = {
@@ -18,7 +19,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" data-scroll-behavior="smooth">
-      <body>
+      {/* Browser extensions can add body attributes before React hydrates. */}
+      <body suppressHydrationWarning>
         <Providers>
           {children}
           <ToastProvider />
