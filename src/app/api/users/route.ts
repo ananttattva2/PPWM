@@ -1,0 +1,119 @@
+import { ObjectId } from "mongodb";
+import { z } from "zod";
+import { hashPassword } from "better-auth/crypto";
+import { db } from "@/lib/db";
+import { apiError, checkOrigin, requireUser, roles } from "@/lib/access";
+const schema = z.object({
+  firstName: z.string().trim().min(1).max(80),
+  lastName: z.string().trim().min(1).max(80),
+  email: z.email().toLowerCase(),
+  password: z.string().min(12).max(128),
+  role: z.enum(roles),
+  active: z.boolean(),
+});
+export async function GET() {
+  try {
+    await requireUser(["admin", "super_admin"]);
+    const users = await db()
+      .collection("user")
+      .find({})
+      .project({
+        name: 1,
+        firstName: 1,
+        lastName: 1,
+        email: 1,
+        role: 1,
+        active: 1,
+        image: 1,
+        createdAt: 1,
+      })
+      .toArray();
+    return Response.json(
+      users.map((u) => ({ ...u, id: u._id.toString(), _id: undefined })),
+    );
+  } catch (e) {
+    return apiError(e);
+  }
+}
+export async function POST(req: Request) {
+  try {
+    checkOrigin(req);
+    const actor = await requireUser(["admin", "super_admin"]);
+    const data = schema.parse(await req.json());
+    if (
+      actor.role !== "super_admin" &&
+      ["admin", "super_admin"].includes(data.role)
+    )
+      throw new Error("FORBIDDEN");
+    const database = db();
+    await database
+      .collection("user")
+      .createIndex({ email: 1 }, { unique: true });
+    const _id = new ObjectId();
+    const { password, ...fields } = data;
+    await database
+      .collection("user")
+      .insertOne({
+        _id,
+        ...fields,
+        name: `${data.firstName} ${data.lastName}`,
+        emailVerified: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    try {
+      await database
+        .collection("account")
+        .insertOne({
+          userId: _id.toString(),
+          accountId: _id.toString(),
+          providerId: "credential",
+          password: await hashPassword(password),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+    } catch (e) {
+      await database.collection("user").deleteOne({ _id });
+      throw e;
+    }
+    return Response.json({ id: _id.toString() }, { status: 201 });
+  } catch (e) {
+    return apiError(e);
+  }
+}
+export async function PATCH(req: Request) {
+  try {
+    checkOrigin(req);
+    const actor = await requireUser(["admin", "super_admin"]);
+    const data = z
+      .object({
+        id: z.string().regex(/^[a-f0-9]{24}$/i),
+        role: z.enum(roles),
+        active: z.boolean(),
+      })
+      .parse(await req.json());
+    if (data.id === actor.id) throw new Error("FORBIDDEN");
+    const target = await db()
+      .collection("user")
+      .findOne({ _id: new ObjectId(data.id) });
+    if (!target) throw new Error("Missing user");
+    if (
+      actor.role !== "super_admin" &&
+      (["admin", "super_admin"].includes(target.role) ||
+        ["admin", "super_admin"].includes(data.role))
+    )
+      throw new Error("FORBIDDEN");
+    await db()
+      .collection("user")
+      .updateOne(
+        { _id: target._id },
+        {
+          $set: { role: data.role, active: data.active, updatedAt: new Date() },
+        },
+      );
+    await db().collection("session").deleteMany({ userId: data.id });
+    return Response.json({ ok: true });
+  } catch (e) {
+    return apiError(e);
+  }
+}
