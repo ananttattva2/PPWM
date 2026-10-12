@@ -18,6 +18,10 @@ npm run dev
 
 Open http://localhost:3000. `/login`, `/admin/login` and `/super-admin/login` share verified email authentication. The account role determines access; selecting a portal never grants privileges. Public account registration is disabled.
 
+On Windows, run `npm run local` to start the local server in the background. It checks port 3000 and waits for the homepage to respond before reporting success. The server stays running after the command finishes; logs are saved in the ignored `.local/` folder. Run this command again after restarting your computer.
+
+If Chrome shows `ERR_CONNECTION_REFUSED`, the local server is not running. Start it with `npm run local`, then refresh http://localhost:3000. With `npm run dev`, keep its terminal open; closing the terminal stops the server. GitHub stores the source code and does not run a localhost server.
+
 ## Roles
 
 | Role              | Access                                                                  |

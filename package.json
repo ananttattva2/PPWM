@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "local": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local.ps1",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
