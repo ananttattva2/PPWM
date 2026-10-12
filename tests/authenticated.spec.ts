@@ -21,6 +21,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
   const email = `qa-${randomUUID()}@example.invalid`;
   const company = `QA-${randomUUID()}`;
   let createdUserEmail = "";
+  const importIds: string[] = [];
   const otp = "739182";
   try {
     await db.collection("user").insertOne({
@@ -239,8 +240,177 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     });
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.getByRole("button", { name: "Next", exact: true }).click();
-    await page.getByLabel("Plastic", { exact: true }).check();
+    await expect(
+      page.getByRole("heading", { name: "Packaging Data Import", exact: true }),
+    ).toBeVisible();
+    const brokenCsv = Buffer.from(
+      "SKU,Product Name,Category,Packaging Type,Material,Total Weight (g),Components\nQA-01,Mineral Water 500ml,Beverages,Bottle,PET,23.5,3\nQA-02,Snack Pouch,Snacks,Pouch,PP,,4\nQA-03,Handwash,Personal Care,Bottle,INVALID,12,2\n",
+    );
+    await page
+      .getByLabel("Packaging data file", { exact: true })
+      .setInputFiles({
+        name: "packaging-review.csv",
+        mimeType: "text/csv",
+        buffer: brokenCsv,
+      });
+    let processed = page.waitForResponse(
+      (r) =>
+        r.url().endsWith("/api/packaging-imports") &&
+        r.request().method() === "POST",
+    );
+    await page
+      .getByRole("button", { name: "Process File", exact: true })
+      .click();
+    let processedResponse = await processed;
+    expect(processedResponse.status()).toBe(200);
+    let importRecord = await processedResponse.json();
+    importIds.push(importRecord.id);
+    expect(importRecord.analysis.summary).toEqual({
+      total: 3,
+      complete: 1,
+      missing: 1,
+      errors: 1,
+      completeness: 33,
+    });
+    await expect(page.getByText("Missing Data", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Validation Error", { exact: true }),
+    ).toBeVisible();
     await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(
+      page.getByText(
+        "Resolve all missing fields and validation errors before continuing.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await page
+      .getByRole("tab", { name: "Missing Fields", exact: true })
+      .click();
+    await expect(
+      page.getByText("Total weight (g) is missing", { exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("tab", { name: "Column Mapping", exact: true })
+      .click();
+    await expect(
+      page.getByRole("combobox", { name: "Product name", exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("combobox", { name: "Product name", exact: true })
+      .click();
+    await page.getByRole("option", { name: "SKU", exact: true }).click();
+    await expect(
+      page.getByText(
+        "Settings or mapping changed. Click Process File to refresh and save your results.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await page
+      .getByRole("combobox", { name: "Product name", exact: true })
+      .click();
+    await page
+      .getByRole("option", { name: "Product Name", exact: true })
+      .click();
+    processed = page.waitForResponse(
+      (r) =>
+        r.url().endsWith("/api/packaging-imports") &&
+        r.request().method() === "POST",
+    );
+    await page
+      .getByRole("button", { name: "Reprocess with mapping", exact: true })
+      .click();
+    const remapped = await (await processed).json();
+    expect(remapped.id).toBe(importRecord.id);
+    expect(remapped.mapping.productName).toBe("Product Name");
+    await page.getByRole("tab", { name: "Data Preview", exact: true }).click();
+    await page.evaluate(() => {
+      document
+        .querySelectorAll<HTMLButtonElement>("[data-close-button]")
+        .forEach((b) => b.click());
+      window.scrollTo({ top: 0, behavior: "instant" });
+    });
+    await page.waitForTimeout(300);
+    await page.screenshot({
+      path: "artifacts/packaging-import-desktop.png",
+      fullPage: true,
+    });
+    await page
+      .getByRole("button", { name: "Switch to dark mode", exact: true })
+      .click();
+    await page.screenshot({
+      path: "artifacts/packaging-import-dark.png",
+      fullPage: true,
+    });
+    await page
+      .getByRole("button", { name: "Switch to light mode", exact: true })
+      .click();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(350);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: "artifacts/packaging-import-mobile.png",
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const validCsv = Buffer.from(
+      brokenCsv
+        .toString()
+        .replace("PP,,4", "PP,6.8,4")
+        .replace("INVALID,12,2", "HDPE,12,2"),
+    );
+    await page
+      .getByLabel("Packaging data file", { exact: true })
+      .setInputFiles({
+        name: "packaging-valid.csv",
+        mimeType: "text/csv",
+        buffer: validCsv,
+      });
+    await page
+      .getByRole("combobox", { name: "Plant / entity", exact: true })
+      .click();
+    await page.getByRole("option", { name: company, exact: true }).click();
+    await page
+      .getByLabel("Update existing SKUs if already present", { exact: true })
+      .uncheck();
+    processed = page.waitForResponse(
+      (r) =>
+        r.url().endsWith("/api/packaging-imports") &&
+        r.request().method() === "POST",
+    );
+    await page
+      .getByRole("button", { name: "Process File", exact: true })
+      .click();
+    processedResponse = await processed;
+    expect(processedResponse.status()).toBe(200);
+    importRecord = await processedResponse.json();
+    importIds.push(importRecord.id);
+    expect(importRecord.analysis.summary.complete).toBe(3);
+    const persistedDraft = await db
+      .collection("packagingImports")
+      .findOne({ _id: new ObjectId(importRecord.id) });
+    expect(persistedDraft?.status).toBe("draft");
+    expect(persistedDraft?.settings.updateExisting).toBe(false);
+    expect(persistedDraft?.settings.plant).toBe(company);
+    expect(persistedDraft?.mapping.sku).toBe("SKU");
+    expect(Buffer.from(persistedDraft?.file.data.buffer).equals(validCsv)).toBe(
+      true,
+    );
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await page.waitForTimeout(550);
+    await page.evaluate(() => {
+      document
+        .querySelectorAll<HTMLButtonElement>("[data-close-button]")
+        .forEach((b) => b.click());
+      window.scrollTo({ top: 0, behavior: "instant" });
+    });
+    await page.screenshot({
+      path: "artifacts/client-review.png",
+      fullPage: true,
+    });
     const savedClient = page.waitForResponse(
       (r) =>
         r.url().endsWith("/api/clients") && r.request().method() === "POST",
@@ -271,6 +441,23 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       page.getByText("Client created successfully", { exact: true }),
     ).toBeVisible();
     const storedClient = await db.collection("clients").findOne({ company });
+    expect(storedClient?.packagingImportId).toBe(importRecord.id);
+    const confirmedImport = await db
+      .collection("packagingImports")
+      .findOne({ _id: new ObjectId(importRecord.id) });
+    expect(confirmedImport?.clientId).toBe(storedClient?._id.toString());
+    expect(confirmedImport?.status).toBe("confirmed");
+    expect(confirmedImport?.expiresAt).toBeUndefined();
+    expect(
+      await db
+        .collection("packagingSkus")
+        .countDocuments({ clientId: storedClient?._id.toString() }),
+    ).toBe(3);
+    const importedFile = await page.request.get(
+      `/api/packaging-imports/${importRecord.id}?download=true`,
+    );
+    expect(importedFile.status()).toBe(200);
+    expect((await importedFile.body()).equals(validCsv)).toBe(true);
     expect(storedClient?.legalName).toBe(company);
     expect(storedClient?.tradeName).toBe("QA Packaging");
     expect(storedClient?.gstNumber).toBe("27ABCDE1234F1Z5");
@@ -311,6 +498,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
           industry: "Retail",
           materials: ["Plastic"],
           notes: "",
+          packagingImportId: importRecord.id,
         }),
         documents: {
           name: "fake.pdf",
@@ -368,6 +556,12 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     expect((await page.request.get("/api/clients")).status()).toBe(401);
     expect(browserErrors).toEqual([]);
   } finally {
+    await db
+      .collection("packagingSkus")
+      .deleteMany({ importId: { $in: importIds } });
+    await db
+      .collection("packagingImports")
+      .deleteMany({ _id: { $in: importIds.map((id) => new ObjectId(id)) } });
     const child = createdUserEmail
       ? await db.collection("user").findOne({ email: createdUserEmail })
       : null;

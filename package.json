@@ -12,7 +12,8 @@
     "test": "playwright test",
     "test:email": "node --conditions=react-server --import tsx --test tests/email-template.test.ts tests/mail-transport.test.ts",
     "preview:email": "node --import tsx scripts/preview-otp-email.ts",
-    "bootstrap-admin": "node --env-file=.env.local --import tsx scripts/bootstrap-admin.ts"
+    "bootstrap-admin": "node --env-file=.env.local --import tsx scripts/bootstrap-admin.ts",
+    "test:imports": "node --import tsx --test tests/packaging-import.test.ts"
   },
   "keywords": [],
   "author": "",
@@ -27,6 +28,8 @@
     "better-auth": "^1.7.7",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "csv-parse": "^7.0.3",
+    "exceljs": "^4.4.0",
     "framer-motion": "^14.1.0",
     "gsap": "^3.15.0",
     "input-otp": "^1.5.0",
@@ -52,5 +55,10 @@
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "exceljs": {
+      "uuid": "^11.1.1"
+    }
+  }
 }

@@ -2,12 +2,14 @@
 
 Verified locally on 12 October 2026.
 
+Packaging import verification covers actual CSV/XLSX parsing, quoted CSV fields, explicit mapping, category overrides, missing required values, invalid materials/numbers, duplicate SKU detection and rejection of oversized XLSX archives before parsing. Browser tests cover the three-step flow, incomplete-data gating, editable mapping/reprocessing, persisted import settings and original bytes, transactional linkage to the client, three persisted SKU records and authenticated source download. Screenshots: `artifacts/packaging-import-*.png` and `artifacts/client-review.png`. Five browser tests and five parser tests pass. Parser dependencies were audited after applying a compatible patched UUID override.
+
 The redesigned OTP email has desktop/mobile browser previews in `artifacts/otp-email-*.png`. Template tests cover purposes, escaping, invalid code rejection, safe workspace links, and embedded logo data. A mocked transport test checks Microsoft Graph HTML and inline-attachment payloads without sending email. Real Outlook inbox rendering of this redesign has not been independently verified.
 
 The packaging compliance section now follows the supplied reference composition: prominent headline, material/regulation cards, PPWM centre panel, coloured connectors, packaging illustration and numbered process cards. Desktop, mobile and dark-mode screenshots are in `artifacts/packaging-compliance-*.png`. Five browser tests pass, including asset loading and responsive section checks. The original illustration is recreated with a newly generated transparent asset; source prompt and provenance are in `public/images/ASSETS.md`.
 
 - Next.js production build and TypeScript checks pass.
-- Four Playwright tests pass: desktop/mobile landing and navigation, all login portals, anonymous access rejection, and authenticated database-backed workflows.
+- Five Playwright tests pass: desktop/mobile landing and navigation, all login portals, the reference compliance section, anonymous access rejection, and authenticated database-backed workflows.
 - Authenticated test covers rejected invalid OTP, accepted six-digit OTP, dashboard, client wizard persistence, team-member creation, profile persistence, role restriction, and inactive-account denial. Uses a temporary hashed OTP fixture rather than reading a real inbox. Test records are removed afterward.
 - MongoDB Atlas connectivity verified. This local network requires the optional `MONGODB_DNS_SERVERS` fallback.
 - Microsoft Graph credentials and Mail.Send application permission verified. A real OTP request for the configured super-admin returned HTTP 200; inbox receipt has not been independently checked.

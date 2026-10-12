@@ -1,13 +1,16 @@
 "use client";
+import { useEffect, useState } from "react";
 import { useComputedColorScheme, useMantineColorScheme } from "@mantine/core";
 import { Sun, Moon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 export default function ThemeToggle() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const scheme = useComputedColorScheme("light", {
     getInitialValueInEffect: true,
   });
   const { setColorScheme } = useMantineColorScheme();
-  const dark = scheme === "dark";
+  const dark = mounted && scheme === "dark";
   return (
     <button
       type="button"
@@ -18,7 +21,7 @@ export default function ThemeToggle() {
     >
       <AnimatePresence mode="wait" initial={false}>
         <motion.span
-          key={scheme}
+          key={dark ? "dark" : "light"}
           initial={{ rotate: -65, opacity: 0, scale: 0.6 }}
           animate={{ rotate: 0, opacity: 1, scale: 1 }}
           exit={{ rotate: 65, opacity: 0, scale: 0.6 }}

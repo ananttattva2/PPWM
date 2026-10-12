@@ -5,6 +5,7 @@ import "./globals.css";
 import "./workspace.css";
 import "./themes.css";
 import "./compliance-section.css";
+import "./packaging-import.css";
 import Providers from "@/components/providers";
 import ToastProvider from "@/components/toast-provider";
 export const metadata: Metadata = {

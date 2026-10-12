@@ -1,6 +1,6 @@
-import { Binary } from "mongodb";
+import { Binary, ObjectId } from "mongodb";
 import { ZodError } from "zod";
-import { db } from "@/lib/db";
+import { db, getClient } from "@/lib/db";
 import { apiError, checkOrigin, requireUser } from "@/lib/access";
 import {
   clientSchema,
@@ -60,7 +60,14 @@ export async function POST(req: Request) {
         { error: "Upload between 1 and 5 supporting documents." },
         { status: 400 },
       );
-    const documents = [];
+    const documents: {
+      name: string;
+      type: string;
+      size: number;
+      data: Binary;
+      uploadedAt: Date;
+      uploadedBy: string;
+    }[] = [];
     for (const file of files) {
       if (
         !(file instanceof File) ||
@@ -89,22 +96,91 @@ export async function POST(req: Request) {
         uploadedBy: user.id,
       });
     }
-    // One atomic insert stores the profile and document bytes together. At most 10 MB of files keeps the record below MongoDB's BSON limit.
-    const result = await db()
-      .collection("clients")
-      .insertOne({
-        ...data,
-        company: data.legalName,
-        contact: data.authorisedPerson,
-        documents,
-        schemaVersion: 2,
-        status: "onboarding",
-        createdBy: user.id,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+    const clientId = new ObjectId();
+    const importId = new ObjectId(data.packagingImportId);
+    const database = db();
+    await database
+      .collection("packagingSkus")
+      .createIndex({ clientId: 1, sku: 1 }, { unique: true });
+    await getClient().withSession(async (session) =>
+      session.withTransaction(async () => {
+        const imported = await database
+          .collection("packagingImports")
+          .findOne(
+            { _id: importId, createdBy: user.id, status: "draft" },
+            { session },
+          );
+        if (!imported) throw new Error("FORBIDDEN");
+        if (
+          !imported.analysis.summary.total ||
+          imported.analysis.summary.errors ||
+          imported.analysis.summary.missing
+        )
+          throw new Error("Import contains unresolved issues");
+        await database.collection("clients").insertOne(
+          {
+            _id: clientId,
+            ...data,
+            materials: imported.analysis.materialFamilies,
+            company: data.legalName,
+            contact: data.authorisedPerson,
+            documents,
+            packagingImport: {
+              id: importId,
+              fileName: imported.file.name,
+              settings: imported.settings,
+              summary: imported.analysis.summary,
+            },
+            schemaVersion: 3,
+            status: "onboarding",
+            createdBy: user.id,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          { session },
+        );
+        const skuRecords = imported.analysis.rows.map(
+          (row: Record<string, unknown>) => ({
+            ...row,
+            clientId: clientId.toString(),
+            importId: importId.toString(),
+            plant: imported.settings.plant,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }),
+        );
+        if (imported.settings.updateExisting) {
+          await database.collection("packagingSkus").bulkWrite(
+            skuRecords.map((row: Record<string, unknown>) => ({
+              updateOne: {
+                filter: { clientId: row.clientId, sku: row.sku },
+                update: { $set: row },
+                upsert: true,
+              },
+            })),
+            { session },
+          );
+        } else
+          await database
+            .collection("packagingSkus")
+            .insertMany(skuRecords, { session });
+        const claimed = await database.collection("packagingImports").updateOne(
+          { _id: importId, createdBy: user.id, status: "draft" },
+          {
+            $set: {
+              status: "confirmed",
+              clientId: clientId.toString(),
+              confirmedAt: new Date(),
+            },
+            $unset: { expiresAt: "" },
+          },
+          { session },
+        );
+        if (!claimed.matchedCount) throw new Error("FORBIDDEN");
+      }),
+    );
     return Response.json(
-      { id: result.insertedId, message: "Client created successfully." },
+      { id: clientId, message: "Client created successfully." },
       { status: 201 },
     );
   } catch (e) {
