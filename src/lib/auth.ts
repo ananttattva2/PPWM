@@ -39,8 +39,8 @@ export const auth = betterAuth({
       allowedAttempts: 5,
       storeOTP: "hashed",
       disableSignUp: true,
-      async sendVerificationOTP({ email, otp }) {
-        await sendOTP(email, otp);
+      async sendVerificationOTP({ email, otp, type }) {
+        await sendOTP(email, otp, type);
       },
     }),
   ],

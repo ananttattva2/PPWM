@@ -59,6 +59,8 @@ Uploads accept PDF, PNG and JPEG files, up to five files at 2 MB each. Metadata 
 
 ## Email and database setup
 
+OTP mail uses a responsive, table-based template with inline styles, an embedded PNG logo, a selectable six-digit code and security guidance. Sign-in, email verification, password reset and email-change messages use purpose-specific copy. A public HTTPS workspace URL enables a return link; localhost URLs are omitted from emails. Run `npm run test:email` for template/Graph payload checks and `npm run preview:email` to generate dummy-code desktop/mobile previews without sending mail. Actual Outlook rendering can vary by version; previews are browser checks rather than an Outlook inbox test.
+
 Microsoft Entra app needs Microsoft Graph **Mail.Send application permission with admin consent**, and access to the sender mailbox. Configure Atlas network access for the deployment's outbound IP. Keep all credentials server-side in environment variables.
 
 The first administrator must be provisioned with an email you own. No account is created automatically from the sender address. The bootstrap command creates an inaccessible random initial password; email OTP proves ownership and the profile supports password reset.

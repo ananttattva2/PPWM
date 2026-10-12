@@ -10,6 +10,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
+    "test:email": "node --conditions=react-server --import tsx --test tests/email-template.test.ts tests/mail-transport.test.ts",
+    "preview:email": "node --import tsx scripts/preview-otp-email.ts",
     "bootstrap-admin": "node --env-file=.env.local --import tsx scripts/bootstrap-admin.ts"
   },
   "keywords": [],

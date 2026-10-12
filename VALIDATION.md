@@ -2,6 +2,8 @@
 
 Verified locally on 12 October 2026.
 
+The redesigned OTP email has desktop/mobile browser previews in `artifacts/otp-email-*.png`. Template tests cover purposes, escaping, invalid code rejection, safe workspace links, and embedded logo data. A mocked transport test checks Microsoft Graph HTML and inline-attachment payloads without sending email. Real Outlook inbox rendering of this redesign has not been independently verified.
+
 The packaging compliance section now follows the supplied reference composition: prominent headline, material/regulation cards, PPWM centre panel, coloured connectors, packaging illustration and numbered process cards. Desktop, mobile and dark-mode screenshots are in `artifacts/packaging-compliance-*.png`. Five browser tests pass, including asset loading and responsive section checks. The original illustration is recreated with a newly generated transparent asset; source prompt and provenance are in `public/images/ASSETS.md`.
 
 - Next.js production build and TypeScript checks pass.
