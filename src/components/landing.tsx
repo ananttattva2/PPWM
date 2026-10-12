@@ -20,6 +20,7 @@ import {
   FlaskConical,
 } from "lucide-react";
 import Brand from "./brand";
+import ThemeToggle from "./theme-toggle";
 import { Button } from "./ui/button";
 import { BorderBeam } from "./magicui/border-beam";
 import { Spotlight } from "./ui/spotlight";
@@ -136,6 +137,7 @@ export default function Landing() {
           </a>
         </div>
         <div className="nav-actions">
+          <ThemeToggle />
           <Button asChild variant="outline">
             <Link href="/login">Sign in</Link>
           </Button>

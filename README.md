@@ -51,6 +51,8 @@ UI uses Tailwind, shadcn/ui, Mantine form/stepper/progress components and HeroUI
 
 ## Client onboarding
 
+Workspace fields use animated floating labels. The navbar's sidebar button switches between expanded navigation and an icon-only rail; the preference persists in this browser. On mobile, navigation remains a slide-out menu. The sun/moon toggle changes the shared light/dark theme across workspace, landing and login pages, with the theme restored before hydration on later visits.
+
 The organisation step captures legal name, trade name, GST number, an optional registration/user reference, one organisation role, registered address, country, email, telephone and authorised person. All eight organisation roles are available in a searchable single-select dropdown. Next validates these fields and at least one supporting document before continuing to packaging details and final review.
 
 Uploads accept PDF, PNG and JPEG files, up to five files at 2 MB each. Metadata and document bytes are stored atomically in the MongoDB client record with creator/upload timestamps. List and dashboard responses exclude document bytes. Files are downloaded through an authenticated API route; the server validates file type, size and signatures. Existing client records remain readable. Success, validation and upload failures display toast notifications.

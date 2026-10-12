@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { OTPInput, REGEXP_ONLY_DIGITS } from "input-otp";
 import Brand from "./brand";
+import ThemeToggle from "./theme-toggle";
 import { Button } from "./ui/button";
 import { BorderBeam } from "./magicui/border-beam";
 import { authClient } from "@/lib/auth-client";
@@ -88,9 +89,12 @@ export default function Login({ portal = "Workspace" }: { portal?: string }) {
         <small>ANANT TATTVA / PACKAGING SUSTAINABILITY</small>
       </div>
       <div className="login-form-side">
-        <Link href="/" className="back-link">
-          <ArrowLeft size={16} /> Back to website
-        </Link>
+        <div className="login-topbar">
+          <Link href="/" className="back-link">
+            <ArrowLeft size={16} /> Back to website
+          </Link>
+          <ThemeToggle />
+        </div>
         <div className="login-form-card">
           <div className="icon-box">
             <ShieldCheck size={25} />

@@ -57,6 +57,22 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await expect(
       page.getByRole("heading", { name: /Hello, QA/ }),
     ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Collapse sidebar", exact: true })
+      .click();
+    await expect(page.locator(".workspace")).toHaveClass(/sidebar-collapsed/);
+    await page.waitForTimeout(350);
+    expect((await page.locator(".sidebar").boundingBox())!.width).toBe(72);
+    await expect(
+      page.getByRole("link", { name: "Client onboarding", exact: true }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(page.locator(".workspace")).toHaveClass(/sidebar-collapsed/);
+    await page
+      .getByRole("button", { name: "Expand sidebar", exact: true })
+      .click();
+    await page.waitForTimeout(350);
+    expect((await page.locator(".sidebar").boundingBox())!.width).toBe(216);
     await page.waitForTimeout(800);
     await page.screenshot({ path: "artifacts/dashboard.png", fullPage: true });
     await page
@@ -74,9 +90,19 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
         exact: true,
       }),
     ).toBeVisible();
+    const legalInput = page.getByRole("textbox", {
+      name: "Legal name",
+      exact: true,
+    });
+    await legalInput.focus();
+    const legalField = page
+      .locator(".floating-field")
+      .filter({ has: legalInput });
+    await expect(legalField).toHaveAttribute("data-focused", "true");
     await page
       .getByRole("textbox", { name: "Legal name", exact: true })
       .fill(company);
+    await expect(legalField).toHaveAttribute("data-filled", "true");
     await page
       .getByRole("textbox", { name: "Authorised person", exact: true })
       .fill("QA Contact");
@@ -145,6 +171,46 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       path: "artifacts/client-onboarding.png",
       fullPage: true,
     });
+    await page
+      .getByRole("button", { name: "Switch to dark mode", exact: true })
+      .click();
+    await expect(page.locator("html")).toHaveAttribute(
+      "data-mantine-color-scheme",
+      "dark",
+    );
+    await page.waitForTimeout(350);
+    await page.screenshot({
+      path: "artifacts/client-onboarding-dark.png",
+      fullPage: true,
+    });
+    await page
+      .getByRole("button", { name: "Collapse sidebar", exact: true })
+      .click();
+    await page.waitForTimeout(350);
+    await page.screenshot({
+      path: "artifacts/client-onboarding-dark-collapsed.png",
+      fullPage: true,
+    });
+    const persisted = await page.context().newPage();
+    await persisted.goto("/dashboard");
+    await expect(persisted.locator("html")).toHaveAttribute(
+      "data-mantine-color-scheme",
+      "dark",
+    );
+    await expect(persisted.locator(".workspace")).toHaveClass(
+      /sidebar-collapsed/,
+    );
+    await persisted.close();
+    await page
+      .getByRole("button", { name: "Expand sidebar", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Switch to light mode", exact: true })
+      .click();
+    await expect(page.locator("html")).toHaveAttribute(
+      "data-mantine-color-scheme",
+      "light",
+    );
     await page.setViewportSize({ width: 390, height: 844 });
     await page.waitForTimeout(350);
     await expect

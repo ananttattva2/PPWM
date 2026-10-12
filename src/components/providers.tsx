@@ -5,6 +5,7 @@ import { MotionConfig } from "motion/react";
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <MantineProvider
+      defaultColorScheme="light"
       theme={createTheme({
         primaryColor: "orange",
         fontFamily: "Arial, sans-serif",

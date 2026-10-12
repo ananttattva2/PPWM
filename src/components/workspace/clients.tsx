@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { TextInput, Select, Textarea, Checkbox, Stepper } from "@mantine/core";
+import { Checkbox, Stepper } from "@mantine/core";
+import { TextInput, Select, Textarea } from "../ui/floating-fields";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import {

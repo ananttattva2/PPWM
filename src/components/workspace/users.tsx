@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { TextInput, PasswordInput, Select, Switch } from "@mantine/core";
+import { Switch } from "@mantine/core";
+import { TextInput, PasswordInput, Select } from "../ui/floating-fields";
 import { Avatar } from "@heroui/react";
 import { Plus, Users, Search, ShieldCheck } from "lucide-react";
 import { Button } from "../ui/button";

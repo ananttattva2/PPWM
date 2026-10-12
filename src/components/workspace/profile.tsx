@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { TextInput, PasswordInput } from "@mantine/core";
+import { TextInput, PasswordInput } from "../ui/floating-fields";
 import { Avatar } from "@heroui/react";
 import { Camera, ShieldCheck, Save } from "lucide-react";
 import { Button } from "../ui/button";

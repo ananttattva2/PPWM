@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
+import ThemeToggle from "../theme-toggle";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
@@ -16,6 +18,8 @@ import {
   HelpCircle,
   ShieldCheck,
   ArrowUpRight,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { Avatar } from "@heroui/react";
 import { toast } from "sonner";
@@ -42,6 +46,21 @@ export default function Shell({
   const [open, setOpen] = useState(false),
     [query, setQuery] = useState(""),
     [signingOut, setSigningOut] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    try {
+      setCollapsed(localStorage.getItem("ppwm.sidebar-collapsed") === "true");
+    } catch {}
+  }, []);
+  function toggleSidebar() {
+    setCollapsed((value) => {
+      const next = !value;
+      try {
+        localStorage.setItem("ppwm.sidebar-collapsed", String(next));
+      } catch {}
+      return next;
+    });
+  }
   const privileged = ["admin", "super_admin"].includes(user.role);
   const groups = [
     {
@@ -90,7 +109,7 @@ export default function Shell({
     }
   }
   return (
-    <div className="workspace">
+    <div className={`workspace ${collapsed ? "sidebar-collapsed" : ""}`}>
       {open && (
         <button
           className="sidebar-backdrop"
@@ -100,7 +119,21 @@ export default function Shell({
       )}
       <aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
         <div className="sidebar-brand">
-          <Brand />
+          <div className="sidebar-logo-full">
+            <Brand />
+          </div>
+          <Link
+            href="/"
+            className="sidebar-logo-mark"
+            aria-label="Anant Tattva home"
+          >
+            <Image
+              src="/brand/anant-tattva-mark.svg"
+              alt=""
+              width={100}
+              height={90}
+            />
+          </Link>
           <small>SUSTAINABILITY FOR A CLEARER TOMORROW</small>
         </div>
         <button
@@ -121,6 +154,8 @@ export default function Shell({
                   onClick={() => setOpen(false)}
                   className={path === url ? "active" : ""}
                   aria-current={path === url ? "page" : undefined}
+                  aria-label={label}
+                  title={collapsed ? label : undefined}
                 >
                   <Icon size={17} />
                   <span>{label}</span>
@@ -166,6 +201,20 @@ export default function Shell({
       <div className="workspace-main">
         <header className="workspace-header">
           <button
+            type="button"
+            className="sidebar-collapse-toggle"
+            onClick={toggleSidebar}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-expanded={!collapsed}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? (
+              <PanelLeftOpen size={19} />
+            ) : (
+              <PanelLeftClose size={19} />
+            )}
+          </button>
+          <button
             className="mobile-menu"
             aria-label="Open sidebar"
             aria-expanded={open}
@@ -195,6 +244,7 @@ export default function Shell({
           <div className="header-workspace-badge">
             <span className="green-dot" /> Workspace
           </div>
+          <ThemeToggle />
           <a
             className="header-help"
             href="mailto:crm@ananttattva.com?subject=Workspace%20support"

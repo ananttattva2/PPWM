@@ -11,8 +11,8 @@ Verified locally on 12 October 2026.
 - `.env.local` is ignored and excluded from commits.
 - Updated onboarding verifies legal/trade names, GST number, registration reference, all eight organisation role options, registered address, email, telephone and authorised person. Tests cover required-field toasts, document upload, exact MongoDB byte persistence, authenticated download, blocked anonymous download, rejection of a mismatched file signature, and document bytes excluded from client list responses. Desktop/mobile onboarding screenshots are included.
 - Compact workspace update verifies a two-column desktop onboarding layout, reduced page height, working navbar client search, mobile navigation opening/Escape dismissal, no horizontal overflow and no uncaught browser errors. The development indicator is disabled; body-only hydration handling accommodates attributes inserted by browser extensions.
+- Floating controls retain label/error accessibility for text, multiline, select and password fields. Browser tests verify focused/filled states, a 72 px icon-only sidebar, expansion to 216 px, collapsed-state persistence after reload, dark/light switching and persistence in a new tab. Screenshots include dark mode with expanded and collapsed navigation. Theme and sidebar preferences are stored locally; reduced-motion preferences are respected.
 
 Screenshots in `artifacts/` are QA captures; any displayed QA account/client is temporary test data. The logo uses local SVG assets recreated from the second supplied reference; the former Om text mark has been removed.
 
 No live hosting deployment was requested or created. Run `npm run dev` for local access; Node.js deployment instructions are in README.md.
-
