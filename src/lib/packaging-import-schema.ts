@@ -20,6 +20,7 @@ export const importFields = [
   { key: "labelCoverage", label: "Label coverage (%)", required: false },
   { key: "adhesiveType", label: "Adhesive type", required: false },
   { key: "barrierLayer", label: "Barrier layer details", required: false },
+  { key: "componentWeight", label: "Component weight (g)", required: false },
   { key: "printingInk", label: "Printing / ink details", required: false },
 ] as const;
 export type ImportField = (typeof importFields)[number]["key"];
@@ -56,6 +57,7 @@ export type PackagingRow = {
   labelCoverage: string;
   adhesiveType: string;
   barrierLayer: string;
+  componentWeight: number | null;
   printingInk: string;
   status: "complete" | "missing" | "error";
   issues: ImportIssue[];

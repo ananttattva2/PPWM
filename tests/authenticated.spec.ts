@@ -323,6 +323,27 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     expect(remapped.id).toBe(importRecord.id);
     expect(remapped.mapping.productName).toBe("Product Name");
     await page.getByRole("tab", { name: "Data Preview", exact: true }).click();
+    await page
+      .getByRole("textbox", { name: "Search packaging data" })
+      .fill("Mineral Water");
+    await expect(page.locator(".import-preview-table tbody tr")).toHaveCount(1);
+    await page.getByRole("textbox", { name: "Search packaging data" }).fill("");
+    await page.getByLabel("Filter packaging status").selectOption("missing");
+    await expect(page.locator(".import-preview-table tbody tr")).toHaveCount(1);
+    await page.getByLabel("Filter packaging status").selectOption("all");
+    await page
+      .getByRole("button", { name: "All 12 fields", exact: true })
+      .click();
+    await expect(
+      page.getByRole("columnheader", {
+        name: "Component Weight (g)",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Summary columns", exact: true })
+      .click();
+    await expect(page.locator(".import-preview-table tbody tr")).toHaveCount(3);
     await page.evaluate(() => {
       document
         .querySelectorAll<HTMLButtonElement>("[data-close-button]")

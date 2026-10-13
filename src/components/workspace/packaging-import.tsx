@@ -20,6 +20,8 @@ import {
   Download,
   Layers3,
   RefreshCw,
+  Search,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Select } from "../ui/floating-fields";
@@ -69,6 +71,9 @@ export default function PackagingImport({
     [busy, setBusy] = useState(false),
     [drag, setDrag] = useState(false),
     [all, setAll] = useState(false);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [details, setDetails] = useState(false);
   const input = useRef<HTMLInputElement>(null),
     id = useRef(result?.id || ""),
     savedFile = useRef<File | null>(null);
@@ -93,6 +98,8 @@ export default function PackagingImport({
     onChange(null);
     setTab("Data Preview");
     setAll(false);
+    setQuery("");
+    setStatusFilter("all");
   }
   function updateSettings(next: ImportSettings) {
     setSettings(next);
@@ -156,12 +163,27 @@ export default function PackagingImport({
   const selectedName = file?.name || result?.file.name;
   const size = file?.size || result?.file.size || 0;
   const rows = result?.analysis.rows || [];
-  const visibleRows = all ? rows : rows.slice(0, 10);
+  const filteredRows = rows.filter(
+    (row) =>
+      (statusFilter === "all" || row.status === statusFilter) &&
+      `${row.productName} ${row.sku} ${row.category} ${row.material}`
+        .toLowerCase()
+        .includes(query.trim().toLowerCase()),
+  );
+  const visibleRows = all ? filteredRows : filteredRows.slice(0, 10);
+  function openTab(next: (typeof tabs)[number]) {
+    setTab(next);
+    window.requestAnimationFrame(() =>
+      document
+        .getElementById("import-results")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  }
   const percentage = (count: number) =>
     summary.total ? `${((count / summary.total) * 100).toFixed(1)}%` : "—";
   function template() {
     const text =
-      "SKU,Product Name,Category,Packaging Type,Material,Total Weight (g),Components,Label Coverage (%),Adhesive Type,Barrier Layer Details,Printing / Ink Details\nSKU-001,Mineral Water 500ml,Beverages,Bottle,PET,23.5,3,80,Water-based,None,Low coverage\nSKU-002,Snack Pouch,Snacks,Pouch,Multi-layer (Plastic),6.8,4,60,Solvent-free,PE,Standard\n";
+      "Product Name,SKU,Category,Packaging Type,Material,Total Weight (g),Components,Label Coverage (%),Adhesive Type,Barrier Layer Details,Component Weight (g),Printing / Ink Details\nMineral Water 500ml,SKU-001,Beverages,Bottle,PET,23.5,3,80,Water-based,None,20,Low coverage\nSnack Pouch,SKU-002,Snacks,Pouch,Multi-layer (Plastic),6.8,4,60,Solvent-free,PE,5,Standard\n";
     const url = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
     const a = document.createElement("a");
     a.href = url;
@@ -182,6 +204,28 @@ export default function PackagingImport({
         <Button type="button" variant="outline" onClick={template}>
           <Download size={14} /> Download template
         </Button>
+      </div>
+      <div className="import-flow" aria-label="Packaging import progress">
+        {[
+          ["Upload file", Boolean(file || result)],
+          ["Map & validate", Boolean(result && !dirty)],
+          [
+            "Review data",
+            Boolean(result && !dirty && !summary.missing && !summary.errors),
+          ],
+        ].map(([label, done], index) => (
+          <div key={String(label)} className={done ? "done" : ""}>
+            <span>{done ? <CheckCircle2 size={16} /> : index + 1}</span>
+            <b>{label}</b>
+          </div>
+        ))}
+        <small>
+          {busy
+            ? "Processing your file…"
+            : result
+              ? `${summary.total} SKUs analysed`
+              : "Start with your Excel or CSV file"}
+        </small>
       </div>
       <div className="import-top-grid">
         <section className="import-panel upload-panel">
@@ -358,7 +402,9 @@ export default function PackagingImport({
             onClick={() => void process()}
           >
             {busy ? (
-              <RefreshCw size={14} className="spin" />
+              <>
+                <RefreshCw size={14} className="spin" /> Processing…
+              </>
             ) : (
               <>
                 Process File <ArrowRight size={15} />
@@ -460,7 +506,7 @@ export default function PackagingImport({
               type="button"
               key={label}
               onClick={() =>
-                setTab(
+                openTab(
                   index === 0
                     ? "Column Mapping"
                     : index === 1
@@ -477,7 +523,57 @@ export default function PackagingImport({
           ))}
         </section>
       </div>
-      <div className="import-bottom-grid">
+      {result && (
+        <div
+          className={`import-review-banner ${summary.missing || summary.errors ? "needs-review" : "ready"}`}
+          role="status"
+        >
+          {summary.missing || summary.errors ? (
+            <AlertCircle size={22} />
+          ) : (
+            <CheckCircle2 size={22} />
+          )}
+          <div>
+            <b>
+              {dirty
+                ? "Your results need refreshing"
+                : summary.missing || summary.errors
+                  ? "A few details need your attention"
+                  : "Your packaging data is ready"}
+            </b>
+            <p>
+              {dirty
+                ? "Reprocess the file to apply your latest settings and column mapping."
+                : summary.missing || summary.errors
+                  ? `${summary.complete} SKUs are complete. Resolve ${summary.missing} incomplete rows and ${summary.errors} validation errors, then re-upload your corrected file.`
+                  : "All SKUs passed validation. Continue to review and confirm your client."}
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              dirty
+                ? void process()
+                : openTab(
+                    summary.errors
+                      ? "Validation Issues"
+                      : summary.missing
+                        ? "Missing Fields"
+                        : "Data Preview",
+                  )
+            }
+          >
+            {dirty
+              ? "Refresh results"
+              : summary.missing || summary.errors
+                ? "Review issues"
+                : "Review data"}
+            <ArrowRight size={15} />
+          </button>
+        </div>
+      )}
+      <div className="import-bottom-grid" id="import-results">
         <section className="import-panel import-data-panel">
           <div
             className="import-tabs"
@@ -490,6 +586,29 @@ export default function PackagingImport({
                 type="button"
                 key={name}
                 aria-selected={tab === name}
+                id={`import-tab-button-${name.replaceAll(" ", "-")}`}
+                tabIndex={tab === name ? 0 : -1}
+                onKeyDown={(event) => {
+                  const current = tabs.indexOf(name);
+                  const next =
+                    event.key === "ArrowRight"
+                      ? (current + 1) % tabs.length
+                      : event.key === "ArrowLeft"
+                        ? (current + tabs.length - 1) % tabs.length
+                        : event.key === "Home"
+                          ? 0
+                          : event.key === "End"
+                            ? tabs.length - 1
+                            : null;
+                  if (next === null) return;
+                  event.preventDefault();
+                  setTab(tabs[next]);
+                  document
+                    .getElementById(
+                      `import-tab-button-${tabs[next].replaceAll(" ", "-")}`,
+                    )
+                    ?.focus();
+                }}
                 aria-controls={`import-tab-${name.replaceAll(" ", "-")}`}
                 onClick={() => setTab(name)}
               >
@@ -509,6 +628,7 @@ export default function PackagingImport({
               key={tab}
               role="tabpanel"
               id={`import-tab-${tab.replaceAll(" ", "-")}`}
+              aria-labelledby={`import-tab-button-${tab.replaceAll(" ", "-")}`}
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -5 }}
@@ -525,20 +645,65 @@ export default function PackagingImport({
                 </div>
               ) : tab === "Data Preview" ? (
                 <>
+                  <div className="import-preview-tools">
+                    <label className="import-search">
+                      <Search size={16} />
+                      <input
+                        aria-label="Search packaging data"
+                        placeholder="Search product, SKU or material…"
+                        value={query}
+                        onChange={(event) => {
+                          setQuery(event.target.value);
+                          setAll(false);
+                        }}
+                      />
+                    </label>
+                    <select
+                      aria-label="Filter packaging status"
+                      value={statusFilter}
+                      onChange={(event) => {
+                        setStatusFilter(event.target.value);
+                        setAll(false);
+                      }}
+                    >
+                      <option value="all">All statuses ({rows.length})</option>
+                      <option value="complete">
+                        Complete ({summary.complete})
+                      </option>
+                      <option value="missing">
+                        Missing data ({summary.missing})
+                      </option>
+                      <option value="error">
+                        Validation errors ({summary.errors})
+                      </option>
+                    </select>
+                    <button
+                      type="button"
+                      aria-pressed={details}
+                      onClick={() => setDetails(!details)}
+                    >
+                      <SlidersHorizontal size={15} />
+                      {details ? "Summary columns" : "All 12 fields"}
+                    </button>
+                  </div>
                   <div className="preview-caption">
                     <b>Preview of detected data</b>
                     <span>
                       {all
-                        ? `Showing ${rows.length} rows`
-                        : "Showing first 10 rows"}
+                        ? `Showing ${filteredRows.length} rows`
+                        : `Showing ${visibleRows.length} of ${filteredRows.length} rows`}
                     </span>
-                    {rows.length > 10 && (
+                    {filteredRows.length > 10 && (
                       <button type="button" onClick={() => setAll(!all)}>
                         {all ? "Show less" : "View all"}
                       </button>
                     )}
                   </div>
-                  <div className="table-scroll import-preview-table">
+                  <div
+                    className={`table-scroll import-preview-table ${details ? "show-details" : ""}`}
+                    tabIndex={0}
+                    aria-label="Packaging data preview"
+                  >
                     <table>
                       <thead>
                         <tr>
@@ -547,9 +712,18 @@ export default function PackagingImport({
                           <th>Category</th>
                           <th>Packaging Type</th>
                           <th>Material</th>
-                          <th>Weight (g)</th>
+                          <th>Total Weight (g)</th>
                           <th>Components</th>
-                          <th>Data Status</th>
+                          {details && (
+                            <>
+                              <th>Label Coverage (%)</th>
+                              <th>Adhesive Type</th>
+                              <th>Barrier Layer Details</th>
+                              <th>Component Weight (g)</th>
+                              <th>Printing / Ink Details</th>
+                            </>
+                          )}
+                          <th className="import-status-cell">Data Status</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -563,11 +737,28 @@ export default function PackagingImport({
                             <td>{row.category || "—"}</td>
                             <td>{row.packagingType || "—"}</td>
                             <td>{row.material || "—"}</td>
-                            <td>{row.weight ?? "—"}</td>
+                            <td>{row.weight?.toFixed(2) ?? "—"}</td>
                             <td>{row.components ?? "—"}</td>
-                            <td>
+                            {details && (
+                              <>
+                                <td>{row.labelCoverage || "—"}</td>
+                                <td>{row.adhesiveType || "—"}</td>
+                                <td>{row.barrierLayer || "—"}</td>
+                                <td>
+                                  {row.componentWeight?.toFixed(2) ?? "—"}
+                                </td>
+                                <td>{row.printingInk || "—"}</td>
+                              </>
+                            )}
+                            <td className="import-status-cell">
                               <span
                                 className={`import-row-status ${row.status}`}
+                                title={
+                                  row.issues
+                                    .map((issue) => issue.message)
+                                    .join("; ") ||
+                                  "All supplied fields passed validation"
+                                }
                               >
                                 {row.status === "complete"
                                   ? "Complete"
@@ -580,6 +771,19 @@ export default function PackagingImport({
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                  {!visibleRows.length && (
+                    <div className="import-clear">
+                      No matching SKUs. Try another search or status filter.
+                    </div>
+                  )}
+                  <div className="import-table-footer">
+                    <span>
+                      {details
+                        ? "Scroll horizontally to explore all packaging fields."
+                        : "Select “All 12 fields” to inspect labels, adhesives and component weights."}
+                    </span>
+                    <b>{filteredRows.length} SKUs</b>
                   </div>
                 </>
               ) : tab === "Column Mapping" ? (
@@ -678,13 +882,14 @@ export default function PackagingImport({
               Missing Fields{" "}
               <span>
                 (
-                {result?.analysis.missingFields.reduce(
-                  (sum, f) => sum + f.count,
-                  0,
-                ) || 0}
-                )
+                {
+                  rows.filter((row) =>
+                    row.issues.some((issue) => issue.kind === "missing"),
+                  ).length
+                }
+                {" SKUs)"}
               </span>
-              <button type="button" onClick={() => setTab("Missing Fields")}>
+              <button type="button" onClick={() => openTab("Missing Fields")}>
                 View all
               </button>
             </h4>
@@ -693,8 +898,8 @@ export default function PackagingImport({
                 <thead>
                   <tr>
                     <th>Field Name</th>
-                    <th>Rows</th>
-                    <th>Impact</th>
+                    <th>No. of SKUs</th>
+                    <th>% Impact</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -713,8 +918,11 @@ export default function PackagingImport({
           </section>
           <section className="import-panel">
             <h4>
-              Validation Errors <span>({summary.errors})</span>
-              <button type="button" onClick={() => setTab("Validation Issues")}>
+              Validation Errors <span>({summary.errors} SKUs)</span>
+              <button
+                type="button"
+                onClick={() => openTab("Validation Issues")}
+              >
                 View all
               </button>
             </h4>
@@ -723,7 +931,8 @@ export default function PackagingImport({
                 <thead>
                   <tr>
                     <th>Error Type</th>
-                    <th>Rows</th>
+                    <th>No. of SKUs</th>
+                    <th>Example</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -731,6 +940,14 @@ export default function PackagingImport({
                     <tr key={index}>
                       <td>{error.message}</td>
                       <td>{error.count}</td>
+                      <td>
+                        {result.analysis.issues.find(
+                          (issue) =>
+                            issue.kind === "error" &&
+                            issue.field === error.field &&
+                            issue.message === error.message,
+                        )?.sku || "—"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

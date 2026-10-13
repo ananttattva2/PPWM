@@ -118,3 +118,63 @@ test("oversized XLSX archives are rejected before decompression", async () => {
     /expanded XLSX workbook is too large/,
   );
 });
+
+test("prefixed XLSX exports map all 12 headers and flag blank detail cells", async () => {
+  const { default: JSZip } = await import("jszip");
+  const book = new ExcelJS.Workbook();
+  const sheet = book.addWorksheet("Packaging");
+  sheet.addRow([
+    "Product Name",
+    "SKU",
+    "Category",
+    "Packaging Type",
+    "Material",
+    "Total Weight (g)",
+    "Components",
+    "Label Coverage (%)",
+    "Adhesive Type",
+    "Barrier Layer Details",
+    "Component Weight (g)",
+    "Printing / Ink Details",
+  ]);
+  sheet.addRow([
+    "Water",
+    "X1",
+    "Beverages",
+    "Bottle",
+    "PET",
+    23.5,
+    3,
+    80,
+    "Acrylic",
+    "None",
+    20.5,
+    "Water-based",
+  ]);
+  sheet.addRow(["Snack", "X2", "Snacks", "Pouch", "PP", 6.8, 2]);
+  const zip = await JSZip.loadAsync(await book.xlsx.writeBuffer());
+  for (const name of ["xl/workbook.xml", "xl/worksheets/sheet1.xml"]) {
+    const xml = await zip.file(name)!.async("string");
+    zip.file(
+      name,
+      xml
+        .replace(
+          'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"',
+          'xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"',
+        )
+        .replace(/(<\/?)([A-Za-z][\w]*)(?=[\s/>])/g, "$1x:$2"),
+    );
+  }
+  const parsed = await parsePackagingFile(
+    await zip.generateAsync({ type: "nodebuffer" }),
+    "prefixed.xlsx",
+    settings,
+  );
+  assert.equal(Object.keys(parsed.suggested).length, 12);
+  const result = analysePackaging(parsed.rawRows, parsed.suggested, settings);
+  assert.equal(result.rows[0].weight, 23.5);
+  assert.equal(result.rows[0].componentWeight, 20.5);
+  assert.equal(result.summary.complete, 1);
+  assert.equal(result.summary.missing, 1);
+  assert.equal(result.missingFields.length, 5);
+});

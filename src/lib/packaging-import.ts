@@ -1,4 +1,6 @@
 import ExcelJS from "exceljs";
+import JSZip from "jszip";
+import { posix } from "node:path";
 import { parse } from "csv-parse/sync";
 import {
   importCategories,
@@ -56,17 +58,12 @@ const aliases: Record<ImportField, string[]> = {
   category: ["category", "productcategory"],
   packagingType: ["packagingtype", "packaging", "packtype"],
   material: ["material", "packagingmaterial"],
-  weight: [
-    "totalweightg",
-    "totalweight",
-    "weightg",
-    "weight",
-    "componentweight",
-  ],
+  weight: ["totalweightg", "totalweight", "weightg", "weight"],
   components: ["components", "componentcount", "numberofcomponents"],
   labelCoverage: ["labelcoverage", "labelcoveragepercent"],
   adhesiveType: ["adhesivetype", "adhesive"],
   barrierLayer: ["barrierlayer", "barrierlayerdetails"],
+  componentWeight: ["componentweightg", "componentweight"],
   printingInk: ["printinginkdetails", "printingink", "ink"],
 };
 function cellText(value: ExcelJS.CellValue): string {
@@ -96,8 +93,35 @@ export async function parsePackagingFile(
     if (bytes[0] !== 0x50 || bytes[1] !== 0x4b)
       throw new Error("The file is not a valid XLSX workbook.");
     validateWorkbookArchive(bytes);
+    // ExcelJS expects unprefixed spreadsheet tags; some valid exporters use x:.
+    const archive = await JSZip.loadAsync(bytes);
+    let normalized = false;
+    for (const entry of Object.values(archive.files)) {
+      if (entry.dir || !/\.(xml|rels)$/.test(entry.name)) continue;
+      let xml = await entry.async("string");
+      const namespace =
+        /xmlns:([\w]+)="http:\/\/schemas\.openxmlformats\.org\/spreadsheetml\/2006\/main"/g;
+      const prefixes = [...xml.matchAll(namespace)].map((match) => match[1]);
+      for (const prefix of prefixes) {
+        xml = xml.replace(new RegExp(`(<\\/?)${prefix}:`, "g"), "$1");
+        normalized = true;
+      }
+      if (entry.name.endsWith(".rels")) {
+        const ownerDirectory = posix.dirname(posix.dirname(entry.name));
+        xml = xml.replace(/Target="\/(xl\/[^" ]+)"/g, (_, target: string) => {
+          normalized = true;
+          return `Target="${posix.relative(ownerDirectory === "." ? "" : ownerDirectory, target)}"`;
+        });
+      }
+      archive.file(entry.name, xml);
+    }
+    const workbookBytes = normalized
+      ? await archive.generateAsync({ type: "nodebuffer" })
+      : bytes;
     const book = new ExcelJS.Workbook();
-    await book.xlsx.load(new Uint8Array(bytes) as unknown as ExcelJS.Buffer);
+    await book.xlsx.load(
+      new Uint8Array(workbookBytes) as unknown as ExcelJS.Buffer,
+    );
     const sheet = book.worksheets[0];
     if (!sheet) throw new Error("The workbook has no worksheet.");
     if (sheet.rowCount > 1001)
@@ -185,7 +209,7 @@ export function analysePackaging(
     if (settings.category !== "All Categories")
       values.category = settings.category;
     for (const field of importFields) {
-      if (field.required && !values[field.key])
+      if ((field.required || mapping[field.key]) && !values[field.key])
         add(field.label, `${field.label} is missing`, "missing");
     }
     const weight =
@@ -196,6 +220,19 @@ export function analysePackaging(
       values.components && /^\d+$/.test(values.components)
         ? Number(values.components)
         : null;
+    const componentWeight =
+      values.componentWeight && /^\d+(\.\d+)?$/.test(values.componentWeight)
+        ? Number(values.componentWeight)
+        : null;
+    if (
+      values.componentWeight &&
+      (componentWeight === null || componentWeight <= 0)
+    )
+      add(
+        "Component weight (g)",
+        "Component weight must be a positive number in grams",
+        "error",
+      );
     if (values.weight && (weight === null || weight <= 0))
       add(
         "Total weight (g)",
@@ -239,6 +276,7 @@ export function analysePackaging(
       labelCoverage: values.labelCoverage,
       adhesiveType: values.adhesiveType,
       barrierLayer: values.barrierLayer,
+      componentWeight,
       printingInk: values.printingInk,
       status: rowIssues.some((i) => i.kind === "error")
         ? "error"
@@ -253,7 +291,7 @@ export function analysePackaging(
     missing = rows.filter((r) => r.status === "missing").length,
     errors = rows.filter((r) => r.status === "error").length;
   const missingFields = importFields
-    .filter((f) => f.required)
+    .filter((f) => f.required || mapping[f.key])
     .map((f) => {
       const count = issues.filter(
         (i) => i.field === f.label && i.kind === "missing",
