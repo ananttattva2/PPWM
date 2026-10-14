@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { PackagingComposition } from "./packaging-composition";
 export const importCategories = [
   "Beverages",
   "Snacks",
@@ -46,6 +47,7 @@ export type ImportIssue = {
   kind: "missing" | "error";
 };
 export type PackagingRow = {
+  composition?: PackagingComposition;
   rowNumber: number;
   sku: string;
   productName: string;

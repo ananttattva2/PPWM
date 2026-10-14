@@ -101,7 +101,30 @@ export async function POST(req: Request) {
     const database = db();
     await database
       .collection("packagingSkus")
-      .createIndex({ clientId: 1, sku: 1 }, { unique: true });
+      .createIndex(
+        { clientId: 1, sku: 1 },
+        {
+          unique: true,
+          name: "client_sku_present_unique",
+          partialFilterExpression: { sku: { $type: "string", $gt: "" } },
+        },
+      );
+    // Keep real SKUs unique while allowing several incomplete rows without SKUs.
+    const skuIndexes = await database
+      .collection("packagingSkus")
+      .listIndexes()
+      .toArray();
+    for (const index of skuIndexes) {
+      if (
+        index.unique &&
+        !index.partialFilterExpression &&
+        index.key.clientId === 1 &&
+        index.key.sku === 1 &&
+        Object.keys(index.key).length === 2 &&
+        index.name
+      )
+        await database.collection("packagingSkus").dropIndex(index.name);
+    }
     await getClient().withSession(async (session) =>
       session.withTransaction(async () => {
         const imported = await database
@@ -113,8 +136,7 @@ export async function POST(req: Request) {
         if (!imported) throw new Error("FORBIDDEN");
         if (
           !imported.analysis.summary.total ||
-          imported.analysis.summary.errors ||
-          imported.analysis.summary.missing
+          imported.analysis.summary.errors
         )
           throw new Error("Import contains unresolved issues");
         await database.collection("clients").insertOne(
@@ -153,7 +175,13 @@ export async function POST(req: Request) {
           await database.collection("packagingSkus").bulkWrite(
             skuRecords.map((row: Record<string, unknown>) => ({
               updateOne: {
-                filter: { clientId: row.clientId, sku: row.sku },
+                filter: row.sku
+                  ? { clientId: row.clientId, sku: row.sku }
+                  : {
+                      clientId: row.clientId,
+                      importId: row.importId,
+                      rowNumber: row.rowNumber,
+                    },
                 update: { $set: row },
                 upsert: true,
               },
@@ -177,6 +205,13 @@ export async function POST(req: Request) {
           { session },
         );
         if (!claimed.matchedCount) throw new Error("FORBIDDEN");
+        await database
+          .collection("packagingAssets")
+          .updateMany(
+            { importId: importId.toString() },
+            { $unset: { expiresAt: "" } },
+            { session },
+          );
       }),
     );
     return Response.json(

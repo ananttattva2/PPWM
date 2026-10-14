@@ -11,7 +11,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
   page,
   request,
 }) => {
-  test.setTimeout(90000);
+  test.setTimeout(150000);
   const browserErrors: string[] = [];
   page.on("pageerror", (e) => browserErrors.push(e.message));
   const client = new MongoClient(process.env.MONGODB_URI!);
@@ -276,10 +276,12 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await expect(
       page.getByText("Validation Error", { exact: true }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Create client", exact: true })
+      .click();
     await expect(
       page.getByText(
-        "Resolve all missing fields and validation errors before continuing.",
+        "Resolve validation errors before continuing. Missing details can be completed later.",
         { exact: true },
       ),
     ).toBeVisible();
@@ -378,10 +380,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     });
     await page.setViewportSize({ width: 1280, height: 720 });
     const validCsv = Buffer.from(
-      brokenCsv
-        .toString()
-        .replace("PP,,4", "PP,6.8,4")
-        .replace("INVALID,12,2", "HDPE,12,2"),
+      brokenCsv.toString().replace("INVALID,12,2", "HDPE,12,2"),
     );
     await page
       .getByLabel("Packaging data file", { exact: true })
@@ -409,7 +408,8 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     expect(processedResponse.status()).toBe(200);
     importRecord = await processedResponse.json();
     importIds.push(importRecord.id);
-    expect(importRecord.analysis.summary.complete).toBe(3);
+    expect(importRecord.analysis.summary.complete).toBe(2);
+    expect(importRecord.analysis.summary.missing).toBe(1);
     const persistedDraft = await db
       .collection("packagingImports")
       .findOne({ _id: new ObjectId(importRecord.id) });
@@ -420,18 +420,119 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     expect(Buffer.from(persistedDraft?.file.data.buffer).equals(validCsv)).toBe(
       true,
     );
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-    await page.waitForTimeout(550);
+    await expect(
+      page
+        .getByRole("navigation", { name: "Onboarding progress" })
+        .getByText("Review", { exact: true }),
+    ).toHaveCount(0);
+    await page
+      .getByRole("button", {
+        name: "Edit packaging for Mineral Water 500ml",
+        exact: true,
+      })
+      .click();
+    await expect(
+      page.getByRole("heading", {
+        name: "Packaging Composition Builder",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Create client", exact: true }),
+    ).toHaveCount(0);
+    await page.getByLabel("Brand", { exact: true }).fill("Aqua QA");
+    await page.getByLabel("Net content", { exact: true }).fill("500 ml");
+    await page.getByLabel("Components", { exact: true }).fill("2");
+    await page.getByLabel("Component 1 name", { exact: true }).fill("Bottle");
+    await page.getByLabel("Component 1 weight", { exact: true }).fill("21");
+    await page
+      .getByRole("button", { name: "Add component", exact: true })
+      .click();
+    await page.getByLabel("Component 2 name", { exact: true }).fill("Cap");
+    await page.getByLabel("Component 2 material", { exact: true }).fill("PP");
+    await page.getByLabel("Component 2 colour", { exact: true }).fill("Blue");
+    await page.getByLabel("Component 2 weight", { exact: true }).fill("2.5");
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=",
+      "base64",
+    );
+    await page.getByLabel("Product photo", { exact: true }).setInputFiles({
+      name: "product.png",
+      mimeType: "image/png",
+      buffer: png,
+    });
+    await page
+      .getByLabel("Component 2 photo", { exact: true })
+      .setInputFiles({ name: "cap.png", mimeType: "image/png", buffer: png });
+    await expect(page.getByText("Matches", { exact: true })).toBeVisible();
+    await page.setViewportSize({ width: 1600, height: 1000 });
     await page.evaluate(() => {
       document
         .querySelectorAll<HTMLButtonElement>("[data-close-button]")
-        .forEach((b) => b.click());
+        .forEach((button) => button.click());
       window.scrollTo({ top: 0, behavior: "instant" });
     });
     await page.screenshot({
-      path: "artifacts/client-review.png",
+      path: "artifacts/packaging-composition-desktop.png",
       fullPage: true,
     });
+    await page
+      .getByRole("button", { name: "Switch to dark mode", exact: true })
+      .click();
+    await page.screenshot({
+      path: "artifacts/packaging-composition-dark.png",
+      fullPage: true,
+    });
+    await page
+      .getByRole("button", { name: "Switch to light mode", exact: true })
+      .click();
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: "artifacts/packaging-composition-mobile.png",
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const editedResponse = page.waitForResponse(
+      (response) =>
+        response.url().endsWith(`/api/packaging-imports/${importRecord.id}`) &&
+        response.request().method() === "PATCH",
+    );
+    await page
+      .getByRole("button", { name: "Save & continue", exact: true })
+      .first()
+      .click();
+    expect((await editedResponse).status()).toBe(200);
+    await expect(
+      page.getByRole("heading", { name: "Packaging Data Import", exact: true }),
+    ).toBeVisible();
+    const edited = await db
+      .collection("packagingImports")
+      .findOne({ _id: new ObjectId(importRecord.id) });
+    expect(edited?.analysis.summary.missing).toBe(1);
+    expect(edited?.analysis.rows[0].composition.brand).toBe("Aqua QA");
+    expect(edited?.analysis.rows[0].composition.components).toHaveLength(2);
+    expect(
+      await db
+        .collection("packagingAssets")
+        .countDocuments({ importId: importRecord.id }),
+    ).toBe(2);
+    const imageUrl = `/api/packaging-imports/${importRecord.id}/assets/${edited?.analysis.rows[0].composition.productImage}`;
+    const imageResponse = await page.request.get(imageUrl);
+    expect(imageResponse.status()).toBe(200);
+    expect((await imageResponse.body()).equals(png)).toBe(true);
+    expect((await request.get(imageUrl)).status()).toBe(401);
+    expect(
+      (
+        await request.patch(`/api/packaging-imports/${importRecord.id}`, {
+          headers: { Origin: "http://localhost:3000" },
+        })
+      ).status(),
+    ).toBe(401);
     const savedClient = page.waitForResponse(
       (r) =>
         r.url().endsWith("/api/clients") && r.request().method() === "POST",
@@ -439,7 +540,8 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page
       .getByRole("button", { name: "Create client", exact: true })
       .click();
-    expect((await savedClient).status()).toBe(201);
+    const createdResponse = await savedClient;
+    expect(createdResponse.status(), await createdResponse.text()).toBe(201);
     await expect(page.getByText(company, { exact: true })).toBeVisible();
     expect(await db.collection("clients").countDocuments({ company })).toBe(1);
     await page
@@ -474,6 +576,43 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
         .collection("packagingSkus")
         .countDocuments({ clientId: storedClient?._id.toString() }),
     ).toBe(3);
+    await page
+      .getByRole("button", { name: "Manage packaging", exact: true })
+      .click();
+    await page
+      .getByRole("button", {
+        name: "Edit packaging for Mineral Water 500ml",
+        exact: true,
+      })
+      .click();
+    await expect(page.getByLabel("Brand", { exact: true })).toHaveValue(
+      "Aqua QA",
+    );
+    await page.getByLabel("Brand", { exact: true }).fill("Updated Aqua QA");
+    const confirmedEdit = page.waitForResponse(
+      (response) =>
+        response.url().endsWith(`/api/packaging-imports/${importRecord.id}`) &&
+        response.request().method() === "PATCH",
+    );
+    await page
+      .getByRole("button", { name: "Save & continue", exact: true })
+      .first()
+      .click();
+    expect((await confirmedEdit).status()).toBe(200);
+    const savedSku = await db
+      .collection("packagingSkus")
+      .findOne({ importId: importRecord.id, sku: "QA-01" });
+    expect(savedSku?.composition.brand).toBe("Updated Aqua QA");
+    expect(savedSku?.composition.components).toHaveLength(2);
+    expect(
+      await db.collection("packagingAssets").countDocuments({
+        importId: importRecord.id,
+        expiresAt: { $exists: true },
+      }),
+    ).toBe(0);
+    await page
+      .getByRole("button", { name: "Back to clients", exact: true })
+      .click();
     const importedFile = await page.request.get(
       `/api/packaging-imports/${importRecord.id}?download=true`,
     );
@@ -566,6 +705,55 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     expect((await db.collection("user").findOne({ _id: id }))?.firstName).toBe(
       "Updated",
     );
+    // Multiple draft SKUs without identifiers or materials must remain separate records.
+    const incompleteUpload = await page.request.post("/api/packaging-imports", {
+      headers: { Origin: "http://localhost:3000" },
+      multipart: {
+        file: {
+          name: "incomplete.csv",
+          mimeType: "text/csv",
+          buffer: Buffer.from(
+            "SKU,Product Name,Category,Packaging Type,Material,Total Weight (g),Components\n,Draft A,Food,Bottle,,10,1\n,Draft B,Food,Bottle,,12,1\n",
+          ),
+        },
+      },
+    });
+    expect(incompleteUpload.status()).toBe(200);
+    const incompleteImport = await incompleteUpload.json();
+    importIds.push(incompleteImport.id);
+    expect(incompleteImport.analysis.summary.missing).toBe(2);
+    const incompleteClient = await page.request.post("/api/clients", {
+      headers: { Origin: "http://localhost:3000" },
+      multipart: {
+        data: JSON.stringify({
+          legalName: company,
+          tradeName: "QA Packaging",
+          gstNumber: "27ABCDE1234F1Z5",
+          registrationNumber: "",
+          organisationRole: "Producer",
+          registeredAddress: "12 Test Street, Mumbai 400001",
+          email,
+          telephone: "+91 9876543210",
+          authorisedPerson: "QA Contact",
+          country: "India",
+          industry: "Retail",
+          materials: [],
+          notes: "",
+          packagingImportId: incompleteImport.id,
+        }),
+        documents: {
+          name: "registration.pdf",
+          mimeType: "application/pdf",
+          buffer: fileBytes,
+        },
+      },
+    });
+    expect(incompleteClient.status(), await incompleteClient.text()).toBe(201);
+    expect(
+      await db
+        .collection("packagingSkus")
+        .countDocuments({ importId: incompleteImport.id, sku: "" }),
+    ).toBe(2);
     await db
       .collection("user")
       .updateOne({ _id: id }, { $set: { role: "user" } });
@@ -577,6 +765,9 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     expect((await page.request.get("/api/clients")).status()).toBe(401);
     expect(browserErrors).toEqual([]);
   } finally {
+    await db
+      .collection("packagingAssets")
+      .deleteMany({ importId: { $in: importIds } });
     await db
       .collection("packagingSkus")
       .deleteMany({ importId: { $in: importIds } });

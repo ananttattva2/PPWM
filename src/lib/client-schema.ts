@@ -60,9 +60,7 @@ export const clientSchema = companySchema.extend({
       "Process a packaging file before creating the client.",
     ),
   industry: z.string().trim().min(2).max(80),
-  materials: z
-    .array(z.enum(packagingMaterials))
-    .min(1, "Choose at least one packaging material."),
+  materials: z.array(z.enum(packagingMaterials)).default([]),
   notes: z.string().trim().max(2000),
 });
 export const MAX_DOCUMENT_SIZE = 2 * 1024 * 1024;

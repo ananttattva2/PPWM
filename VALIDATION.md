@@ -1,8 +1,12 @@
 # Verification
 
-Verified locally on 12 October 2026.
+Packaging onboarding and composition verified locally on 14 October 2026. Earlier checks below retain their original scope.
 
-Packaging import verification covers actual CSV/XLSX parsing, quoted CSV fields, explicit mapping, category overrides, missing required values, invalid materials/numbers, duplicate SKU detection and rejection of oversized XLSX archives before parsing. Browser tests cover the three-step flow, incomplete-data gating, editable mapping/reprocessing, persisted import settings and original bytes, transactional linkage to the client, three persisted SKU records and authenticated source download. Screenshots: `artifacts/packaging-import-*.png` and `artifacts/client-review.png`. Five browser tests and five parser tests pass. Parser dependencies were audited after applying a compatible patched UUID override.
+Packaging onboarding now has two steps: Organisation and Packaging. The Review page is removed. Missing data permits client creation; invalid values still require correction. The database-backed browser test verifies creation with an incomplete row and with multiple blank SKU/material rows, so drafts remain distinct.
+
+The table edit icon opens Packaging Composition Builder. Browser checks cover component creation, live weight matching, product/component PNG uploads, exact image retrieval, anonymous access rejection, saved composition reopening, and confirmed-client edits updating packaging SKU records. Import changes and SKU/client summaries are saved in a MongoDB transaction. Draft assets expire with their import; confirmed assets are retained. Desktop, mobile and dark-mode captures are in `artifacts/packaging-composition-*.png`.
+
+Seven import/composition tests pass, covering CSV/XLSX parsing, all 12 fields, prefixed XLSX exports, explicit mapping, category overrides, missing values, invalid materials/numbers, duplicate SKUs, archive size limits, and incomplete composition schemas. TypeScript checks and the expanded authenticated end-to-end test pass.
 
 The redesigned OTP email has desktop/mobile browser previews in `artifacts/otp-email-*.png`. Template tests cover purposes, escaping, invalid code rejection, safe workspace links, and embedded logo data. A mocked transport test checks Microsoft Graph HTML and inline-attachment payloads without sending email. Real Outlook inbox rendering of this redesign has not been independently verified.
 

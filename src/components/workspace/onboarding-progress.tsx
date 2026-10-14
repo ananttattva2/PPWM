@@ -4,7 +4,6 @@ import { motion } from "motion/react";
 const steps = [
   ["Organisation", "Identity & documents"],
   ["Packaging", "Import & validate"],
-  ["Review", "Check & create"],
 ];
 export default function OnboardingProgress({
   active,
@@ -45,7 +44,7 @@ export default function OnboardingProgress({
                 <small>{hint}</small>
               </span>
             </button>
-            {index < 2 && (
+            {index < steps.length - 1 && (
               <span className="progress-connector">
                 <motion.span
                   initial={false}

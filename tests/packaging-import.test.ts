@@ -6,6 +6,11 @@ import {
   analysePackaging,
 } from "../src/lib/packaging-import";
 import type { ImportSettings } from "../src/lib/packaging-import-schema";
+import {
+  compositionSchema,
+  initialComposition,
+  rowFields,
+} from "../src/lib/packaging-composition";
 const settings: ImportSettings = {
   category: "All Categories",
   plant: "Mumbai",
@@ -14,6 +19,37 @@ const settings: ImportSettings = {
 };
 const csv =
   "SKU,Product Name,Category,Packaging Type,Material,Total Weight (g),Components\nS1,Water,Beverages,Bottle,PET,23.5,3\nS2,Snacks,Snacks,Pouch,PP,,2\nS3,Soap,Personal Care,Bottle,UNKNOWN,-1,2\n";
+test("composition drafts preserve source values without inventing component weights", async () => {
+  const parsed = await parsePackagingFile(
+    Buffer.from(csv),
+    "data.csv",
+    settings,
+  );
+  const row = analysePackaging(parsed.rawRows, parsed.suggested, settings)
+    .rows[0];
+  const draft = initialComposition(row);
+  assert.equal(draft.components[0].weight, "");
+  assert.equal(rowFields(row).weight, "23.5");
+  assert.equal(Object.keys(rowFields(row)).length, 12);
+  assert.ok(compositionSchema.safeParse(draft).success);
+  assert.ok(
+    !compositionSchema.safeParse({
+      ...draft,
+      components: [draft.components[0], draft.components[0]],
+    }).success,
+  );
+  assert.ok(
+    !compositionSchema.safeParse({
+      ...draft,
+      components: [{ ...draft.components[0], weight: "-1" }],
+    }).success,
+  );
+  const saved = { ...draft, brand: "Saved brand" };
+  assert.equal(
+    initialComposition({ ...row, composition: saved }).brand,
+    "Saved brand",
+  );
+});
 test("CSV parsing detects real completeness, missing data and validation errors", async () => {
   const parsed = await parsePackagingFile(
     Buffer.from(csv),

@@ -22,9 +22,11 @@ import {
   RefreshCw,
   Search,
   SlidersHorizontal,
+  Pencil,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Select } from "../ui/floating-fields";
+import PackagingComposition from "./packaging-composition";
 import {
   importCategories,
   importFields,
@@ -52,6 +54,7 @@ export default function PackagingImport({
   sourceFile,
   onFileChange,
   organisationName,
+  onEditorChange,
 }: {
   result: ImportResult | null;
   onChange: (result: ImportResult | null) => void;
@@ -59,6 +62,7 @@ export default function PackagingImport({
   sourceFile: File | null;
   onFileChange: (file: File | null) => void;
   organisationName: string;
+  onEditorChange?: (open: boolean) => void;
 }) {
   const [result, setResult] = useState(parentResult);
   const [dirty, setDirty] = useState(false);
@@ -74,6 +78,7 @@ export default function PackagingImport({
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [details, setDetails] = useState(false);
+  const [editingRow, setEditingRow] = useState<number | null>(null);
   const input = useRef<HTMLInputElement>(null),
     id = useRef(result?.id || ""),
     savedFile = useRef<File | null>(null);
@@ -191,14 +196,41 @@ export default function PackagingImport({
     a.click();
     URL.revokeObjectURL(url);
   }
+  const selectedRow = result?.analysis.rows.find(
+    (row) => row.rowNumber === editingRow,
+  );
+  if (result && selectedRow)
+    return (
+      <PackagingComposition
+        key={`${result.id}-${selectedRow.rowNumber}`}
+        row={selectedRow}
+        imported={result}
+        onBusy={onBusy}
+        onBack={() => {
+          setEditingRow(null);
+          onEditorChange?.(false);
+        }}
+        onSave={(updated) => {
+          setResult(updated);
+          setMapping(updated.mapping);
+          setSettings(updated.settings);
+          onChange(updated);
+          setEditingRow(null);
+          onEditorChange?.(false);
+        }}
+      />
+    );
   return (
-    <div className="packaging-import-workspace">
+    <div
+      className={`packaging-import-workspace ${result?.clientId ? "confirmed-import" : ""}`}
+    >
       <div className="import-workspace-heading">
         <div>
           <h3>Packaging Data Import</h3>
           <p>
-            Upload your file, map its columns and validate every SKU before
-            onboarding.
+            {result?.clientId
+              ? "Use the edit icon to complete packaging details. Changes are saved to this client’s SKUs."
+              : "Upload your file, map its columns and add packaging details. Missing data can be completed later."}
           </p>
         </div>
         <Button type="button" variant="outline" onClick={template}>
@@ -500,7 +532,7 @@ export default function PackagingImport({
             "Map required columns",
             "Review missing fields",
             "Fix validation errors",
-            "Confirm and create SKUs",
+            "Save client & finish later",
           ].map((label, index) => (
             <button
               type="button"
@@ -545,8 +577,8 @@ export default function PackagingImport({
               {dirty
                 ? "Reprocess the file to apply your latest settings and column mapping."
                 : summary.missing || summary.errors
-                  ? `${summary.complete} SKUs are complete. Resolve ${summary.missing} incomplete rows and ${summary.errors} validation errors, then re-upload your corrected file.`
-                  : "All SKUs passed validation. Continue to review and confirm your client."}
+                  ? `${summary.complete} SKUs are complete. Use the edit icon to add details. Missing data can be completed after saving your client.`
+                  : "All SKUs passed validation. Save your client to finish onboarding."}
             </p>
           </div>
           <button
@@ -724,6 +756,7 @@ export default function PackagingImport({
                             </>
                           )}
                           <th className="import-status-cell">Data Status</th>
+                          <th className="import-edit-cell">Edit</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -767,6 +800,21 @@ export default function PackagingImport({
                                     : "Validation Error"}
                               </span>
                             </td>
+                            <td className="import-edit-cell">
+                              <button
+                                type="button"
+                                className="import-edit-button"
+                                aria-label={`Edit packaging for ${row.productName || row.sku}`}
+                                title="Edit packaging composition"
+                                disabled={busy || dirty}
+                                onClick={() => {
+                                  setEditingRow(row.rowNumber);
+                                  onEditorChange?.(true);
+                                }}
+                              >
+                                <Pencil size={16} />
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -796,7 +844,7 @@ export default function PackagingImport({
                     {importFields.map((field) => (
                       <Select
                         key={field.key}
-                        disabled={busy}
+                        disabled={busy || Boolean(result.clientId)}
                         label={field.label}
                         required={field.required}
                         data={[
@@ -820,7 +868,7 @@ export default function PackagingImport({
                   </div>
                   <Button
                     type="button"
-                    disabled={busy}
+                    disabled={busy || !file}
                     onClick={() => void process()}
                   >
                     Reprocess with mapping <RefreshCw size={14} />
@@ -964,7 +1012,7 @@ export default function PackagingImport({
             <CheckCircle2 size={16} />
             <p>
               {result
-                ? "Processed file, settings and validation results are saved. Click Next when all rows are complete."
+                ? "Your data is saved. Missing details can be completed later with the edit icon. Validation errors must be corrected before creating the client."
                 : "Your file and results will be saved when you process the import."}
             </p>
           </div>

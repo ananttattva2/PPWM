@@ -12,7 +12,6 @@ import {
   ArrowRight,
   Building2,
   Plus,
-  CheckCircle2,
   Search,
   UploadCloud,
   FileText,
@@ -22,7 +21,6 @@ import {
   UserRound,
   Download,
   LoaderCircle,
-  Package,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -73,6 +71,8 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
   );
   const [packagingFile, setPackagingFile] = useState<File | null>(null);
   const [importBusy, setImportBusy] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [managedImport, setManagedImport] = useState<ImportResult | null>(null);
   const searchParams = useSearchParams();
   const [list, setList] = useState<Client[]>([]),
     [form, setForm] = useState(initial),
@@ -171,32 +171,24 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
         );
         return;
       }
-      if (
-        packagingImport.analysis.summary.missing ||
-        packagingImport.analysis.summary.errors
-      ) {
+      if (packagingImport.analysis.summary.errors) {
         toast.error(
-          "Resolve all missing fields and validation errors before continuing.",
+          "Resolve validation errors before continuing. Missing details can be completed later.",
         );
         return;
       }
-      setForm((prev) => ({
-        ...prev,
-        materials: packagingImport.analysis.materialFamilies,
-      }));
+      void save();
+      return;
     }
     setFieldErrors({});
     setStep((s) => s + 1);
     requestAnimationFrame(() =>
-      document
-        .querySelector(".onboarding-progress")
-        ?.scrollIntoView({
-          behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
-            .matches
-            ? "auto"
-            : "smooth",
-          block: "start",
-        }),
+      document.querySelector(".onboarding-progress")?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      }),
     );
   }
   async function save() {
@@ -210,7 +202,11 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       const data = new FormData();
       data.append(
         "data",
-        JSON.stringify({ ...form, packagingImportId: packagingImport?.id }),
+        JSON.stringify({
+          ...form,
+          materials: packagingImport?.analysis.materialFamilies || [],
+          packagingImportId: packagingImport?.id,
+        }),
       );
       files.forEach((f) => data.append("documents", f));
       const r = await fetch("/api/clients", { method: "POST", body: data });
@@ -248,6 +244,42 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
+  if (managedImport)
+    return (
+      <>
+        <div className="page-heading">
+          <div>
+            <h1>Packaging workspace</h1>
+            <p>Update SKU details and composition for this client.</p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={importBusy || editorOpen}
+            onClick={() => {
+              setManagedImport(null);
+              void load();
+            }}
+          >
+            <ArrowLeft size={16} /> Back to clients
+          </Button>
+        </div>
+        <section className="panel packaging-step-layout">
+          <PackagingImport
+            key={managedImport.id}
+            result={managedImport}
+            onChange={(updated) => {
+              if (updated) setManagedImport(updated);
+            }}
+            onBusy={setImportBusy}
+            sourceFile={null}
+            onFileChange={() => {}}
+            organisationName={managedImport.settings.plant}
+            onEditorChange={setEditorOpen}
+          />
+        </section>
+      </>
+    );
   return (
     <>
       <div className="page-heading">
@@ -258,7 +290,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
         </div>
         {canEdit && !show && (
           <Button
-            disabled={busy || importBusy}
+            disabled={busy || importBusy || editorOpen}
             onClick={() => {
               setShow(true);
               setError("");
@@ -279,7 +311,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
               </p>
             </div>
             <button
-              disabled={busy || importBusy}
+              disabled={busy || importBusy || editorOpen}
               onClick={() => setShow(false)}
               className="text-button"
             >
@@ -289,14 +321,14 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
           <OnboardingProgress
             active={step}
             onBack={(index) => {
-              if (!busy && !importBusy) setStep(index);
+              if (!busy && !importBusy && !editorOpen) setStep(index);
             }}
           />
           <form
             noValidate
             onSubmit={(e) => {
               e.preventDefault();
-              if (!busy && !importBusy) void (step === 2 ? save() : next());
+              if (!busy && !importBusy && !editorOpen) void next();
             }}
           >
             <motion.div
@@ -524,7 +556,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                     </div>
                   </fieldset>
                 </>
-              ) : step === 1 ? (
+              ) : (
                 <PackagingImport
                   result={packagingImport}
                   onChange={setPackagingImport}
@@ -532,99 +564,8 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                   sourceFile={packagingFile}
                   onFileChange={setPackagingFile}
                   organisationName={form.legalName}
+                  onEditorChange={setEditorOpen}
                 />
-              ) : (
-                <div className="review-card">
-                  <CheckCircle2 />
-                  <h2>One last look before we connect.</h2>
-                  <p className="muted">
-                    Check the information below. Use Back to make changes.
-                  </p>
-                  <div className="review-import-summary">
-                    <motion.div
-                      initial={{ y: 8, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                    >
-                      <Package size={21} />
-                      <span>
-                        <b>{packagingImport?.analysis.summary.total || 0}</b>
-                        <small>Packaging SKUs ready</small>
-                      </span>
-                    </motion.div>
-                    <motion.div
-                      initial={{ y: 8, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.06 }}
-                    >
-                      <CheckCircle2 size={21} />
-                      <span>
-                        <b>
-                          {packagingImport?.analysis.summary.completeness || 0}%
-                        </b>
-                        <small>Required data complete</small>
-                      </span>
-                    </motion.div>
-                    <motion.div
-                      initial={{ y: 8, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.12 }}
-                    >
-                      <FileText size={21} />
-                      <span>
-                        <b>{files.length}</b>
-                        <small>Supporting documents</small>
-                      </span>
-                    </motion.div>
-                  </div>
-                  <dl>
-                    {[
-                      ["Legal name", form.legalName],
-                      ["Trade name", form.tradeName],
-                      ["GST number", form.gstNumber],
-                      [
-                        "Registration / user number",
-                        form.registrationNumber || "Not provided",
-                      ],
-                      ["Organisation role", form.organisationRole],
-                      ["Registered address", form.registeredAddress],
-                      ["Email", form.email],
-                      ["Telephone", form.telephone],
-                      ["Authorised person", form.authorisedPerson],
-                      ["Country", form.country],
-                      ["Industry", form.industry],
-                      ["Materials", form.materials.join(", ")],
-                      ["Packaging file", packagingImport?.file.name || "—"],
-                      [
-                        "Imported SKUs",
-                        String(packagingImport?.analysis.summary.total || 0),
-                      ],
-                      [
-                        "Completeness",
-                        `${packagingImport?.analysis.summary.completeness || 0}%`,
-                      ],
-                      [
-                        "Plant / entity",
-                        packagingImport?.settings.plant || "—",
-                      ],
-                      ["Notes", form.notes || "No notes"],
-                    ].map(([k, v]) => (
-                      <div key={k}>
-                        <dt>{k}</dt>
-                        <dd>{v}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                  <h3 className="materials-heading">Supporting documents</h3>
-                  <div className="review-documents">
-                    {files.map((f) => (
-                      <div key={`${f.name}-${f.lastModified}`}>
-                        <FileText size={17} />
-                        <span>{f.name}</span>
-                        <small>{(f.size / 1024).toFixed(1)} KB</small>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               )}
             </motion.div>
             {error && (
@@ -632,37 +573,42 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                 {error}
               </p>
             )}
-            <div className="form-actions onboarding-actions">
-              <span>
-                <ShieldCheck size={14} />{" "}
-                {step === 2
-                  ? "Ready to save securely"
-                  : "Details stay here while you move between steps"}
-              </span>
-              {step > 0 && (
-                <Button
-                  type="button"
-                  disabled={busy || importBusy}
-                  variant="outline"
-                  onClick={() => setStep((s) => s - 1)}
-                >
-                  <ArrowLeft size={16} /> Back
-                </Button>
-              )}
-              <Button disabled={busy || importBusy} type="submit">
-                {busy ? (
-                  <>
-                    <LoaderCircle size={16} className="spin" /> Saving…
-                  </>
-                ) : step === 2 ? (
-                  "Create client"
-                ) : (
-                  <>
-                    Next <ArrowRight size={17} />
-                  </>
+            {!editorOpen && (
+              <div className="form-actions onboarding-actions">
+                <span>
+                  <ShieldCheck size={14} />{" "}
+                  {step === 1
+                    ? "Missing packaging details can be completed later"
+                    : "Details stay here while you move between steps"}
+                </span>
+                {step > 0 && (
+                  <Button
+                    type="button"
+                    disabled={busy || importBusy || editorOpen}
+                    variant="outline"
+                    onClick={() => setStep((s) => s - 1)}
+                  >
+                    <ArrowLeft size={16} /> Back
+                  </Button>
                 )}
-              </Button>
-            </div>
+                <Button
+                  disabled={busy || importBusy || editorOpen}
+                  type="submit"
+                >
+                  {busy ? (
+                    <>
+                      <LoaderCircle size={16} className="spin" /> Saving…
+                    </>
+                  ) : step === 1 ? (
+                    "Create client"
+                  ) : (
+                    <>
+                      Next <ArrowRight size={17} />
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </form>
         </section>
       ) : (
@@ -717,6 +663,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                     <th>Authorised contact</th>
                     <th>Documents</th>
                     <th>Status</th>
+                    {canEdit && <th>Packaging</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -775,6 +722,34 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                       <td>
                         <span className="status-badge">Onboarding</span>
                       </td>
+                      {canEdit && (
+                        <td>
+                          {c.packagingImport && (
+                            <button
+                              type="button"
+                              className="import-manage-button"
+                              disabled={importBusy}
+                              onClick={async () => {
+                                setImportBusy(true);
+                                try {
+                                  const response = await fetch(
+                                    `/api/packaging-imports/${c.packagingImport!.id}`,
+                                  );
+                                  const data = await response.json();
+                                  if (!response.ok) throw new Error(data.error);
+                                  setManagedImport(data);
+                                } catch (failure) {
+                                  toast.error((failure as Error).message);
+                                } finally {
+                                  setImportBusy(false);
+                                }
+                              }}
+                            >
+                              Manage packaging <ArrowRight size={14} />
+                            </button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
