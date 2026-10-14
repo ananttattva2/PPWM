@@ -260,6 +260,80 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await expect(
       page.getByRole("heading", { name: "Packaging Data Import", exact: true }),
     ).toBeVisible();
+    const organisationOnly = await db
+      .collection("clients")
+      .findOne({ company });
+    expect(organisationOnly?.status).toBe("packaging_pending");
+    expect(organisationOnly?.packagingImport).toBeUndefined();
+    expect(organisationOnly?.documents).toHaveLength(1);
+    const anotherOrganisation = await page.request.post("/api/clients", {
+      headers: { Origin: "http://localhost:3000" },
+      multipart: {
+        data: JSON.stringify({
+          legalName: `${company} second`,
+          tradeName: "Second organisation",
+          gstNumber: "27ABCDE1234F1Z5",
+          registrationNumber: "",
+          organisationRole: "Producer",
+          registeredAddress: "12 Test Street, Mumbai 400001",
+          email,
+          telephone: "+91 9876543210",
+          authorisedPerson: "QA Contact",
+          country: "India",
+          industry: "Retail",
+          materials: [],
+          notes: "",
+        }),
+        documents: {
+          name: "second.pdf",
+          mimeType: "application/pdf",
+          buffer: fileBytes,
+        },
+      },
+    });
+    expect(anotherOrganisation.status()).toBe(201);
+    const secondOrganisation = await anotherOrganisation.json();
+    const visibleClients = await (
+      await page.request.get("/api/clients")
+    ).json();
+    expect(
+      visibleClients.some(
+        (entry: { _id: string }) =>
+          entry._id === organisationOnly?._id.toString(),
+      ),
+    ).toBe(true);
+    expect(
+      visibleClients.some(
+        (entry: { _id: string }) => entry._id === secondOrganisation.id,
+      ),
+    ).toBe(true);
+    expect(
+      (
+        await request.put(
+          `/api/clients/${organisationOnly?._id}/packaging-draft`,
+          {
+            headers: { Origin: "http://localhost:3000" },
+            data: { importId: new ObjectId().toString() },
+          },
+        )
+      ).status(),
+    ).toBe(401);
+
+    await page.getByRole("button", { name: "Close form", exact: true }).click();
+    await page.reload();
+    const organisationRow = page
+      .getByRole("row")
+      .filter({ has: page.getByText(company, { exact: true }) });
+    await expect(
+      organisationRow.getByText("Packaging pending", { exact: true }),
+    ).toBeVisible();
+    await organisationRow
+      .getByRole("button", { name: "Add packaging", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Packaging Data Import", exact: true }),
+    ).toBeVisible();
+    expect(await db.collection("clients").countDocuments({ company })).toBe(1);
     const brokenCsv = Buffer.from(
       "SKU,Product Name,Category,Packaging Type,Material,Total Weight (g),Components\nQA-01,Mineral Water 500ml,Beverages,Bottle,PET,23.5,3\nQA-02,Snack Pouch,Snacks,Pouch,PP,,4\nQA-03,Handwash,Personal Care,Bottle,INVALID,12,2\n",
     );
@@ -294,7 +368,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       page.getByText("Validation Error", { exact: true }),
     ).toBeVisible();
     await page
-      .getByRole("button", { name: "Create client", exact: true })
+      .getByRole("button", { name: "Save changes", exact: true })
       .click();
     await expect(
       page.getByText(
@@ -431,6 +505,32 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       .collection("packagingImports")
       .findOne({ _id: new ObjectId(importRecord.id) });
     expect(persistedDraft?.status).toBe("draft");
+    await expect
+      .poll(
+        async () =>
+          (await db.collection("clients").findOne({ company }))
+            ?.packagingDraftId,
+      )
+      .toBe(importRecord.id);
+    const linkedDraft = await db
+      .collection("packagingImports")
+      .findOne({ _id: new ObjectId(importRecord.id) });
+    expect(linkedDraft?.draftClientId).toBe(organisationOnly?._id.toString());
+    expect(linkedDraft?.expiresAt).toBeUndefined();
+    await page.getByRole("button", { name: "Close form", exact: true }).click();
+    await page.reload();
+    await page
+      .getByRole("row")
+      .filter({ has: page.getByText(company, { exact: true }) })
+      .getByRole("button", { name: "Add packaging", exact: true })
+      .click();
+    await expect(
+      page.getByRole("button", {
+        name: "Edit packaging for Mineral Water 500ml",
+        exact: true,
+      }),
+    ).toBeVisible();
+
     expect(persistedDraft?.settings.updateExisting).toBe(false);
     expect(persistedDraft?.settings.plant).toBe("All Plants");
     expect(persistedDraft?.mapping.sku).toBe("SKU");
@@ -455,7 +555,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Create client", exact: true }),
+      page.getByRole("button", { name: "Save changes", exact: true }),
     ).toHaveCount(0);
     await page.getByLabel("Brand", { exact: true }).fill("Aqua QA");
     await page.getByLabel("Product volume", { exact: true }).fill("500 ml");
@@ -724,10 +824,10 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
         r.url().endsWith("/api/clients") && r.request().method() === "POST",
     );
     await page
-      .getByRole("button", { name: "Create client", exact: true })
+      .getByRole("button", { name: "Save changes", exact: true })
       .click();
     const createdResponse = await savedClient;
-    expect(createdResponse.status(), await createdResponse.text()).toBe(201);
+    expect(createdResponse.status(), await createdResponse.text()).toBe(200);
     await expect(page.getByText(company, { exact: true })).toBeVisible();
     expect(await db.collection("clients").countDocuments({ company })).toBe(1);
     await page
@@ -747,10 +847,12 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       .press("Enter");
     await expect(page.getByText(company, { exact: true })).toBeVisible();
     await expect(
-      page.getByText("Client created successfully", { exact: true }),
+      page.getByText("Client updated successfully", { exact: true }),
     ).toBeVisible();
     const storedClient = await db.collection("clients").findOne({ company });
     expect(storedClient?.packagingImportId).toBe(importRecord.id);
+    expect(storedClient?._id.toString()).toBe(organisationOnly?._id.toString());
+    expect(storedClient?.packagingDraftId).toBeUndefined();
     const confirmedImport = await db
       .collection("packagingImports")
       .findOne({ _id: new ObjectId(importRecord.id) });
@@ -1231,7 +1333,9 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await db
       .collection("verification")
       .deleteMany({ identifier: `sign-in-otp-${email}` });
-    await db.collection("clients").deleteMany({ company });
+    await db
+      .collection("clients")
+      .deleteMany({ company: { $in: [company, `${company} second`] } });
     await db
       .collection("user")
       .deleteMany({ _id: { $in: [id, ...(child ? [child._id] : [])] } });

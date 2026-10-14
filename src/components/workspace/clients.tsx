@@ -52,6 +52,7 @@ type Client = {
   industry: string;
   materials: string[];
   documents?: { name: string; size: number }[];
+  packagingDraftId?: string;
   packagingImport?: {
     id: string;
     fileName: string;
@@ -110,6 +111,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
     [fieldErrors, setFieldErrors] = useState<Record<string, string>>({}),
     [dragging, setDragging] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const linkingDraft = useRef("");
   async function load() {
     try {
       const r = await fetch("/api/clients");
@@ -175,10 +177,11 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
     toast.success(
       editingClient
         ? "Document added. It will be uploaded when you save changes."
-        : "Document added. It will be uploaded when you create the client.",
+        : "Document added. It will be uploaded when you continue.",
     );
   }
-  function next() {
+  async function next() {
+    if (busy) return;
     setError("");
     if (step === 0) {
       const result = companySchema.safeParse(form);
@@ -198,15 +201,13 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
         );
         return;
       }
+      if (!(await saveOrganisation())) return;
     }
     if (step === 1) {
-      if (!packagingImport) {
-        toast.error(
-          "Upload and process your packaging file before continuing.",
-        );
-        return;
-      }
-      if (packagingImport.analysis.summary.errors && !editingClient) {
+      if (
+        packagingImport?.analysis.summary.errors &&
+        !editingClient?.packagingImport
+      ) {
         toast.error(
           "Resolve validation errors before continuing. Missing details can be completed later.",
         );
@@ -226,6 +227,95 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       }),
     );
   }
+  async function rememberPackaging(updated: ImportResult | null) {
+    setPackagingImport(updated);
+    if (
+      !updated ||
+      !editingClient ||
+      editingClient.packagingImport ||
+      linkingDraft.current === updated.id
+    )
+      return;
+    linkingDraft.current = updated.id;
+    setBusy(true);
+    try {
+      const response = await fetch(
+        `/api/clients/${editingClient._id}/packaging-draft`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ importId: updated.id }),
+        },
+      );
+      const saved = await response.json();
+      if (!response.ok)
+        throw new Error(saved.error || "Could not link this packaging draft.");
+      setEditingClient((current) =>
+        current ? { ...current, packagingDraftId: updated.id } : current,
+      );
+    } catch (failure) {
+      linkingDraft.current = "";
+      toast.error((failure as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function saveOrganisation() {
+    setBusy(true);
+    try {
+      const body = new FormData();
+      body.append("data", JSON.stringify(form));
+      files.forEach((file) => body.append("documents", file));
+      const response = await fetch(
+        editingClient ? `/api/clients/${editingClient._id}` : "/api/clients",
+        {
+          method: editingClient ? "PATCH" : "POST",
+          body,
+        },
+      );
+      const saved = await response.json();
+      if (!response.ok) {
+        if (saved.fields)
+          setFieldErrors(
+            Object.fromEntries(
+              Object.entries(saved.fields).map(([key, values]) => [
+                key,
+                (values as string[])[0],
+              ]),
+            ),
+          );
+        throw new Error(saved.error || "Could not save organisation details.");
+      }
+      setEditingClient({
+        ...editingClient,
+        ...form,
+        _id: saved.id,
+        company: form.legalName,
+        contact: form.authorisedPerson,
+        documents: [
+          ...(editingClient?.documents || []),
+          ...files.map((file) => ({ name: file.name, size: file.size })),
+        ],
+      });
+      setFiles([]);
+      const reply = await fetch(`/api/clients/${saved.id}`);
+      if (!reply.ok)
+        throw new Error(
+          "Organisation saved. Reopen the client list to continue.",
+        );
+      setEditingClient(await reply.json());
+      setFiles([]);
+      await load();
+      toast.success("Organisation saved. You can add packaging now or later.");
+      return true;
+    } catch (failure) {
+      setError((failure as Error).message);
+      toast.error((failure as Error).message);
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
   async function save() {
     if (busy) return;
     setBusy(true);
@@ -243,12 +333,17 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
           ...form,
           materials: packagingImport?.analysis.materialFamilies || [],
           packagingImportId: packagingImport?.id,
+          clientId: editingClient?._id,
         }),
       );
       files.forEach((f) => data.append("documents", f));
+      const attachPackaging = Boolean(
+        packagingImport && !editingClient?.packagingImport,
+      );
+      const updateProfile = editingClient && !attachPackaging;
       const r = await fetch(
-        editingClient ? `/api/clients/${editingClient._id}` : "/api/clients",
-        { method: editingClient ? "PATCH" : "POST", body: data },
+        updateProfile ? `/api/clients/${editingClient._id}` : "/api/clients",
+        { method: updateProfile ? "PATCH" : "POST", body: data },
       );
       const result = await r.json();
       if (!r.ok) {
@@ -298,10 +393,10 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       const profile = await response.json();
       if (!response.ok) throw new Error(profile.error);
       let imported: ImportResult | null = null;
-      if (profile.packagingImport?.id) {
-        const reply = await fetch(
-          `/api/packaging-imports/${profile.packagingImport.id}`,
-        );
+      const savedImportId =
+        profile.packagingImport?.id || profile.packagingDraftId;
+      if (savedImportId) {
+        const reply = await fetch(`/api/packaging-imports/${savedImportId}`);
         const data = await reply.json();
         if (!reply.ok) throw new Error(data.error);
         imported = data;
@@ -321,7 +416,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       setFiles([]);
       setFieldErrors({});
       setError("");
-      setStep(imported ? 1 : 0);
+      setStep(1);
       setShow(true);
       requestAnimationFrame(() =>
         window.scrollTo({ top: 0, behavior: "smooth" }),
@@ -480,8 +575,9 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                 {editingClient ? "Edit client profile" : "New client profile"}
               </h3>
               <p>
-                Add organisation details and supporting documents to get
-                started.
+                {step === 1 && !editingClient?.packagingImport
+                  ? "Organisation saved. Add packaging now or return from your client list later."
+                  : "Add organisation details and supporting documents to get started."}
               </p>
             </div>
             <button
@@ -781,7 +877,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
               ) : (
                 <PackagingImport
                   result={packagingImport}
-                  onChange={setPackagingImport}
+                  onChange={(updated) => void rememberPackaging(updated)}
                   onBusy={setImportBusy}
                   sourceFile={packagingFile}
                   onFileChange={setPackagingFile}
@@ -947,7 +1043,11 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                         )}
                       </td>
                       <td>
-                        <span className="status-badge">Onboarding</span>
+                        <span className="status-badge">
+                          {c.packagingImport
+                            ? "Onboarding"
+                            : "Packaging pending"}
+                        </span>
                       </td>
                       {canEdit && (
                         <td>
@@ -973,6 +1073,16 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                               }}
                             >
                               Manage packaging <ArrowRight size={14} />
+                            </button>
+                          )}
+                          {!c.packagingImport && (
+                            <button
+                              type="button"
+                              className="import-manage-button"
+                              disabled={busy}
+                              onClick={() => void editClient(c)}
+                            >
+                              Add packaging <ArrowRight size={14} />
                             </button>
                           )}
                         </td>

@@ -55,10 +55,12 @@ export const companySchema = z.object({
 export const clientSchema = companySchema.extend({
   packagingImportId: z
     .string()
-    .regex(
-      /^[a-f0-9]{24}$/i,
-      "Process a packaging file before creating the client.",
-    ),
+    .regex(/^[a-f0-9]{24}$/i, "Choose a valid packaging import.")
+    .optional(),
+  clientId: z
+    .string()
+    .regex(/^[a-f0-9]{24}$/i)
+    .optional(),
   industry: z.string().trim().min(2).max(80),
   materials: z.array(z.enum(packagingMaterials)).default([]),
   notes: z.string().trim().max(2000),

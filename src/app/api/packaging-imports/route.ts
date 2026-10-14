@@ -17,6 +17,7 @@ export async function GET() {
       .find({
         createdBy: user.id,
         status: "draft",
+        draftClientId: { $exists: false },
         expiresAt: { $gt: new Date() },
       })
       .project({
@@ -119,6 +120,10 @@ export async function POST(req: Request) {
         { $set: value },
       );
       if (!update.matchedCount) throw new Error("FORBIDDEN");
+      await collection.updateOne(
+        { _id: id, draftClientId: { $exists: true } },
+        { $unset: { expiresAt: "" } },
+      );
     } else {
       id = new ObjectId();
       await collection.insertOne({ _id: id, ...value, createdAt: now });

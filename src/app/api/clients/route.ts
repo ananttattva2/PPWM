@@ -53,9 +53,28 @@ export async function POST(req: Request) {
         { error: "Client information is missing." },
         { status: 400 },
       );
-    const data = clientSchema.parse(JSON.parse(raw));
+    const { clientId: targetId, ...data } = clientSchema.parse(JSON.parse(raw));
+    const database = db();
+    const existing = targetId
+      ? await database
+          .collection("clients")
+          .findOne({ _id: new ObjectId(targetId) })
+      : null;
+    if (targetId && !existing)
+      return Response.json({ error: "Client not found" }, { status: 404 });
+    if (existing?.packagingImport)
+      return Response.json(
+        {
+          error:
+            "This client already has packaging. Reopen it to manage the saved import.",
+        },
+        { status: 409 },
+      );
     const files = multipart.getAll("documents");
-    if (!files.length || files.length > MAX_DOCUMENTS)
+    if (
+      (!files.length && !existing?.documents?.length) ||
+      files.length + (existing?.documents?.length || 0) > MAX_DOCUMENTS
+    )
       return Response.json(
         { error: "Upload between 1 and 5 supporting documents." },
         { status: 400 },
@@ -96,19 +115,44 @@ export async function POST(req: Request) {
         uploadedBy: user.id,
       });
     }
-    const clientId = new ObjectId();
-    const importId = new ObjectId(data.packagingImportId);
-    const database = db();
-    await database
-      .collection("packagingSkus")
-      .createIndex(
-        { clientId: 1, sku: 1 },
+    const clientId = existing?._id || new ObjectId();
+    const profile = {
+      ...data,
+      company: data.legalName,
+      contact: data.authorisedPerson,
+      documents: [...(existing?.documents || []), ...documents],
+      schemaVersion: 3,
+      updatedAt: new Date(),
+    };
+    if (!data.packagingImportId) {
+      if (existing)
+        throw new Error(
+          "Use the client edit action to update organisation details.",
+        );
+      await database.collection("clients").insertOne({
+        _id: clientId,
+        ...profile,
+        status: "packaging_pending",
+        createdBy: user.id,
+        createdAt: new Date(),
+      });
+      return Response.json(
         {
-          unique: true,
-          name: "client_sku_present_unique",
-          partialFilterExpression: { sku: { $type: "string", $gt: "" } },
+          id: clientId,
+          message: "Organisation saved. Packaging can be added later.",
         },
+        { status: 201 },
       );
+    }
+    const importId = new ObjectId(data.packagingImportId);
+    await database.collection("packagingSkus").createIndex(
+      { clientId: 1, sku: 1 },
+      {
+        unique: true,
+        name: "client_sku_present_unique",
+        partialFilterExpression: { sku: { $type: "string", $gt: "" } },
+      },
+    );
     // Keep real SKUs unique while allowing several incomplete rows without SKUs.
     const skuIndexes = await database
       .collection("packagingSkus")
@@ -133,34 +177,53 @@ export async function POST(req: Request) {
             { _id: importId, createdBy: user.id, status: "draft" },
             { session },
           );
-        if (!imported) throw new Error("FORBIDDEN");
+        if (
+          !imported ||
+          (imported.draftClientId &&
+            imported.draftClientId !== clientId.toString())
+        )
+          throw new Error("FORBIDDEN");
         if (
           !imported.analysis.summary.total ||
           imported.analysis.summary.errors
         )
           throw new Error("Import contains unresolved issues");
-        await database.collection("clients").insertOne(
-          {
-            _id: clientId,
-            ...data,
-            materials: imported.analysis.materialFamilies,
-            company: data.legalName,
-            contact: data.authorisedPerson,
-            documents,
-            packagingImport: {
-              id: importId,
-              fileName: imported.file.name,
-              settings: imported.settings,
-              summary: imported.analysis.summary,
-            },
-            schemaVersion: 3,
-            status: "onboarding",
-            createdBy: user.id,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+        const linkedProfile = {
+          ...profile,
+          materials: imported.analysis.materialFamilies,
+          packagingImport: {
+            id: importId,
+            fileName: imported.file.name,
+            settings: imported.settings,
+            summary: imported.analysis.summary,
           },
-          { session },
-        );
+          status: "onboarding",
+        };
+        if (existing) {
+          const updated = await database.collection("clients").updateOne(
+            {
+              _id: clientId,
+              updatedAt: existing.updatedAt,
+              packagingImport: { $exists: false },
+            },
+            { $set: linkedProfile, $unset: { packagingDraftId: "" } },
+            { session },
+          );
+          if (!updated.matchedCount)
+            throw new Error(
+              "Client changed while saving. Reopen it and try again.",
+            );
+        } else {
+          await database.collection("clients").insertOne(
+            {
+              _id: clientId,
+              ...linkedProfile,
+              createdBy: user.id,
+              createdAt: new Date(),
+            },
+            { session },
+          );
+        }
         const skuRecords = imported.analysis.rows.map(
           (row: Record<string, unknown>) => ({
             ...row,
@@ -216,7 +279,7 @@ export async function POST(req: Request) {
     );
     return Response.json(
       { id: clientId, message: "Client created successfully." },
-      { status: 201 },
+      { status: existing ? 200 : 201 },
     );
   } catch (e) {
     if (e instanceof ZodError)
