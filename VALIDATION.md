@@ -6,6 +6,8 @@ Packaging onboarding now has two steps: Organisation and Packaging. The Review p
 
 The table edit icon opens Packaging Composition Builder. Browser checks cover component creation, live weight matching, product/component PNG uploads, exact image retrieval, anonymous access rejection, saved composition reopening, and confirmed-client edits updating packaging SKU records. Import changes and SKU/client summaries are saved in a MongoDB transaction. Draft assets expire with their import; confirmed assets are retained. Desktop, mobile and dark-mode captures are in `artifacts/packaging-composition-*.png`.
 
+The Product volume field preserves existing saved net-content values. Each SKU has separate View and Edit icons. View mode shows saved volume, brand, component details and photos without editable controls, and supports opening Edit details. The authenticated browser test checks this immediately after saving and after fetching a confirmed client. View screenshots are in `artifacts/packaging-view-*.png`.
+
 Seven import/composition tests pass, covering CSV/XLSX parsing, all 12 fields, prefixed XLSX exports, explicit mapping, category overrides, missing values, invalid materials/numbers, duplicate SKUs, archive size limits, and incomplete composition schemas. TypeScript checks and the expanded authenticated end-to-end test pass.
 
 The redesigned OTP email has desktop/mobile browser previews in `artifacts/otp-email-*.png`. Template tests cover purposes, escaping, invalid code rejection, safe workspace links, and embedded logo data. A mocked transport test checks Microsoft Graph HTML and inline-attachment payloads without sending email. Real Outlook inbox rendering of this redesign has not been independently verified.

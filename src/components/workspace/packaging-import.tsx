@@ -23,10 +23,12 @@ import {
   Search,
   SlidersHorizontal,
   Pencil,
+  Eye,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Select } from "../ui/floating-fields";
 import PackagingComposition from "./packaging-composition";
+import PackagingView from "./packaging-view";
 import {
   importCategories,
   importFields,
@@ -79,6 +81,7 @@ export default function PackagingImport({
   const [statusFilter, setStatusFilter] = useState("all");
   const [details, setDetails] = useState(false);
   const [editingRow, setEditingRow] = useState<number | null>(null);
+  const [viewingRow, setViewingRow] = useState<number | null>(null);
   const input = useRef<HTMLInputElement>(null),
     id = useRef(result?.id || ""),
     savedFile = useRef<File | null>(null);
@@ -199,6 +202,25 @@ export default function PackagingImport({
   const selectedRow = result?.analysis.rows.find(
     (row) => row.rowNumber === editingRow,
   );
+  const viewedRow = result?.analysis.rows.find(
+    (row) => row.rowNumber === viewingRow,
+  );
+  if (result && viewedRow)
+    return (
+      <PackagingView
+        key={`${result.id}-${viewedRow.rowNumber}`}
+        row={viewedRow}
+        importId={result.id}
+        onBack={() => {
+          setViewingRow(null);
+          onEditorChange?.(false);
+        }}
+        onEdit={() => {
+          setEditingRow(viewedRow.rowNumber);
+          setViewingRow(null);
+        }}
+      />
+    );
   if (result && selectedRow)
     return (
       <PackagingComposition
@@ -756,7 +778,7 @@ export default function PackagingImport({
                             </>
                           )}
                           <th className="import-status-cell">Data Status</th>
-                          <th className="import-edit-cell">Edit</th>
+                          <th className="import-edit-cell">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -801,19 +823,34 @@ export default function PackagingImport({
                               </span>
                             </td>
                             <td className="import-edit-cell">
-                              <button
-                                type="button"
-                                className="import-edit-button"
-                                aria-label={`Edit packaging for ${row.productName || row.sku}`}
-                                title="Edit packaging composition"
-                                disabled={busy || dirty}
-                                onClick={() => {
-                                  setEditingRow(row.rowNumber);
-                                  onEditorChange?.(true);
-                                }}
-                              >
-                                <Pencil size={16} />
-                              </button>
+                              <div className="import-row-actions">
+                                <button
+                                  type="button"
+                                  className="import-edit-button import-view-button"
+                                  aria-label={`View packaging for ${row.productName || row.sku}`}
+                                  title="View saved packaging details"
+                                  disabled={busy || dirty}
+                                  onClick={() => {
+                                    setViewingRow(row.rowNumber);
+                                    onEditorChange?.(true);
+                                  }}
+                                >
+                                  <Eye size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="import-edit-button"
+                                  aria-label={`Edit packaging for ${row.productName || row.sku}`}
+                                  title="Edit packaging composition"
+                                  disabled={busy || dirty}
+                                  onClick={() => {
+                                    setEditingRow(row.rowNumber);
+                                    onEditorChange?.(true);
+                                  }}
+                                >
+                                  <Pencil size={16} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}

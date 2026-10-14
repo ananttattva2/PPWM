@@ -441,7 +441,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       page.getByRole("button", { name: "Create client", exact: true }),
     ).toHaveCount(0);
     await page.getByLabel("Brand", { exact: true }).fill("Aqua QA");
-    await page.getByLabel("Net content", { exact: true }).fill("500 ml");
+    await page.getByLabel("Product volume", { exact: true }).fill("500 ml");
     await page.getByLabel("Components", { exact: true }).fill("2");
     await page.getByLabel("Component 1 name", { exact: true }).fill("Bottle");
     await page.getByLabel("Component 1 weight", { exact: true }).fill("21");
@@ -510,6 +510,42 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await expect(
       page.getByRole("heading", { name: "Packaging Data Import", exact: true }),
     ).toBeVisible();
+    await page
+      .getByRole("button", {
+        name: "View packaging for Mineral Water 500ml",
+        exact: true,
+      })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Packaging details", exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("500 ml", { exact: true })).toBeVisible();
+    await expect(page.getByText("Aqua QA", { exact: true })).toBeVisible();
+    await expect(page.locator(".composition-view input")).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Save & continue", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: "Open product photo", exact: true }),
+    ).toBeVisible();
+    await page.screenshot({
+      path: "artifacts/packaging-view-desktop.png",
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: "artifacts/packaging-view-mobile.png",
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page
+      .getByRole("button", { name: "Back to list", exact: true })
+      .click();
     const edited = await db
       .collection("packagingImports")
       .findOne({ _id: new ObjectId(importRecord.id) });
@@ -581,9 +617,14 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       .click();
     await page
       .getByRole("button", {
-        name: "Edit packaging for Mineral Water 500ml",
+        name: "View packaging for Mineral Water 500ml",
         exact: true,
       })
+      .click();
+    await expect(page.getByText("500 ml", { exact: true })).toBeVisible();
+    await page
+      .getByRole("button", { name: "Edit details", exact: true })
+      .first()
       .click();
     await expect(page.getByLabel("Brand", { exact: true })).toHaveValue(
       "Aqua QA",

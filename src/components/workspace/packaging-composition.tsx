@@ -376,9 +376,9 @@ export default function PackagingComposition({
               />
             </label>
             <label className="composition-field">
-              Net content
+              Product volume
               <input
-                aria-label="Net content"
+                aria-label="Product volume"
                 disabled={busy}
                 maxLength={200}
                 placeholder="e.g. 500 ml"
