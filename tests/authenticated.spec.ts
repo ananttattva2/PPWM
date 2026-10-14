@@ -521,13 +521,79 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     ).toBeVisible();
     await expect(page.getByText("500 ml", { exact: true })).toBeVisible();
     await expect(page.getByText("Aqua QA", { exact: true })).toBeVisible();
-    await expect(page.locator(".composition-view input")).toHaveCount(0);
+    await expect(
+      page.locator('.composition-view input:not([type="file"])'),
+    ).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "Save & continue", exact: true }),
     ).toHaveCount(0);
     await expect(
-      page.getByRole("link", { name: "Open product photo", exact: true }),
+      page.getByRole("button", { name: "Expand product photo", exact: true }),
     ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Next product photo", exact: true })
+      .click();
+    await expect(
+      page.getByRole("button", { name: "Show product photo 2", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await page
+      .getByRole("button", { name: "Previous product photo", exact: true })
+      .click();
+    await expect(
+      page.getByRole("button", { name: "Show product photo 1", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await page
+      .getByRole("button", { name: "Expand product photo", exact: true })
+      .click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    const galleryUpload = page.waitForResponse(
+      (response) =>
+        response
+          .url()
+          .endsWith(`/api/packaging-imports/${importRecord.id}/photos`) &&
+        response.request().method() === "POST",
+    );
+    await page
+      .getByLabel("Upload additional product photos", { exact: true })
+      .setInputFiles({ name: "back.png", mimeType: "image/png", buffer: png });
+    expect((await galleryUpload).status()).toBe(200);
+    await expect(
+      page.getByRole("button", { name: "Show product photo 3", exact: true }),
+    ).toBeVisible();
+    const analysisOpened = page.context().waitForEvent("page");
+    await page
+      .getByRole("link", {
+        name: "Analyse packaging (opens in a new tab)",
+        exact: true,
+      })
+      .click();
+    const analysisPage = await analysisOpened;
+    await expect(
+      analysisPage.getByRole("heading", {
+        name: "Packaging analysis",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      analysisPage.getByText("Component weights match", { exact: true }),
+    ).toBeVisible();
+    await analysisPage.screenshot({
+      path: "artifacts/packaging-analysis-desktop.png",
+      fullPage: true,
+    });
+    await analysisPage.setViewportSize({ width: 390, height: 844 });
+    expect(
+      await analysisPage.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await analysisPage.screenshot({
+      path: "artifacts/packaging-analysis-mobile.png",
+      fullPage: true,
+    });
+    await analysisPage.close();
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
     await page.screenshot({
       path: "artifacts/packaging-view-desktop.png",
       fullPage: true,
@@ -556,7 +622,8 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       await db
         .collection("packagingAssets")
         .countDocuments({ importId: importRecord.id }),
-    ).toBe(2);
+    ).toBe(3);
+    expect(edited?.analysis.rows[0].composition.productImages).toHaveLength(1);
     const imageUrl = `/api/packaging-imports/${importRecord.id}/assets/${edited?.analysis.rows[0].composition.productImage}`;
     const imageResponse = await page.request.get(imageUrl);
     expect(imageResponse.status()).toBe(200);
@@ -621,6 +688,9 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
         exact: true,
       })
       .click();
+    await expect(
+      page.getByRole("button", { name: "Show product photo 3", exact: true }),
+    ).toBeVisible();
     await expect(page.getByText("500 ml", { exact: true })).toBeVisible();
     await page
       .getByRole("button", { name: "Edit details", exact: true })
@@ -645,6 +715,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       .findOne({ importId: importRecord.id, sku: "QA-01" });
     expect(savedSku?.composition.brand).toBe("Updated Aqua QA");
     expect(savedSku?.composition.components).toHaveLength(2);
+    expect(savedSku?.composition.productImages).toHaveLength(1);
     expect(
       await db.collection("packagingAssets").countDocuments({
         importId: importRecord.id,

@@ -39,6 +39,10 @@ export const compositionSchema = z.object({
     .string()
     .regex(/^[a-f0-9]{24}$/)
     .or(z.literal("")),
+  productImages: z
+    .array(z.string().regex(/^[a-f0-9]{24}$/))
+    .max(12)
+    .default([]),
   brand: text,
   netContent: text,
 });
@@ -61,10 +65,16 @@ export function rowFields(row: PackagingRow): Record<ImportField, string> {
 }
 export function initialComposition(row: PackagingRow): PackagingComposition {
   return (
-    row.composition || {
+    (row.composition
+      ? {
+          ...row.composition,
+          productImages: row.composition.productImages || [],
+        }
+      : null) || {
       brand: "",
       netContent: "",
       productImage: "",
+      productImages: [],
       components: [
         {
           id: "main",

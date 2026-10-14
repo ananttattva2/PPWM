@@ -1,7 +1,17 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import PackagingGallery from "./packaging-gallery";
+import type { PackagingComposition } from "@/lib/packaging-composition";
 import { motion, useReducedMotion } from "motion/react";
-import { ArrowLeft, Eye, Package, Pencil, CheckCircle2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Eye,
+  Package,
+  Pencil,
+  CheckCircle2,
+  ChartNoAxesCombined,
+} from "lucide-react";
 import { Button } from "../ui/button";
 import { importFields, type PackagingRow } from "@/lib/packaging-import-schema";
 
@@ -10,14 +20,19 @@ export default function PackagingView({
   importId,
   onBack,
   onEdit,
+  onPhotosSaved,
+  onBusy,
 }: {
   row: PackagingRow;
   importId: string;
   onBack: () => void;
   onEdit: () => void;
+  onPhotosSaved: (composition: PackagingComposition) => void;
+  onBusy: (busy: boolean) => void;
 }) {
   const top = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
+  const [uploading, setUploading] = useState(false);
   useEffect(() => {
     top.current?.focus();
     top.current?.scrollIntoView({ behavior: "instant", block: "start" });
@@ -50,10 +65,24 @@ export default function PackagingView({
           </p>
         </div>
         <div className="composition-heading-actions">
-          <Button type="button" variant="outline" onClick={onBack}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onBack}
+            disabled={uploading}
+          >
             <ArrowLeft size={16} /> Back to list
           </Button>
-          <Button type="button" onClick={onEdit}>
+          <Link
+            className="gallery-analyse-link"
+            href={`/dashboard/packaging/${importId}/${row.rowNumber}/analyse`}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Analyse packaging (opens in a new tab)"
+          >
+            <ChartNoAxesCombined size={16} /> Analyse
+          </Link>
+          <Button type="button" onClick={onEdit} disabled={uploading}>
             <Pencil size={16} /> Edit details
           </Button>
         </div>
@@ -107,28 +136,15 @@ export default function PackagingView({
               ))}
             </dl>
           </section>
-          <section className="composition-card">
-            <h3>Product photo</h3>
-            {composition?.productImage ? (
-              <a
-                className="composition-view-photo"
-                href={image(composition.productImage)}
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Open product photo"
-              >
-                <img
-                  src={image(composition.productImage)}
-                  alt={row.productName || "Product"}
-                />
-              </a>
-            ) : (
-              <div className="composition-view-placeholder">
-                <Package size={35} />
-                <p>No product photo uploaded</p>
-              </div>
-            )}
-          </section>
+          <PackagingGallery
+            row={row}
+            importId={importId}
+            onSaved={onPhotosSaved}
+            onBusy={(busy) => {
+              setUploading(busy);
+              onBusy(busy);
+            }}
+          />
         </aside>
         <section
           className="composition-middle"
@@ -248,7 +264,7 @@ export default function PackagingView({
           <CheckCircle2 size={16} />
           Viewing saved details. Changes are made in edit mode.
         </span>
-        <Button type="button" onClick={onEdit}>
+        <Button type="button" onClick={onEdit} disabled={uploading}>
           <Pencil size={16} /> Edit details
         </Button>
       </footer>

@@ -211,6 +211,22 @@ export default function PackagingImport({
         key={`${result.id}-${viewedRow.rowNumber}`}
         row={viewedRow}
         importId={result.id}
+        onBusy={onBusy}
+        onPhotosSaved={(composition) => {
+          const updated = {
+            ...result,
+            analysis: {
+              ...result.analysis,
+              rows: result.analysis.rows.map((row) =>
+                row.rowNumber === viewedRow.rowNumber
+                  ? { ...row, composition }
+                  : row,
+              ),
+            },
+          };
+          setResult(updated);
+          onChange(updated);
+        }}
         onBack={() => {
           setViewingRow(null);
           onEditorChange?.(false);

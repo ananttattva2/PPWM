@@ -99,16 +99,26 @@ export async function PATCH(
         const previous = record.analysis.rows[index].composition as
           PackagingComposition | undefined;
         if (previous?.productImage) permittedImages.add(previous.productImage);
+        previous?.productImages?.forEach((image) => permittedImages.add(image));
         previous?.components.forEach((component) => {
           if (component.image) permittedImages.add(component.image);
         });
         for (const image of [
           composition.productImage,
+          ...composition.productImages,
           ...composition.components.map((component) => component.image),
         ]) {
           if (image && !permittedImages.has(image))
             throw new Error("Invalid image reference");
         }
+        // The component editor does not remove gallery photos, including photos
+        // uploaded after an older editor tab was opened.
+        composition.productImages = [
+          ...new Set([
+            ...(previous?.productImages || []),
+            ...composition.productImages,
+          ]),
+        ];
         const uploads = [...body.entries()].filter(
           ([key, value]) => key.startsWith("image:") && value instanceof File,
         );
@@ -159,6 +169,7 @@ export async function PATCH(
         }
         const retainedImages = [
           composition.productImage,
+          ...composition.productImages,
           ...composition.components.map((component) => component.image),
         ]
           .filter(Boolean)
@@ -210,22 +221,20 @@ export async function PATCH(
         });
         analysis.rows[index].composition = composition;
         const now = new Date();
-        await database
-          .collection("packagingImports")
-          .updateOne(
-            { _id: record._id },
-            {
-              $set: {
-                analysis,
-                rawRows,
-                mapping,
-                headers,
-                settings,
-                updatedAt: now,
-              },
+        await database.collection("packagingImports").updateOne(
+          { _id: record._id },
+          {
+            $set: {
+              analysis,
+              rawRows,
+              mapping,
+              headers,
+              settings,
+              updatedAt: now,
             },
-            { session },
-          );
+          },
+          { session },
+        );
         if (record.clientId) {
           // Revalidation may change duplicate-SKU issues on more than the edited row.
           await database.collection("packagingSkus").bulkWrite(

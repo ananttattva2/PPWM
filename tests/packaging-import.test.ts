@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import ExcelJS from "exceljs";
+import { packagingAnalysis } from "../src/lib/packaging-analysis";
 import {
   parsePackagingFile,
   analysePackaging,
@@ -19,6 +20,45 @@ const settings: ImportSettings = {
 };
 const csv =
   "SKU,Product Name,Category,Packaging Type,Material,Total Weight (g),Components\nS1,Water,Beverages,Bottle,PET,23.5,3\nS2,Snacks,Snacks,Pouch,PP,,2\nS3,Soap,Personal Care,Bottle,UNKNOWN,-1,2\n";
+test("saved packaging analysis reconciles weights without treating incomplete parts as a match", async () => {
+  const parsed = await parsePackagingFile(
+    Buffer.from(csv),
+    "data.csv",
+    settings,
+  );
+  const row = analysePackaging(parsed.rawRows, parsed.suggested, settings)
+    .rows[0];
+  const composition = initialComposition(row);
+  const base = composition.components[0];
+  row.components = 2;
+  row.composition = {
+    ...composition,
+    components: [
+      { ...base, id: "bottle", material: "PET", weight: "21" },
+      { ...base, id: "cap", material: "PP", weight: "2.5" },
+    ],
+  };
+  const analysis = packagingAnalysis(row);
+  assert.equal(analysis.total, 23.5);
+  assert.equal(analysis.matches, true);
+  assert.equal(analysis.countMatches, true);
+  assert.equal(analysis.materials.length, 2);
+  assert.ok(
+    Math.abs(
+      analysis.materials.reduce(
+        (sum, material) => sum + material.percentage,
+        0,
+      ) - 100,
+    ) < 0.0001,
+  );
+  row.composition.components[1].weight = "";
+  assert.equal(packagingAnalysis(row).matches, false);
+  assert.equal(packagingAnalysis(row).weightsComplete, false);
+  assert.equal(
+    packagingAnalysis({ ...row, composition: undefined }).matches,
+    false,
+  );
+});
 test("composition drafts preserve source values without inventing component weights", async () => {
   const parsed = await parsePackagingFile(
     Buffer.from(csv),
