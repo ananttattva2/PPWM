@@ -1,3 +1,4 @@
+import { classificationSchema } from "../src/lib/packaging-classification";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import ExcelJS from "exceljs";
@@ -107,7 +108,7 @@ test("CSV parsing detects real completeness, missing data and validation errors"
   assert.equal(result.missingFields[0].field, "Total weight (g)");
   assert.ok(
     result.validationErrors.some(
-      (e) => e.message === "Unrecognised material type",
+      (e) => e.message === "Unrecognised polymer type",
     ),
   );
   assert.equal(result.rows[0].weight, 23.5);
@@ -253,4 +254,43 @@ test("prefixed XLSX exports map all 12 headers and flag blank detail cells", asy
   assert.equal(result.summary.complete, 1);
   assert.equal(result.summary.missing, 1);
   assert.equal(result.missingFields.length, 5);
+});
+
+test("Polymer spreadsheet headers map to the existing material data field", async () => {
+  const parsed = await parsePackagingFile(
+    Buffer.from(
+      "SKU,Product Name,Category,Packaging Type,Polymer,Total Weight (g),Components\nP1,Bottle,Food,Bottle,PET,10,1\n",
+    ),
+    "polymer.csv",
+    settings,
+  );
+  assert.equal(parsed.suggested.material, "Polymer");
+  assert.equal(
+    analysePackaging(parsed.rawRows, parsed.suggested, settings).rows[0]
+      .material,
+    "PET",
+  );
+});
+
+test("Component classification accepts matching categories and rejects cross-material selections", () => {
+  const input = {
+    rowNumber: 2,
+    componentId: "main",
+    family: "Plastic",
+    categoryId: "pet-bottles",
+  };
+  assert.equal(classificationSchema.safeParse(input).success, true);
+  assert.equal(
+    classificationSchema.safeParse({ ...input, family: "Glass" }).success,
+    false,
+  );
+  assert.equal(
+    classificationSchema.safeParse({ ...input, family: "Multi-material" })
+      .success,
+    true,
+  );
+  assert.equal(
+    classificationSchema.safeParse({ ...input, categoryId: "unknown" }).success,
+    false,
+  );
 });

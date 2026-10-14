@@ -10,8 +10,10 @@ import {
 } from "@/lib/client-schema";
 import { z } from "zod";
 const profileSchema = companySchema.extend({
-  industry: z.string().trim().min(2).max(80),
-  notes: z.string().trim().max(2000),
+  operatorStatus: companySchema.shape.operatorStatus.optional(),
+  obligationsByRole: companySchema.shape.obligationsByRole.optional(),
+  industry: z.string().trim().max(80).optional(),
+  notes: z.string().trim().max(2000).optional(),
 });
 export const runtime = "nodejs";
 export async function GET(

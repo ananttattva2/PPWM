@@ -115,9 +115,34 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page
       .getByRole("textbox", { name: "GST number", exact: true })
       .fill("27ABCDE1234F1Z5");
+    await expect(
+      page.getByLabel("Registration / user number", { exact: true }),
+    ).toHaveCount(0);
+    await expect(page.getByLabel("Industry", { exact: true })).toHaveCount(0);
+    await expect(page.getByLabel("Notes", { exact: true })).toHaveCount(0);
     await page
-      .getByRole("textbox", { name: "Registration / user number", exact: true })
-      .fill("QA-REG-001");
+      .getByRole("combobox", { name: "Operator Status", exact: true })
+      .click();
+    await page
+      .getByRole("option", { name: "Packaging manufacturer", exact: true })
+      .click();
+    await page
+      .getByRole("option", { name: "Distributor", exact: true })
+      .click();
+    await page.keyboard.press("Escape");
+    await page
+      .getByRole("combobox", { name: "Obligations by Role", exact: true })
+      .click();
+    await page
+      .getByRole("option", {
+        name: "Manufacturer / Legal manufacturer",
+        exact: true,
+      })
+      .click();
+    await page
+      .getByRole("option", { name: "EPR producer", exact: true })
+      .click();
+    await page.keyboard.press("Escape");
     await page
       .getByRole("textbox", { name: "Registered address", exact: true })
       .fill("12 Test Street, Mumbai, Maharashtra 400001");
@@ -187,6 +212,14 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       fullPage: true,
       caret: "initial",
     });
+    const roleLabelWidths = await page
+      .locator(".operator-role-fields .mantine-Pill-label")
+      .evaluateAll((nodes) =>
+        nodes.map((node) => node.getBoundingClientRect().width),
+      );
+    expect(roleLabelWidths).toHaveLength(4);
+    expect(roleLabelWidths.every((width) => width > 40)).toBe(true);
+
     await page
       .getByRole("button", { name: "Collapse sidebar", exact: true })
       .click();
@@ -566,7 +599,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       .getByRole("button", { name: "Add component", exact: true })
       .click();
     await page.getByLabel("Component 2 name", { exact: true }).fill("Cap");
-    await page.getByLabel("Component 2 material", { exact: true }).fill("PP");
+    await page.getByLabel("Component 2 polymer", { exact: true }).fill("PP");
     await page.getByLabel("Component 2 colour", { exact: true }).fill("Blue");
     await page.getByLabel("Component 2 weight", { exact: true }).fill("2.5");
     const png = Buffer.from(
@@ -726,9 +759,9 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     });
     await analysisPage.close();
     await expect(page.locator(".component-analyse-link")).toHaveCount(2);
-    for (const [name, weight] of [
-      ["Bottle", "21.00 g"],
-      ["Cap", "2.50 g"],
+    for (const [name, categoryName] of [
+      ["Bottle", "PET — rigid bottles"],
+      ["Cap", "PP — rigid"],
     ]) {
       const componentOpened = page.context().waitForEvent("page");
       await page
@@ -739,20 +772,77 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
         .click();
       const componentPage = await componentOpened;
       await expect(
-        componentPage.getByRole("heading", {
-          name: "Component analysis",
+        componentPage.getByRole("heading", { name, exact: true }),
+      ).toBeVisible();
+      await expect(
+        componentPage.locator(".material-choice-grid > button"),
+      ).toHaveCount(6);
+      await componentPage.screenshot({
+        path: "artifacts/material-selection.png",
+        fullPage: true,
+        caret: "initial",
+      });
+      await componentPage
+        .getByRole("button", { name: "Plastic", exact: true })
+        .click();
+      const classified = componentPage.waitForResponse(
+        (response) =>
+          response
+            .url()
+            .endsWith(
+              `/api/packaging-imports/${importRecord.id}/classification`,
+            ) && response.request().method() === "PUT",
+      );
+      await componentPage
+        .getByRole("button", { name: categoryName, exact: true })
+        .click();
+      const classificationResponse = await classified;
+      expect(
+        classificationResponse.status(),
+        await classificationResponse.text(),
+      ).toBe(200);
+      await expect(
+        componentPage.getByText("Supplier details coming soon.", {
           exact: true,
         }),
       ).toBeVisible();
+      const classifiedRecord = await db
+        .collection("packagingClassifications")
+        .findOne({
+          importId: importRecord.id,
+          categoryId: name === "Bottle" ? "pet-bottles" : "pp-rigid",
+        });
+      expect(classifiedRecord?.family).toBe("Plastic");
+      const anonymousClassification = await request.put(
+        `/api/packaging-imports/${importRecord.id}/classification`,
+        {
+          headers: { Origin: "http://localhost:3000" },
+          data: {
+            rowNumber: 2,
+            componentId: "main",
+            family: "Plastic",
+            categoryId: "pet-bottles",
+          },
+        },
+      );
+      expect(anonymousClassification.status()).toBe(401);
+      await componentPage.reload();
+      await componentPage
+        .getByRole("button", { name: "Plastic", exact: true })
+        .click();
       await expect(
-        componentPage
-          .locator(".composition-sku-title")
-          .getByText(name, { exact: true }),
-      ).toBeVisible();
-      await expect(
-        componentPage.getByText(weight, { exact: true }),
-      ).toBeVisible();
+        componentPage.getByRole("button", { name: categoryName, exact: true }),
+      ).toHaveAttribute("aria-pressed", "true");
       if (name === "Cap") {
+        await componentPage
+          .getByRole("button", { name: "Change material", exact: true })
+          .click();
+        await componentPage
+          .getByRole("button", { name: "Multi-material", exact: true })
+          .click();
+        await expect(
+          componentPage.locator(".category-choice-grid > button"),
+        ).toHaveCount(22);
         await componentPage.screenshot({
           path: "artifacts/component-analysis-desktop.png",
           fullPage: true,
@@ -826,8 +916,50 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page
       .getByRole("button", { name: "Save changes", exact: true })
       .click();
+    const exemptionDialog = page.getByRole("dialog", {
+      name: "Exemption check",
+    });
+    await expect(exemptionDialog).toBeVisible();
+    await exemptionDialog
+      .getByRole("button", { name: "Yes", exact: true })
+      .click();
+    await expect(exemptionDialog.getByRole("alert")).toHaveText(
+      "You cannot proceed because you have indicated that you fall under an exemption.",
+    );
+    await expect
+      .poll(
+        async () =>
+          (await db.collection("clients").findOne({ company }))
+            ?.exemptionAnswer,
+      )
+      .toBe("yes");
+    expect(
+      (await db.collection("clients").findOne({ company }))?.packagingImport,
+    ).toBeUndefined();
+    await page.screenshot({
+      path: "artifacts/exemption-check.png",
+      fullPage: true,
+      caret: "initial",
+    });
+    const blockedSave = await page.request.post("/api/clients", {
+      headers: { Origin: "http://localhost:3000" },
+      multipart: {
+        data: JSON.stringify({
+          ...organisationOnly,
+          clientId: String(organisationOnly?._id),
+          packagingImportId: importRecord.id,
+        }),
+      },
+    });
+    expect(blockedSave.status()).toBe(403);
+    await exemptionDialog
+      .getByRole("button", { name: "No", exact: true })
+      .click();
     const createdResponse = await savedClient;
     expect(createdResponse.status(), await createdResponse.text()).toBe(200);
+    await page
+      .getByRole("button", { name: "Back to clients", exact: true })
+      .click();
     await expect(page.getByText(company, { exact: true })).toBeVisible();
     expect(await db.collection("clients").countDocuments({ company })).toBe(1);
     await page
@@ -915,16 +1047,14 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page.getByLabel("Product name", { exact: true }).fill("Manual Jar");
     await page.getByLabel("Category", { exact: true }).selectOption("Food");
     await page.getByLabel("Packaging type", { exact: true }).fill("Jar");
-    await page.getByLabel("Material", { exact: true }).fill("Glass");
+    await page.getByLabel("Polymer", { exact: true }).fill("Glass");
     await page.getByLabel("Total weight (g)", { exact: true }).fill("12.5");
     await page.getByLabel("Components", { exact: true }).fill("1");
     await page
       .getByRole("button", { name: "Add component", exact: true })
       .click();
     await page.getByLabel("Component 1 name", { exact: true }).fill("Jar body");
-    await page
-      .getByLabel("Component 1 material", { exact: true })
-      .fill("Glass");
+    await page.getByLabel("Component 1 polymer", { exact: true }).fill("Glass");
     await page.getByLabel("Component 1 weight", { exact: true }).fill("12.5");
     await page
       .getByLabel("Product photo", { exact: true })
@@ -999,9 +1129,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       name: "Client details",
       exact: true,
     });
-    await expect(
-      profileDialog.getByText("QA-REG-001", { exact: true }),
-    ).toBeVisible();
+
     await expect(
       profileDialog.getByText("12 Test Street, Mumbai, Maharashtra 400001", {
         exact: true,
@@ -1056,12 +1184,6 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       .getByRole("textbox", { name: "Telephone", exact: true })
       .fill("+91 99888 77766");
     await page
-      .getByRole("textbox", { name: "Notes", exact: true })
-      .fill("Saved profile updated without re-uploading Excel.");
-    await page
-      .getByRole("textbox", { name: "Industry", exact: true })
-      .fill("Packaging manufacturing");
-    await page
       .getByLabel("Supporting documents", { exact: true })
       .setInputFiles({
         name: "additional.pdf",
@@ -1083,19 +1205,32 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page
       .getByRole("button", { name: "Save changes", exact: true })
       .click();
+    await page
+      .getByRole("dialog", { name: "Exemption check" })
+      .getByRole("button", { name: "No", exact: true })
+      .click();
     const savedProfileResponse = await savedProfile;
     expect(
       savedProfileResponse.status(),
       await savedProfileResponse.text(),
     ).toBe(200);
+    await page
+      .getByRole("button", { name: "Back to clients", exact: true })
+      .click();
     const refreshedProfile = await db
       .collection("clients")
       .findOne({ _id: storedClient?._id });
     expect(refreshedProfile?.telephone).toBe("+91 99888 77766");
-    expect(refreshedProfile?.notes).toBe(
-      "Saved profile updated without re-uploading Excel.",
-    );
-    expect(refreshedProfile?.industry).toBe("Packaging manufacturing");
+    expect(refreshedProfile?.notes).toBe("");
+    expect(refreshedProfile?.industry).toBe("");
+    expect(refreshedProfile?.operatorStatus).toEqual([
+      "Packaging manufacturer",
+      "Distributor",
+    ]);
+    expect(refreshedProfile?.obligationsByRole).toEqual([
+      "Manufacturer / Legal manufacturer",
+      "EPR producer",
+    ]);
     expect(refreshedProfile?.documents).toHaveLength(2);
     expect(
       Buffer.from(refreshedProfile?.documents[0].data.buffer).equals(fileBytes),
@@ -1121,7 +1256,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     expect(storedClient?.legalName).toBe(company);
     expect(storedClient?.tradeName).toBe("QA Packaging");
     expect(storedClient?.gstNumber).toBe("27ABCDE1234F1Z5");
-    expect(storedClient?.registrationNumber).toBe("QA-REG-001");
+    expect(storedClient?.registrationNumber).toBe("");
     expect(storedClient?.organisationRole).toBe("Producer");
     expect(storedClient?.registeredAddress).toBe(
       "12 Test Street, Mumbai, Maharashtra 400001",
@@ -1315,6 +1450,9 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     expect((await page.request.get("/api/clients")).status()).toBe(401);
     expect(browserErrors).toEqual([]);
   } finally {
+    await db
+      .collection("packagingClassifications")
+      .deleteMany({ importId: { $in: importIds } });
     await db
       .collection("packagingAssets")
       .deleteMany({ importId: { $in: importIds } });

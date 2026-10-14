@@ -21,7 +21,7 @@ export function packagingAnalysis(row: PackagingRow) {
     .map((field) => field.label);
   const materials = new Map<string, number>();
   for (const component of components) {
-    const name = component.material.trim() || "Material pending";
+    const name = component.material.trim() || "Polymer pending";
     materials.set(
       name,
       (materials.get(name) || 0) + (Number(component.weight) || 0),

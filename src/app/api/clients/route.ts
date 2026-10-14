@@ -62,6 +62,14 @@ export async function POST(req: Request) {
       : null;
     if (targetId && !existing)
       return Response.json({ error: "Client not found" }, { status: 404 });
+    if (existing?.exemptionAnswer === "yes")
+      return Response.json(
+        {
+          error:
+            "You cannot proceed because you have indicated that you fall under an exemption.",
+        },
+        { status: 403 },
+      );
     if (existing?.packagingImport)
       return Response.json(
         {

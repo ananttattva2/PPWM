@@ -57,7 +57,7 @@ const aliases: Record<ImportField, string[]> = {
   productName: ["productname", "product", "name", "productnamesku"],
   category: ["category", "productcategory"],
   packagingType: ["packagingtype", "packaging", "packtype"],
-  material: ["material", "packagingmaterial"],
+  material: ["polymer", "material", "packagingmaterial"],
   weight: ["totalweightg", "totalweight", "weightg", "weight"],
   components: ["components", "componentcount", "numberofcomponents"],
   labelCoverage: ["labelcoverage", "labelcoveragepercent"],
@@ -245,7 +245,7 @@ export function analysePackaging(
       (m) => normal(m) === normal(values.material),
     );
     if (values.material && !material)
-      add("Material", "Unrecognised material type", "error");
+      add("Polymer", "Unrecognised polymer type", "error");
     const category = importCategories.find(
       (c) => normal(c) === normal(values.category),
     );

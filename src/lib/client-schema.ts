@@ -9,6 +9,29 @@ export const organisationRoles = [
   "Fulfilment Service Provider",
   "Authorised Representative",
 ] as const;
+export const operatorStatuses = [
+  "Packaging manufacturer",
+  "Legal manufacturer",
+  "Private label / distributor's own brand",
+  "Operator responsible for compliance",
+  "PPWR importer",
+  "EPR producer / first operator making available",
+  "Distance seller",
+  "Operator requiring an Authorised Representative",
+  "Distributor",
+  "Online marketplace / platform",
+  "Relevant logistics operator",
+  "End user",
+] as const;
+export const obligationsByRole = [
+  "Manufacturer / Legal manufacturer",
+  "Private label / distributor's own brand",
+  "Importer",
+  "Distributor",
+  "EPR producer",
+  "Distance seller / Marketplace / Logistics operator",
+  "Re-use / Refill / DRS operator",
+] as const;
 export const packagingMaterials = [
   "Plastic",
   "Paper & board",
@@ -17,6 +40,14 @@ export const packagingMaterials = [
   "Other",
 ] as const;
 export const companySchema = z.object({
+  operatorStatus: z
+    .array(z.enum(operatorStatuses))
+    .max(operatorStatuses.length)
+    .default([]),
+  obligationsByRole: z
+    .array(z.enum(obligationsByRole))
+    .max(obligationsByRole.length)
+    .default([]),
   legalName: z.string().trim().min(2, "Enter the legal name.").max(160),
   tradeName: z.string().trim().min(2, "Enter the trade name.").max(160),
   gstNumber: z
@@ -27,7 +58,7 @@ export const companySchema = z.object({
       /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/,
       "Enter a valid 15-character GST number.",
     ),
-  registrationNumber: z.string().trim().max(80),
+  registrationNumber: z.string().trim().max(80).default(""),
   organisationRole: z.enum(organisationRoles, {
     error: "Select an organisation role.",
   }),
@@ -61,9 +92,9 @@ export const clientSchema = companySchema.extend({
     .string()
     .regex(/^[a-f0-9]{24}$/i)
     .optional(),
-  industry: z.string().trim().min(2).max(80),
+  industry: z.string().trim().max(80).default(""),
   materials: z.array(z.enum(packagingMaterials)).default([]),
-  notes: z.string().trim().max(2000),
+  notes: z.string().trim().max(2000).default(""),
 });
 export const MAX_DOCUMENT_SIZE = 2 * 1024 * 1024;
 export const MAX_DOCUMENTS = 5;

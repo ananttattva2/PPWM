@@ -1292,3 +1292,90 @@ body {
     flex-basis: calc(100% - 40px);
   }
 }
+
+.operator-role-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+.operator-role-fields .mantine-MultiSelect-label {
+  margin-bottom: 7px;
+}
+@media (max-width: 600px) {
+  .operator-role-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.exemption-alert {
+  padding: 16px;
+  margin-top: 16px;
+  border: 1px solid #f6b8ac;
+  background: #fff2ef;
+  color: #a23320;
+  border-radius: 10px;
+  line-height: 1.6;
+}
+.exemption-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.operator-role-fields .mantine-MultiSelect-label {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+}
+.operator-role-fields .mantine-MultiSelect-input {
+  min-height: 46px;
+  border-color: #d7e2ef;
+  background: white;
+  border-radius: 8px;
+  padding: 8px 36px 8px 10px;
+}
+.operator-role-fields .mantine-MultiSelect-pill {
+  max-width: 100%;
+}
+.operator-role-fields .mantine-Pill-label {
+  white-space: nowrap;
+}
+[data-mantine-color-scheme="dark"]
+  .operator-role-fields
+  .mantine-MultiSelect-input {
+  background: #1b293c;
+  border-color: #3c506a;
+  color: #e1ebfa;
+}
+[data-mantine-color-scheme="dark"]
+  .operator-role-fields
+  .mantine-MultiSelect-inputField {
+  color: #e1ebfa;
+}
+[data-mantine-color-scheme="dark"]
+  .operator-role-fields
+  .mantine-MultiSelect-inputField::placeholder {
+  color: #a2b3c9;
+}
+[data-mantine-color-scheme="dark"] .operator-role-fields .mantine-Pill-root {
+  background: #2d4058;
+  color: #e1ebfa;
+}
+[data-mantine-color-scheme="dark"] .mantine-MultiSelect-dropdown {
+  background: #1b293c;
+  border-color: #3c506a;
+  color: #e1ebfa;
+}
+[data-mantine-color-scheme="dark"]
+  .mantine-MultiSelect-option[data-combobox-selected],
+[data-mantine-color-scheme="dark"]
+  .mantine-MultiSelect-option[data-combobox-active] {
+  background: #2d4058;
+}
+[data-mantine-color-scheme="dark"] .exemption-alert {
+  background: #4e281d;
+  border-color: #a15a3e;
+  color: #ffd3c4;
+}

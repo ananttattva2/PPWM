@@ -493,9 +493,9 @@ export default function PackagingComposition({
                     </div>
                     <div className="composition-component-grid">
                       <label>
-                        Material
+                        Polymer
                         <input
-                          aria-label={`Component ${index + 1} material`}
+                          aria-label={`Component ${index + 1} polymer`}
                           disabled={busy}
                           maxLength={200}
                           placeholder="e.g. PET"
@@ -658,7 +658,7 @@ export default function PackagingComposition({
                     />
                     <div>
                       <b>{item.name || `Component ${index + 1}`}</b>
-                      <small>{item.material || "Material pending"}</small>
+                      <small>{item.material || "Polymer pending"}</small>
                       <span>
                         {item.weight || "—"} g{" "}
                         {total > 0 && item.weight

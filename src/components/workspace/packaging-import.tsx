@@ -194,7 +194,7 @@ export default function PackagingImport({
     summary.total ? `${((count / summary.total) * 100).toFixed(1)}%` : "—";
   function template() {
     const text =
-      "Product Name,SKU,Category,Packaging Type,Material,Total Weight (g),Components,Label Coverage (%),Adhesive Type,Barrier Layer Details,Component Weight (g),Printing / Ink Details\nMineral Water 500ml,SKU-001,Beverages,Bottle,PET,23.5,3,80,Water-based,None,20,Low coverage\nSnack Pouch,SKU-002,Snacks,Pouch,Multi-layer (Plastic),6.8,4,60,Solvent-free,PE,5,Standard\n";
+      "Product Name,SKU,Category,Packaging Type,Polymer,Total Weight (g),Components,Label Coverage (%),Adhesive Type,Barrier Layer Details,Component Weight (g),Printing / Ink Details\nMineral Water 500ml,SKU-001,Beverages,Bottle,PET,23.5,3,80,Water-based,None,20,Low coverage\nSnack Pouch,SKU-002,Snacks,Pouch,Multi-layer (Plastic),6.8,4,60,Solvent-free,PE,5,Standard\n";
     const url = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
     const a = document.createElement("a");
     a.href = url;
@@ -760,7 +760,7 @@ export default function PackagingImport({
                       <Search size={16} />
                       <input
                         aria-label="Search packaging data"
-                        placeholder="Search product, SKU or material…"
+                        placeholder="Search product, SKU or polymer…"
                         value={query}
                         onChange={(event) => {
                           setQuery(event.target.value);
@@ -832,7 +832,7 @@ export default function PackagingImport({
                           <th>Product Name / SKU</th>
                           <th>Category</th>
                           <th>Packaging Type</th>
-                          <th>Material</th>
+                          <th>Polymer</th>
                           <th>Total Weight (g)</th>
                           <th>Components</th>
                           {details && (

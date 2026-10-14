@@ -206,7 +206,7 @@ export default function PackagingView({
                     </div>
                     <dl className="composition-view-facts component-facts">
                       {[
-                        ["Material", component.material],
+                        ["Polymer", component.material],
                         ["Colour", component.colour],
                         ["Weight (g)", component.weight],
                         ["Label coverage (%)", component.labelCoverage],

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Modal } from "@mantine/core";
+import { Modal, MultiSelect } from "@mantine/core";
 import PackagingImport from "./packaging-import";
 import OnboardingProgress from "./onboarding-progress";
 import type { ImportResult } from "@/lib/packaging-import-schema";
@@ -29,6 +29,8 @@ import { Button } from "../ui/button";
 import {
   companySchema,
   organisationRoles,
+  operatorStatuses,
+  obligationsByRole,
   MAX_DOCUMENT_SIZE,
   MAX_DOCUMENTS,
   documentTypes,
@@ -45,6 +47,8 @@ type Client = {
   notes?: string;
   status?: string;
   organisationRole?: string;
+  operatorStatus?: string[];
+  obligationsByRole?: string[];
   authorisedPerson?: string;
   contact: string;
   email: string;
@@ -76,7 +80,9 @@ const initial = {
   telephone: "",
   authorisedPerson: "",
   country: "India",
-  industry: "Food & beverage",
+  industry: "",
+  operatorStatus: [] as string[],
+  obligationsByRole: [] as string[],
   materials: [] as string[],
   notes: "",
 };
@@ -88,6 +94,9 @@ type PendingImport = {
   expiresAt: string;
 };
 export default function Clients({ canEdit }: { canEdit: boolean }) {
+  const [exemptionOpen, setExemptionOpen] = useState(false);
+  const [exemptionBlocked, setExemptionBlocked] = useState(false);
+  const [exemptionBusy, setExemptionBusy] = useState(false);
   const [pendingImports, setPendingImports] = useState<PendingImport[]>([]);
   const [packagingImport, setPackagingImport] = useState<ImportResult | null>(
     null,
@@ -137,7 +146,10 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
   useEffect(() => {
     setSearch(searchParams.get("q") || "");
   }, [searchParams]);
-  function update(key: keyof typeof initial, value: string) {
+  function update<K extends keyof typeof initial>(
+    key: K,
+    value: (typeof initial)[K],
+  ) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setFieldErrors((prev) => ({ ...prev, [key]: "" }));
   }
@@ -213,7 +225,8 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
         );
         return;
       }
-      void save();
+      setExemptionBlocked(false);
+      setExemptionOpen(true);
       return;
     }
     setFieldErrors({});
@@ -316,7 +329,35 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       setBusy(false);
     }
   }
-  async function save() {
+  async function answerExemption(answer: "yes" | "no") {
+    if (!editingClient) return;
+    setExemptionBusy(true);
+    try {
+      const response = await fetch(
+        `/api/clients/${editingClient._id}/exemption`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ answer }),
+        },
+      );
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(
+          result.error || "Could not save your exemption answer.",
+        );
+      if (answer === "yes") setExemptionBlocked(true);
+      else {
+        setExemptionOpen(false);
+        await save(true);
+      }
+    } catch (failure) {
+      toast.error((failure as Error).message);
+    } finally {
+      setExemptionBusy(false);
+    }
+  }
+  async function save(stayInPackaging = false) {
     if (busy) return;
     setBusy(true);
     setError("");
@@ -355,6 +396,25 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
           setStep(0);
         }
         throw new Error(result.error || "Unable to save client.");
+      }
+      if (stayInPackaging) {
+        if (packagingImport) {
+          const importedReply = await fetch(
+            `/api/packaging-imports/${packagingImport.id}`,
+          );
+          if (!importedReply.ok)
+            throw new Error(
+              "Client saved. Reopen Packaging from your client list.",
+            );
+          setManagedImport(await importedReply.json());
+          setShow(false);
+        } else {
+          setStep(1);
+        }
+        setFiles([]);
+        toast.success("Client updated successfully");
+        await load();
+        return;
       }
       setShow(false);
       setForm(initial);
@@ -506,6 +566,36 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
     );
   return (
     <>
+      <Modal
+        opened={exemptionOpen}
+        onClose={() => !exemptionBusy && setExemptionOpen(false)}
+        title="Exemption check"
+        centered
+        closeOnClickOutside={!exemptionBusy}
+      >
+        <p>Do you fall under an exemption?</p>
+        {exemptionBlocked && (
+          <div className="exemption-alert" role="alert">
+            You cannot proceed because you have indicated that you fall under an
+            exemption.
+          </div>
+        )}
+        <div className="exemption-actions">
+          <Button
+            variant="outline"
+            disabled={exemptionBusy}
+            onClick={() => void answerExemption("yes")}
+          >
+            Yes
+          </Button>
+          <Button
+            disabled={exemptionBusy}
+            onClick={() => void answerExemption("no")}
+          >
+            {exemptionBusy ? "Saving…" : "No"}
+          </Button>
+        </div>
+      </Modal>
       <div className="page-heading">
         <div>
           <span className="eyebrow">A CONNECTED PORTFOLIO</span>
@@ -660,16 +750,6 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                           update("gstNumber", e.target.value.toUpperCase())
                         }
                       />
-                      <TextInput
-                        label="Registration / user number"
-                        placeholder="Additional registration reference (optional)"
-                        maxLength={80}
-                        value={form.registrationNumber}
-                        error={fieldErrors.registrationNumber}
-                        onChange={(e) =>
-                          update("registrationNumber", e.target.value)
-                        }
-                      />
                       <Select
                         label="Organisation role"
                         placeholder="Select one role"
@@ -688,6 +768,30 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                         value={form.country}
                         error={fieldErrors.country}
                         onChange={(e) => update("country", e.target.value)}
+                      />
+                    </div>
+                    <div className="operator-role-fields">
+                      <MultiSelect
+                        label="Operator Status"
+                        placeholder="Select operator statuses"
+                        searchable
+                        clearable
+                        data={[...operatorStatuses]}
+                        value={form.operatorStatus}
+                        onChange={(values) => update("operatorStatus", values)}
+                        error={fieldErrors.operatorStatus}
+                      />
+                      <MultiSelect
+                        label="Obligations by Role"
+                        placeholder="Select applicable obligations"
+                        searchable
+                        clearable
+                        data={[...obligationsByRole]}
+                        value={form.obligationsByRole}
+                        onChange={(values) =>
+                          update("obligationsByRole", values)
+                        }
+                        error={fieldErrors.obligationsByRole}
                       />
                     </div>
                   </fieldset>
@@ -848,29 +952,6 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                     <div className="document-privacy">
                       <ShieldCheck size={14} /> Documents are stored with this
                       client and accessible only to signed-in workspace members.
-                    </div>
-                    <div className="client-extra-fields">
-                      <h4>Additional details</h4>
-                      <TextInput
-                        label="Industry"
-                        required
-                        maxLength={80}
-                        value={form.industry}
-                        error={fieldErrors.industry}
-                        onChange={(event) =>
-                          update("industry", event.target.value)
-                        }
-                      />
-                      <Textarea
-                        label="Notes"
-                        maxLength={2000}
-                        minRows={2}
-                        value={form.notes}
-                        error={fieldErrors.notes}
-                        onChange={(event) =>
-                          update("notes", event.target.value)
-                        }
-                      />
                     </div>
                   </fieldset>
                 </>
@@ -1163,7 +1244,17 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                   "Packaging SKUs",
                   viewingClient.packagingImport?.summary.total?.toString(),
                 ],
-                ["Status", viewingClient.status || "Onboarding"],
+                ["Operator Status", viewingClient.operatorStatus?.join(", ")],
+                [
+                  "Obligations by Role",
+                  viewingClient.obligationsByRole?.join(", "),
+                ],
+                [
+                  "Status",
+                  viewingClient.packagingImport
+                    ? "Onboarding"
+                    : "Packaging pending",
+                ],
                 ["Packaging file", viewingClient.packagingImport?.fileName],
                 [
                   "Plant / entity",

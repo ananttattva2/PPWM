@@ -15,7 +15,7 @@ export const importFields = [
   { key: "productName", label: "Product name", required: true },
   { key: "category", label: "Category", required: true },
   { key: "packagingType", label: "Packaging type", required: true },
-  { key: "material", label: "Material", required: true },
+  { key: "material", label: "Polymer", required: true },
   { key: "weight", label: "Total weight (g)", required: true },
   { key: "components", label: "Components", required: true },
   { key: "labelCoverage", label: "Label coverage (%)", required: false },
