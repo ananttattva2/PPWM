@@ -9,6 +9,39 @@ import {
 } from "@/lib/packaging-import-schema";
 import { analysePackaging, parsePackagingFile } from "@/lib/packaging-import";
 export const runtime = "nodejs";
+export async function GET() {
+  try {
+    const user = await requireUser(["admin", "super_admin", "manager"]);
+    const drafts = await db()
+      .collection("packagingImports")
+      .find({
+        createdBy: user.id,
+        status: "draft",
+        expiresAt: { $gt: new Date() },
+      })
+      .project({
+        _id: 1,
+        "file.name": 1,
+        "analysis.summary.total": 1,
+        updatedAt: 1,
+        expiresAt: 1,
+      })
+      .sort({ updatedAt: -1 })
+      .toArray();
+    return Response.json(
+      drafts.map((draft) => ({
+        id: draft._id.toString(),
+        fileName: draft.file.name,
+        total: draft.analysis.summary.total,
+        updatedAt: draft.updatedAt,
+        expiresAt: draft.expiresAt,
+      })),
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
+  } catch (error) {
+    return apiError(error);
+  }
+}
 export async function POST(req: Request) {
   try {
     checkOrigin(req);

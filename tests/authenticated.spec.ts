@@ -191,6 +191,18 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       .getByRole("button", { name: "Collapse sidebar", exact: true })
       .click();
     await page.waitForTimeout(350);
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    const contentBounds = await page
+      .locator(".workspace-content")
+      .boundingBox();
+    expect(contentBounds!.x).toBe(72);
+    expect(contentBounds!.width).toBe(1848);
+    await page.screenshot({
+      path: "artifacts/workspace-wide.png",
+      fullPage: true,
+      caret: "initial",
+    });
+    await page.setViewportSize({ width: 1280, height: 720 });
     await page.screenshot({
       path: "artifacts/client-onboarding-dark-collapsed.png",
       fullPage: true,
@@ -397,10 +409,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
         mimeType: "text/csv",
         buffer: validCsv,
       });
-    await page
-      .getByRole("combobox", { name: "Plant / entity", exact: true })
-      .click();
-    await page.getByRole("option", { name: company, exact: true }).click();
+    // Keep the default plant to cover duplicate All Plants options on reopening.
     await page
       .getByLabel("Update existing SKUs if already present", { exact: true })
       .uncheck();
@@ -423,7 +432,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       .findOne({ _id: new ObjectId(importRecord.id) });
     expect(persistedDraft?.status).toBe("draft");
     expect(persistedDraft?.settings.updateExisting).toBe(false);
-    expect(persistedDraft?.settings.plant).toBe(company);
+    expect(persistedDraft?.settings.plant).toBe("All Plants");
     expect(persistedDraft?.mapping.sku).toBe("SKU");
     expect(Buffer.from(persistedDraft?.file.data.buffer).equals(validCsv)).toBe(
       true,
@@ -1095,6 +1104,30 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     const incompleteImport = await incompleteUpload.json();
     importIds.push(incompleteImport.id);
     expect(incompleteImport.analysis.summary.missing).toBe(2);
+    const pendingResponse = await page.request.get("/api/packaging-imports");
+    expect(pendingResponse.ok()).toBe(true);
+    const pending = await pendingResponse.json();
+    expect(
+      pending.some((draft: { id: string }) => draft.id === incompleteImport.id),
+    ).toBe(true);
+    expect(
+      pending.some((draft: { id: string }) => draft.id === importRecord.id),
+    ).toBe(false);
+    expect(
+      pending.every((draft: { id: string }) => importIds.includes(draft.id)),
+    ).toBe(true);
+    expect(JSON.stringify(pending)).not.toContain("rawRows");
+    await page.goto("/dashboard/clients");
+    const pendingRow = page
+      .locator(".pending-import-row")
+      .filter({ hasText: "incomplete.csv" });
+    await expect(pendingRow).toBeVisible();
+    await pendingRow.getByRole("button", { name: "Resume" }).click();
+    await expect(
+      page.getByRole("heading", { name: "New client profile", exact: true }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Close form", exact: true }).click();
+    expect(await db.collection("clients").countDocuments({ company })).toBe(1);
     const incompleteClient = await page.request.post("/api/clients", {
       headers: { Origin: "http://localhost:3000" },
       multipart: {

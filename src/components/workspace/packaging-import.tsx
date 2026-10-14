@@ -469,7 +469,9 @@ export default function PackagingImport({
             <Select
               label="Plant / entity"
               disabled={busy}
-              data={["All Plants", organisationName]}
+              data={Array.from(
+                new Set(["All Plants", organisationName].filter(Boolean)),
+              )}
               value={settings.plant}
               onChange={(value) =>
                 updateSettings({ ...settings, plant: value || "All Plants" })

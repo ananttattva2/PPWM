@@ -291,7 +291,9 @@
 }
 .workspace-content {
   padding: 17px 24px 24px;
-  max-width: 1600px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   min-height: calc(100vh - 102px);
 }
 .workspace-context {
@@ -1251,5 +1253,42 @@ body {
     max-width: 155px;
     opacity: 1;
     visibility: visible;
+  }
+}
+
+.pending-imports {
+  margin-bottom: 18px;
+}
+.pending-import-list {
+  padding: 0 20px 12px;
+}
+.pending-import-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+.pending-import-row > div {
+  flex: 1;
+  min-width: 0;
+}
+.pending-import-row b {
+  overflow-wrap: anywhere;
+}
+.pending-import-row p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+@media (max-width: 480px) {
+  .pending-import-list {
+    padding-inline: 14px;
+  }
+  .pending-import-row {
+    flex-wrap: wrap;
+  }
+  .pending-import-row > div {
+    flex-basis: calc(100% - 40px);
   }
 }

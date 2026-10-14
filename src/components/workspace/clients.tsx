@@ -79,7 +79,15 @@ const initial = {
   materials: [] as string[],
   notes: "",
 };
+type PendingImport = {
+  id: string;
+  fileName: string;
+  total: number;
+  updatedAt: string;
+  expiresAt: string;
+};
 export default function Clients({ canEdit }: { canEdit: boolean }) {
+  const [pendingImports, setPendingImports] = useState<PendingImport[]>([]);
   const [packagingImport, setPackagingImport] = useState<ImportResult | null>(
     null,
   );
@@ -107,6 +115,12 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       const r = await fetch("/api/clients");
       if (!r.ok) throw new Error("Could not load clients. Please try again.");
       setList(await r.json());
+      if (canEdit) {
+        const drafts = await fetch("/api/packaging-imports");
+        if (!drafts.ok)
+          throw new Error("Could not load pending imports. Please try again.");
+        setPendingImports(await drafts.json());
+      }
     } catch (e) {
       const message = (e as Error).message;
       setError(message);
@@ -331,6 +345,31 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       setBusy(false);
     }
   }
+  async function resumeImport(draft: PendingImport) {
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/packaging-imports/${draft.id}`);
+      const imported = await response.json();
+      if (!response.ok) throw new Error(imported.error);
+      setEditingClient(null);
+      setForm(initial);
+      setPackagingImport(imported);
+      setPackagingFile(null);
+      setFiles([]);
+      setFieldErrors({});
+      setError("");
+      setStep(0);
+      setShow(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      toast.info(
+        "Your packaging data is restored. Complete organisation details and documents to create this client.",
+      );
+    } catch (failure) {
+      toast.error((failure as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   if (managedImport)
     return (
       <>
@@ -393,6 +432,43 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
           </Button>
         )}
       </div>
+      {!show && pendingImports.length > 0 && (
+        <section className="panel pending-imports" aria-label="Pending imports">
+          <div className="panel-heading">
+            <div>
+              <h3>
+                Pending imports{" "}
+                <span className="count-badge">{pendingImports.length}</span>
+              </h3>
+              <p>
+                These uploads have not been saved as clients. Resume to complete
+                organisation details. Drafts expire 7 days after processing.
+              </p>
+            </div>
+          </div>
+          <div className="pending-import-list">
+            {pendingImports.map((draft) => (
+              <div className="pending-import-row" key={draft.id}>
+                <FileText size={20} aria-hidden="true" />
+                <div>
+                  <b>{draft.fileName}</b>
+                  <p>
+                    {draft.total} packaging SKUs · Expires{" "}
+                    {new Date(draft.expiresAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => void resumeImport(draft)}
+                >
+                  Resume <ArrowRight size={16} />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
       {show ? (
         <section className="panel onboarding-panel">
           <div className="panel-heading">
@@ -407,7 +483,10 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
             </div>
             <button
               disabled={busy || importBusy || editorOpen}
-              onClick={() => setShow(false)}
+              onClick={() => {
+                setShow(false);
+                void load();
+              }}
               className="text-button"
             >
               Close form
