@@ -539,6 +539,16 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await expect(
       page.getByRole("heading", { name: "Packaging details", exact: true }),
     ).toBeVisible();
+    const facts = page
+      .locator(".composition-saved-component .component-facts")
+      .first();
+    const firstFacts = await facts
+      .locator(":scope > div")
+      .evaluateAll((nodes) =>
+        nodes.slice(0, 3).map((node) => node.getBoundingClientRect().top),
+      );
+    expect(firstFacts).toHaveLength(3);
+    expect(Math.max(...firstFacts) - Math.min(...firstFacts)).toBeLessThan(1);
     await expect(page.getByText("500 ml", { exact: true })).toBeVisible();
     await expect(page.getByText("Aqua QA", { exact: true })).toBeVisible();
     await expect(
@@ -922,6 +932,18 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await expect(
       page.getByRole("heading", { name: "Edit client profile", exact: true }),
     ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Packaging Data Import", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: "View packaging for Manual Jar",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Go back to Organisation", exact: true })
+      .click();
     await expect(
       page.getByRole("textbox", { name: "Legal name", exact: true }),
     ).toHaveValue(company);

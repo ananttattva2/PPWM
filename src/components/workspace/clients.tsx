@@ -321,7 +321,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       setFiles([]);
       setFieldErrors({});
       setError("");
-      setStep(0);
+      setStep(imported ? 1 : 0);
       setShow(true);
       requestAnimationFrame(() =>
         window.scrollTo({ top: 0, behavior: "smooth" }),

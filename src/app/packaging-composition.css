@@ -865,6 +865,9 @@
   grid-template-columns: 1fr 1fr;
   gap: 0 20px;
 }
+.composition-saved-component .component-facts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
 .component-facts > div {
   display: block;
 }
@@ -884,7 +887,8 @@
   }
 }
 @media (max-width: 600px) {
-  .component-facts {
+  .component-facts,
+  .composition-saved-component .component-facts {
     grid-template-columns: 1fr;
   }
   .composition-view-component-photo {
