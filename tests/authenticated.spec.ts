@@ -1122,6 +1122,26 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       .locator(".pending-import-row")
       .filter({ hasText: "incomplete.csv" });
     await expect(pendingRow).toBeVisible();
+    // Browser translators replace text nodes with font elements. Switching from
+    // the client list to the form must not reconcile against detached text nodes.
+    await page.evaluate(() => {
+      const content = document.querySelector(".workspace-content")!;
+      const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
+      const nodes: Text[] = [];
+      while (walker.nextNode()) {
+        const node = walker.currentNode as Text;
+        if (
+          node.textContent?.trim() &&
+          !node.parentElement?.closest("script, style")
+        )
+          nodes.push(node);
+      }
+      for (const node of nodes) {
+        const translated = document.createElement("font");
+        translated.textContent = node.textContent;
+        node.replaceWith(translated);
+      }
+    });
     await pendingRow.getByRole("button", { name: "Resume" }).click();
     await expect(
       page.getByRole("heading", { name: "New client profile", exact: true }),

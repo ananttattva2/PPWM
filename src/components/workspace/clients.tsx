@@ -390,7 +390,10 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
             <ArrowLeft size={16} /> Back to clients
           </Button>
         </div>
-        <section className="panel packaging-step-layout">
+        <section
+          key="packaging-workspace"
+          className="panel packaging-step-layout"
+        >
           <PackagingImport
             key={managedImport.id}
             result={managedImport}
@@ -470,7 +473,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
         </section>
       )}
       {show ? (
-        <section className="panel onboarding-panel">
+        <section key="client-form" className="panel onboarding-panel">
           <div className="panel-heading">
             <div>
               <h3>
@@ -835,7 +838,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
           </form>
         </section>
       ) : (
-        <section className="panel">
+        <section key="client-list" className="panel">
           <div className="panel-heading">
             <div>
               <h3>
