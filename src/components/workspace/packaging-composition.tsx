@@ -38,12 +38,14 @@ export default function PackagingComposition({
   onBack,
   onSave,
   onBusy,
+  creating = false,
 }: {
   row: PackagingRow;
   imported: ImportResult;
   onBack: () => void;
   onSave: (result: ImportResult) => void;
   onBusy: (busy: boolean) => void;
+  creating?: boolean;
 }) {
   const [fields, setFields] = useState(() => rowFields(row));
   const [composition, setComposition] = useState(() => initialComposition(row));
@@ -219,19 +221,25 @@ export default function PackagingComposition({
       for (const [key, image] of Object.entries(images))
         data.append(`image:${key}`, image);
       const response = await fetch(`/api/packaging-imports/${imported.id}`, {
-        method: "PATCH",
+        method: creating ? "POST" : "PATCH",
         body: data,
       });
       const result = await response.json();
       if (!response.ok)
         throw new Error(result.error || "Could not save packaging details.");
       setDirty(false);
-      toast.success("Packaging details and images saved", {
-        description: "SKU validation and totals have been refreshed.",
-      });
+      toast.success(
+        creating
+          ? "SKU added successfully"
+          : "Packaging details and images saved",
+        {
+          description: "SKU validation and totals have been refreshed.",
+        },
+      );
       onSave(result);
     } catch (failure) {
       setError((failure as Error).message);
+      toast.error((failure as Error).message);
     } finally {
       setBusy(false);
       onBusy(false);
@@ -251,7 +259,9 @@ export default function PackagingComposition({
           <span className="composition-eyebrow">
             PACKAGING WORKSPACE / {fields.sku || "NEW SKU"}
           </span>
-          <h2>Packaging Composition Builder</h2>
+          <h2>
+            {creating ? "Add packaging SKU" : "Packaging Composition Builder"}
+          </h2>
           <p>
             Define every component. Add photos, materials and weights at your
             own pace.
@@ -273,7 +283,8 @@ export default function PackagingComposition({
               </>
             ) : (
               <>
-                Save & continue <ArrowRight size={16} />
+                {creating ? "Save SKU" : "Save & continue"}{" "}
+                <ArrowRight size={16} />
               </>
             )}
           </Button>
@@ -738,7 +749,7 @@ export default function PackagingComposition({
             : "Your imported data is preserved"}
         </span>
         <Button type="button" disabled={busy} onClick={() => void save()}>
-          {busy ? "Saving…" : "Save & continue"}
+          {busy ? "Saving…" : creating ? "Save SKU" : "Save & continue"}
           <ArrowRight size={16} />
         </Button>
       </footer>

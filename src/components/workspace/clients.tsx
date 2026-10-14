@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { Modal } from "@mantine/core";
 import PackagingImport from "./packaging-import";
 import OnboardingProgress from "./onboarding-progress";
 import type { ImportResult } from "@/lib/packaging-import-schema";
@@ -21,6 +22,8 @@ import {
   UserRound,
   Download,
   LoaderCircle,
+  Eye,
+  Pencil,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -36,6 +39,11 @@ type Client = {
   legalName?: string;
   tradeName?: string;
   gstNumber?: string;
+  registrationNumber?: string;
+  registeredAddress?: string;
+  telephone?: string;
+  notes?: string;
+  status?: string;
   organisationRole?: string;
   authorisedPerson?: string;
   contact: string;
@@ -47,7 +55,13 @@ type Client = {
   packagingImport?: {
     id: string;
     fileName: string;
-    summary: { total: number };
+    summary: {
+      total: number;
+      complete?: number;
+      missing?: number;
+      errors?: number;
+    };
+    settings?: { plant?: string };
   };
 };
 const initial = {
@@ -73,6 +87,8 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
   const [importBusy, setImportBusy] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [managedImport, setManagedImport] = useState<ImportResult | null>(null);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [viewingClient, setViewingClient] = useState<Client | null>(null);
   const searchParams = useSearchParams();
   const [list, setList] = useState<Client[]>([]),
     [form, setForm] = useState(initial),
@@ -110,7 +126,10 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
     setFieldErrors((prev) => ({ ...prev, [key]: "" }));
   }
   function addFiles(incoming: File[]) {
-    if (files.length + incoming.length > MAX_DOCUMENTS) {
+    if (
+      files.length + incoming.length + (editingClient?.documents?.length || 0) >
+      MAX_DOCUMENTS
+    ) {
       toast.error("Upload a maximum of 5 documents.");
       return;
     }
@@ -140,7 +159,9 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
     ]);
     setFieldErrors((prev) => ({ ...prev, documents: "" }));
     toast.success(
-      "Document added. It will be uploaded when you create the client.",
+      editingClient
+        ? "Document added. It will be uploaded when you save changes."
+        : "Document added. It will be uploaded when you create the client.",
     );
   }
   function next() {
@@ -153,7 +174,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
           const key = String(issue.path[0]);
           errors[key] ??= issue.message;
         }
-      if (!files.length)
+      if (!files.length && !editingClient?.documents?.length)
         errors.documents = "Upload at least one supporting document.";
       setFieldErrors(errors);
       if (Object.keys(errors).length) {
@@ -171,7 +192,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
         );
         return;
       }
-      if (packagingImport.analysis.summary.errors) {
+      if (packagingImport.analysis.summary.errors && !editingClient) {
         toast.error(
           "Resolve validation errors before continuing. Missing details can be completed later.",
         );
@@ -196,7 +217,9 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
     setBusy(true);
     setError("");
     const notification = toast.loading(
-      "Creating your client and uploading documents…",
+      editingClient
+        ? "Saving your client changes…"
+        : "Creating your client and uploading documents…",
     );
     try {
       const data = new FormData();
@@ -209,7 +232,10 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
         }),
       );
       files.forEach((f) => data.append("documents", f));
-      const r = await fetch("/api/clients", { method: "POST", body: data });
+      const r = await fetch(
+        editingClient ? `/api/clients/${editingClient._id}` : "/api/clients",
+        { method: editingClient ? "PATCH" : "POST", body: data },
+      );
       const result = await r.json();
       if (!r.ok) {
         if (result.fields) {
@@ -227,10 +253,17 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       setStep(0);
       setPackagingImport(null);
       setPackagingFile(null);
-      toast.success("Client created successfully", {
-        id: notification,
-        description: "Organisation details and supporting documents are saved.",
-      });
+      toast.success(
+        editingClient
+          ? "Client updated successfully"
+          : "Client created successfully",
+        {
+          id: notification,
+          description:
+            "Organisation details and supporting documents are saved.",
+        },
+      );
+      setEditingClient(null);
       await load();
     } catch (e) {
       setError((e as Error).message);
@@ -244,6 +277,60 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
+  async function editClient(client: Client) {
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/clients/${client._id}`);
+      const profile = await response.json();
+      if (!response.ok) throw new Error(profile.error);
+      let imported: ImportResult | null = null;
+      if (profile.packagingImport?.id) {
+        const reply = await fetch(
+          `/api/packaging-imports/${profile.packagingImport.id}`,
+        );
+        const data = await reply.json();
+        if (!reply.ok) throw new Error(data.error);
+        imported = data;
+      }
+      setForm({
+        ...initial,
+        ...Object.fromEntries(
+          Object.keys(initial).map((key) => [
+            key,
+            profile[key] ?? initial[key as keyof typeof initial],
+          ]),
+        ),
+      } as typeof initial);
+      setEditingClient(profile);
+      setPackagingImport(imported);
+      setPackagingFile(null);
+      setFiles([]);
+      setFieldErrors({});
+      setError("");
+      setStep(0);
+      setShow(true);
+      requestAnimationFrame(() =>
+        window.scrollTo({ top: 0, behavior: "smooth" }),
+      );
+    } catch (failure) {
+      toast.error((failure as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function viewClient(client: Client) {
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/clients/${client._id}`);
+      const profile = await response.json();
+      if (!response.ok) throw new Error(profile.error);
+      setViewingClient(profile);
+    } catch (failure) {
+      toast.error((failure as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   if (managedImport)
     return (
       <>
@@ -293,6 +380,12 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
             disabled={busy || importBusy || editorOpen}
             onClick={() => {
               setShow(true);
+              setEditingClient(null);
+              setForm(initial);
+              setFiles([]);
+              setPackagingImport(null);
+              setPackagingFile(null);
+              setStep(0);
               setError("");
             }}
           >
@@ -304,7 +397,9 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
         <section className="panel onboarding-panel">
           <div className="panel-heading">
             <div>
-              <h3>New client profile</h3>
+              <h3>
+                {editingClient ? "Edit client profile" : "New client profile"}
+              </h3>
               <p>
                 Add organisation details and supporting documents to get
                 started.
@@ -472,10 +567,14 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                       />
                     </div>
                   </fieldset>
+
                   <fieldset className="onboarding-section">
                     <legend>
                       <FileText size={16} /> Supporting documents{" "}
-                      <span className="document-count">{files.length}/5</span>
+                      <span className="document-count">
+                        {files.length + (editingClient?.documents?.length || 0)}
+                        /5
+                      </span>
                     </legend>
                     <p className="document-description">
                       Upload registration, GST or authorisation documents. At
@@ -525,6 +624,24 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                       </p>
                     )}
                     <div className="document-list">
+                      {editingClient?.documents?.map((document, index) => (
+                        <div key={`saved-${index}`}>
+                          <FileText size={20} />
+                          <div>
+                            <b>{document.name}</b>
+                            <small>
+                              Already saved ·{" "}
+                              {(document.size / 1024).toFixed(1)} KB
+                            </small>
+                          </div>
+                          <a
+                            href={`/api/clients/${editingClient._id}/documents/${index}`}
+                            aria-label={`Download saved ${document.name}`}
+                          >
+                            <Download size={16} />
+                          </a>
+                        </div>
+                      ))}
                       {files.map((f, i) => (
                         <div key={`${f.name}-${f.lastModified}`}>
                           <span className="document-file-icon">
@@ -553,6 +670,29 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                     <div className="document-privacy">
                       <ShieldCheck size={14} /> Documents are stored with this
                       client and accessible only to signed-in workspace members.
+                    </div>
+                    <div className="client-extra-fields">
+                      <h4>Additional details</h4>
+                      <TextInput
+                        label="Industry"
+                        required
+                        maxLength={80}
+                        value={form.industry}
+                        error={fieldErrors.industry}
+                        onChange={(event) =>
+                          update("industry", event.target.value)
+                        }
+                      />
+                      <Textarea
+                        label="Notes"
+                        maxLength={2000}
+                        minRows={2}
+                        value={form.notes}
+                        error={fieldErrors.notes}
+                        onChange={(event) =>
+                          update("notes", event.target.value)
+                        }
+                      />
                     </div>
                   </fieldset>
                 </>
@@ -600,7 +740,11 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                       <LoaderCircle size={16} className="spin" /> Saving…
                     </>
                   ) : step === 1 ? (
-                    "Create client"
+                    editingClient ? (
+                      "Save changes"
+                    ) : (
+                      "Create client"
+                    )
                   ) : (
                     <>
                       Next <ArrowRight size={17} />
@@ -664,6 +808,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                     <th>Documents</th>
                     <th>Status</th>
                     {canEdit && <th>Packaging</th>}
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -750,6 +895,30 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                           )}
                         </td>
                       )}
+                      <td>
+                        <div className="client-row-actions">
+                          <button
+                            type="button"
+                            aria-label={`View client ${c.legalName || c.company}`}
+                            title="View all client details"
+                            disabled={busy || importBusy}
+                            onClick={() => void viewClient(c)}
+                          >
+                            <Eye size={16} />
+                          </button>
+                          {canEdit && (
+                            <button
+                              type="button"
+                              aria-label={`Edit client ${c.legalName || c.company}`}
+                              title="Edit saved client profile"
+                              disabled={busy || importBusy}
+                              onClick={() => void editClient(c)}
+                            >
+                              <Pencil size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -758,6 +927,116 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
           )}
         </section>
       )}
+      <Modal
+        opened={Boolean(viewingClient)}
+        onClose={() => setViewingClient(null)}
+        title="Client details"
+        size="lg"
+        centered
+      >
+        {viewingClient && (
+          <div className="client-profile-view">
+            <div className="client-profile-heading">
+              <Building2 size={28} />
+              <div>
+                <h3>{viewingClient.legalName || viewingClient.company}</h3>
+                <p>{viewingClient.tradeName || "Trade name not provided"}</p>
+              </div>
+            </div>
+            <dl>
+              {[
+                [
+                  "Legal name",
+                  viewingClient.legalName || viewingClient.company,
+                ],
+                ["Trade name", viewingClient.tradeName],
+                ["GST number", viewingClient.gstNumber],
+                [
+                  "Registration / user number",
+                  viewingClient.registrationNumber,
+                ],
+                ["Organisation role", viewingClient.organisationRole],
+                ["Registered address", viewingClient.registeredAddress],
+                [
+                  "Authorised person",
+                  viewingClient.authorisedPerson || viewingClient.contact,
+                ],
+                ["Email", viewingClient.email],
+                ["Telephone", viewingClient.telephone],
+                ["Country", viewingClient.country],
+                ["Industry", viewingClient.industry],
+                ["Materials", viewingClient.materials?.join(", ")],
+                ["Notes", viewingClient.notes],
+                [
+                  "Packaging SKUs",
+                  viewingClient.packagingImport?.summary.total?.toString(),
+                ],
+                ["Status", viewingClient.status || "Onboarding"],
+                ["Packaging file", viewingClient.packagingImport?.fileName],
+                [
+                  "Plant / entity",
+                  viewingClient.packagingImport?.settings?.plant,
+                ],
+                [
+                  "Ready SKUs",
+                  viewingClient.packagingImport?.summary.complete?.toString(),
+                ],
+                [
+                  "Incomplete SKUs",
+                  viewingClient.packagingImport?.summary.missing?.toString(),
+                ],
+                [
+                  "Validation errors",
+                  viewingClient.packagingImport?.summary.errors?.toString(),
+                ],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{value || "Not provided"}</dd>
+                </div>
+              ))}
+            </dl>
+            <h4>Supporting documents</h4>
+            <div className="client-document-links">
+              {viewingClient.packagingImport && (
+                <a
+                  href={`/api/packaging-imports/${viewingClient.packagingImport.id}?download=true`}
+                >
+                  <Download size={14} />
+                  {viewingClient.packagingImport.fileName}
+                </a>
+              )}
+              {viewingClient.documents?.map((document, index) => (
+                <a
+                  key={index}
+                  href={`/api/clients/${viewingClient._id}/documents/${index}`}
+                >
+                  <Download size={14} />
+                  {document.name}
+                </a>
+              ))}
+            </div>
+            {viewingClient.packagingImport && (
+              <p className="client-profile-hint">
+                Select Manage packaging in the client list to view every SKU,
+                component and photo.
+              </p>
+            )}
+            {canEdit && (
+              <Button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setViewingClient(null);
+                  void editClient(viewingClient);
+                }}
+              >
+                <Pencil size={16} /> Edit client
+              </Button>
+            )}
+          </div>
+        )}
+      </Modal>
     </>
   );
 }

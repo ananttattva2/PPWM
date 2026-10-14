@@ -23,6 +23,7 @@ import {
   Search,
   SlidersHorizontal,
   Pencil,
+  Plus,
   Eye,
 } from "lucide-react";
 import { Button } from "../ui/button";
@@ -35,6 +36,7 @@ import {
   type ImportResult,
   type ImportSettings,
   type ColumnMapping,
+  type PackagingRow,
   MAX_IMPORT_SIZE,
 } from "@/lib/packaging-import-schema";
 const tabs = [
@@ -81,6 +83,7 @@ export default function PackagingImport({
   const [statusFilter, setStatusFilter] = useState("all");
   const [details, setDetails] = useState(false);
   const [editingRow, setEditingRow] = useState<number | null>(null);
+  const [addingRow, setAddingRow] = useState(false);
   const [viewingRow, setViewingRow] = useState<number | null>(null);
   const input = useRef<HTMLInputElement>(null),
     id = useRef(result?.id || ""),
@@ -199,9 +202,33 @@ export default function PackagingImport({
     a.click();
     URL.revokeObjectURL(url);
   }
-  const selectedRow = result?.analysis.rows.find(
-    (row) => row.rowNumber === editingRow,
-  );
+  const emptyRow: PackagingRow = {
+    rowNumber: rows.length + (settings.firstRow === "headers" ? 2 : 1),
+    sku: "",
+    productName: "",
+    category: settings.category === "All Categories" ? "" : settings.category,
+    packagingType: "",
+    material: "",
+    weight: null,
+    components: null,
+    labelCoverage: "",
+    adhesiveType: "",
+    barrierLayer: "",
+    componentWeight: null,
+    printingInk: "",
+    status: "missing",
+    issues: [],
+    composition: {
+      brand: "",
+      netContent: "",
+      productImage: "",
+      productImages: [],
+      components: [],
+    },
+  };
+  const selectedRow = addingRow
+    ? emptyRow
+    : result?.analysis.rows.find((row) => row.rowNumber === editingRow);
   const viewedRow = result?.analysis.rows.find(
     (row) => row.rowNumber === viewingRow,
   );
@@ -240,12 +267,14 @@ export default function PackagingImport({
   if (result && selectedRow)
     return (
       <PackagingComposition
-        key={`${result.id}-${selectedRow.rowNumber}`}
+        key={`${result.id}-${addingRow ? "new" : selectedRow.rowNumber}`}
+        creating={addingRow}
         row={selectedRow}
         imported={result}
         onBusy={onBusy}
         onBack={() => {
           setEditingRow(null);
+          setAddingRow(false);
           onEditorChange?.(false);
         }}
         onSave={(updated) => {
@@ -254,6 +283,13 @@ export default function PackagingImport({
           setSettings(updated.settings);
           onChange(updated);
           setEditingRow(null);
+          if (addingRow) {
+            setQuery("");
+            setStatusFilter("all");
+            setAll(true);
+            setTab("Data Preview");
+          }
+          setAddingRow(false);
           onEditorChange?.(false);
         }}
       />
@@ -271,9 +307,11 @@ export default function PackagingImport({
               : "Upload your file, map its columns and add packaging details. Missing data can be completed later."}
           </p>
         </div>
-        <Button type="button" variant="outline" onClick={template}>
-          <Download size={14} /> Download template
-        </Button>
+        <div className="import-heading-actions">
+          <Button type="button" variant="outline" onClick={template}>
+            <Download size={14} /> Download template
+          </Button>
+        </div>
       </div>
       <div className="import-flow" aria-label="Packaging import progress">
         {[
@@ -754,6 +792,17 @@ export default function PackagingImport({
                     >
                       <SlidersHorizontal size={15} />
                       {details ? "Summary columns" : "All 12 fields"}
+                    </button>
+                    <button
+                      type="button"
+                      className="import-add-sku"
+                      disabled={busy || dirty || rows.length >= 1000}
+                      onClick={() => {
+                        setAddingRow(true);
+                        onEditorChange?.(true);
+                      }}
+                    >
+                      <Plus size={16} /> Add SKU
                     </button>
                   </div>
                   <div className="preview-caption">

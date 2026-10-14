@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { rowFields } from "../src/lib/packaging-composition";
 import { MongoClient, ObjectId } from "mongodb";
 import { createHash, randomUUID } from "node:crypto";
 import { setServers } from "node:dns";
@@ -171,6 +172,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page.screenshot({
       path: "artifacts/client-onboarding.png",
       fullPage: true,
+      caret: "initial",
     });
     await page
       .getByRole("button", { name: "Switch to dark mode", exact: true })
@@ -183,6 +185,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page.screenshot({
       path: "artifacts/client-onboarding-dark.png",
       fullPage: true,
+      caret: "initial",
     });
     await page
       .getByRole("button", { name: "Collapse sidebar", exact: true })
@@ -191,6 +194,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page.screenshot({
       path: "artifacts/client-onboarding-dark-collapsed.png",
       fullPage: true,
+      caret: "initial",
     });
     const persisted = await page.context().newPage();
     await persisted.goto("/dashboard");
@@ -237,6 +241,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page.screenshot({
       path: "artifacts/client-onboarding-mobile.png",
       fullPage: true,
+      caret: "initial",
     });
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.getByRole("button", { name: "Next", exact: true }).click();
@@ -356,6 +361,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page.screenshot({
       path: "artifacts/packaging-import-desktop.png",
       fullPage: true,
+      caret: "initial",
     });
     await page
       .getByRole("button", { name: "Switch to dark mode", exact: true })
@@ -363,6 +369,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page.screenshot({
       path: "artifacts/packaging-import-dark.png",
       fullPage: true,
+      caret: "initial",
     });
     await page
       .getByRole("button", { name: "Switch to light mode", exact: true })
@@ -377,6 +384,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page.screenshot({
       path: "artifacts/packaging-import-mobile.png",
       fullPage: true,
+      caret: "initial",
     });
     await page.setViewportSize({ width: 1280, height: 720 });
     const validCsv = Buffer.from(
@@ -475,6 +483,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page.screenshot({
       path: "artifacts/packaging-composition-desktop.png",
       fullPage: true,
+      caret: "initial",
     });
     await page
       .getByRole("button", { name: "Switch to dark mode", exact: true })
@@ -482,6 +491,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page.screenshot({
       path: "artifacts/packaging-composition-dark.png",
       fullPage: true,
+      caret: "initial",
     });
     await page
       .getByRole("button", { name: "Switch to light mode", exact: true })
@@ -495,6 +505,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page.screenshot({
       path: "artifacts/packaging-composition-mobile.png",
       fullPage: true,
+      caret: "initial",
     });
     await page.setViewportSize({ width: 1280, height: 720 });
     const editedResponse = page.waitForResponse(
@@ -581,6 +592,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await analysisPage.screenshot({
       path: "artifacts/packaging-analysis-desktop.png",
       fullPage: true,
+      caret: "initial",
     });
     await analysisPage.setViewportSize({ width: 390, height: 844 });
     expect(
@@ -591,6 +603,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await analysisPage.screenshot({
       path: "artifacts/packaging-analysis-mobile.png",
       fullPage: true,
+      caret: "initial",
     });
     await analysisPage.close();
     await expect(page.locator(".component-analyse-link")).toHaveCount(2);
@@ -624,6 +637,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
         await componentPage.screenshot({
           path: "artifacts/component-analysis-desktop.png",
           fullPage: true,
+          caret: "initial",
         });
         await componentPage.setViewportSize({ width: 390, height: 844 });
         await expect
@@ -636,6 +650,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
         await componentPage.screenshot({
           path: "artifacts/component-analysis-mobile.png",
           fullPage: true,
+          caret: "initial",
         });
       }
       await componentPage.close();
@@ -644,6 +659,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page.screenshot({
       path: "artifacts/packaging-view-desktop.png",
       fullPage: true,
+      caret: "initial",
     });
     await page.setViewportSize({ width: 390, height: 844 });
     expect(
@@ -654,6 +670,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page.screenshot({
       path: "artifacts/packaging-view-mobile.png",
       fullPage: true,
+      caret: "initial",
     });
     await page.setViewportSize({ width: 1280, height: 720 });
     await page
@@ -769,9 +786,200 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
         expiresAt: { $exists: true },
       }),
     ).toBe(0);
+    await page.getByRole("button", { name: "Add SKU", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "Add packaging SKU", exact: true }),
+    ).toBeVisible();
+    await page.getByLabel("SKU", { exact: true }).fill("QA-04");
+    await page.getByLabel("Product name", { exact: true }).fill("Manual Jar");
+    await page.getByLabel("Category", { exact: true }).selectOption("Food");
+    await page.getByLabel("Packaging type", { exact: true }).fill("Jar");
+    await page.getByLabel("Material", { exact: true }).fill("Glass");
+    await page.getByLabel("Total weight (g)", { exact: true }).fill("12.5");
+    await page.getByLabel("Components", { exact: true }).fill("1");
+    await page
+      .getByRole("button", { name: "Add component", exact: true })
+      .click();
+    await page.getByLabel("Component 1 name", { exact: true }).fill("Jar body");
+    await page
+      .getByLabel("Component 1 material", { exact: true })
+      .fill("Glass");
+    await page.getByLabel("Component 1 weight", { exact: true }).fill("12.5");
+    await page
+      .getByLabel("Product photo", { exact: true })
+      .setInputFiles({ name: "jar.png", mimeType: "image/png", buffer: png });
+    await page.screenshot({
+      path: "artifacts/add-sku-desktop.png",
+      fullPage: true,
+      caret: "initial",
+    });
+    const addedResponse = page.waitForResponse(
+      (response) =>
+        response.url().endsWith(`/api/packaging-imports/${importRecord.id}`) &&
+        response.request().method() === "POST",
+    );
+    await page
+      .getByRole("button", { name: "Save SKU", exact: true })
+      .first()
+      .click();
+    const added = await addedResponse;
+    expect(added.status(), await added.text()).toBe(201);
+    const updatedImport = await added.json();
+    expect(updatedImport.analysis.summary.total).toBe(4);
+    await expect(
+      page.getByRole("button", {
+        name: "View packaging for Manual Jar",
+        exact: true,
+      }),
+    ).toBeVisible();
+    const addedRow = updatedImport.analysis.rows.find(
+      (row: { sku: string }) => row.sku === "QA-04",
+    );
+    expect(
+      await db
+        .collection("packagingSkus")
+        .countDocuments({ importId: importRecord.id }),
+    ).toBe(4);
+    const retainedSku = await db
+      .collection("packagingSkus")
+      .findOne({ importId: importRecord.id, sku: "QA-01" });
+    expect(retainedSku?.composition.brand).toBe("Updated Aqua QA");
+    expect(retainedSku?.composition.productImages).toHaveLength(1);
+    expect(
+      (await db.collection("clients").findOne({ _id: storedClient?._id }))
+        ?.packagingImport.summary.total,
+    ).toBe(4);
+    const duplicate = await page.request.post(
+      `/api/packaging-imports/${importRecord.id}`,
+      {
+        headers: { Origin: "http://localhost:3000" },
+        multipart: {
+          data: JSON.stringify({
+            rowNumber: 6,
+            fields: rowFields(addedRow),
+            composition: addedRow.composition,
+          }),
+        },
+      },
+    );
+    expect(duplicate.status()).toBe(400);
+    expect(
+      await db
+        .collection("packagingSkus")
+        .countDocuments({ importId: importRecord.id }),
+    ).toBe(4);
     await page
       .getByRole("button", { name: "Back to clients", exact: true })
       .click();
+    await page
+      .getByRole("button", { name: `View client ${company}`, exact: true })
+      .click();
+    const profileDialog = page.getByRole("dialog", {
+      name: "Client details",
+      exact: true,
+    });
+    await expect(
+      profileDialog.getByText("QA-REG-001", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      profileDialog.getByText("12 Test Street, Mumbai, Maharashtra 400001", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      profileDialog.getByText("+91 98765 43210", { exact: true }),
+    ).toBeVisible();
+    await page.screenshot({
+      path: "artifacts/client-details-desktop.png",
+      fullPage: true,
+      caret: "initial",
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      )
+      .toBe(true);
+    await page.screenshot({
+      path: "artifacts/client-details-mobile.png",
+      fullPage: true,
+      caret: "initial",
+    });
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.keyboard.press("Escape");
+    await page
+      .getByRole("button", { name: `Edit client ${company}`, exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Edit client profile", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("textbox", { name: "Legal name", exact: true }),
+    ).toHaveValue(company);
+    await expect(
+      page.getByRole("textbox", { name: "Registered address", exact: true }),
+    ).toHaveValue("12 Test Street, Mumbai, Maharashtra 400001");
+    await page
+      .getByRole("textbox", { name: "Telephone", exact: true })
+      .fill("+91 99888 77766");
+    await page
+      .getByRole("textbox", { name: "Notes", exact: true })
+      .fill("Saved profile updated without re-uploading Excel.");
+    await page
+      .getByRole("textbox", { name: "Industry", exact: true })
+      .fill("Packaging manufacturing");
+    await page
+      .getByLabel("Supporting documents", { exact: true })
+      .setInputFiles({
+        name: "additional.pdf",
+        mimeType: "application/pdf",
+        buffer: fileBytes,
+      });
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(
+      page.getByRole("button", {
+        name: "View packaging for Manual Jar",
+        exact: true,
+      }),
+    ).toBeVisible();
+    const savedProfile = page.waitForResponse(
+      (response) =>
+        response.url().endsWith(`/api/clients/${storedClient?._id}`) &&
+        response.request().method() === "PATCH",
+    );
+    await page
+      .getByRole("button", { name: "Save changes", exact: true })
+      .click();
+    const savedProfileResponse = await savedProfile;
+    expect(
+      savedProfileResponse.status(),
+      await savedProfileResponse.text(),
+    ).toBe(200);
+    const refreshedProfile = await db
+      .collection("clients")
+      .findOne({ _id: storedClient?._id });
+    expect(refreshedProfile?.telephone).toBe("+91 99888 77766");
+    expect(refreshedProfile?.notes).toBe(
+      "Saved profile updated without re-uploading Excel.",
+    );
+    expect(refreshedProfile?.industry).toBe("Packaging manufacturing");
+    expect(refreshedProfile?.documents).toHaveLength(2);
+    expect(
+      Buffer.from(refreshedProfile?.documents[0].data.buffer).equals(fileBytes),
+    ).toBe(true);
+    expect(refreshedProfile?.packagingImportId).toBe(importRecord.id);
+    expect(refreshedProfile?.packagingImport.summary.total).toBe(4);
+    expect(await db.collection("clients").countDocuments({ company })).toBe(1);
+    expect(
+      (await request.get(`/api/clients/${storedClient?._id}`)).status(),
+    ).toBe(401);
+    expect(
+      (
+        await request.patch(`/api/clients/${storedClient?._id}`, {
+          headers: { Origin: "http://localhost:3000" },
+        })
+      ).status(),
+    ).toBe(401);
     const importedFile = await page.request.get(
       `/api/packaging-imports/${importRecord.id}?download=true`,
     );
@@ -857,7 +1065,13 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page
       .getByRole("textbox", { name: "First name", exact: true })
       .fill("Updated");
+    const ownProfileSaved = page.waitForResponse(
+      (response) =>
+        response.url().endsWith("/api/profile") &&
+        response.request().method() === "PATCH",
+    );
     await page.getByRole("button", { name: "Save changes" }).click();
+    expect((await ownProfileSaved).status()).toBe(200);
     await expect(
       page.getByText("Your profile has been updated."),
     ).toBeVisible();

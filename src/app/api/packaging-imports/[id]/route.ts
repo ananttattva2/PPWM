@@ -63,7 +63,20 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  return saveRow(req, context, false);
+}
+export async function POST(
+  req: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  return saveRow(req, context, true);
+}
+async function saveRow(
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
+  creating: boolean,
 ) {
   try {
     checkOrigin(req);
@@ -90,8 +103,35 @@ export async function PATCH(
         if (!record) throw new Error("FORBIDDEN");
         if (record.status === "draft" && record.createdBy !== user.id)
           throw new Error("FORBIDDEN");
+        const existingRows = record.analysis.rows as PackagingRow[];
+        if (creating && existingRows.length >= 1000)
+          throw new Error("Use a maximum of 1,000 data rows.");
+        if (creating && !update.fields.sku && !update.fields.productName)
+          throw new Error("Enter a product name or SKU before saving.");
+        if (
+          creating &&
+          update.fields.sku &&
+          existingRows.some(
+            (row) => row.sku.toLowerCase() === update.fields.sku.toLowerCase(),
+          )
+        )
+          throw new Error("This SKU already exists. Use a different SKU.");
+        const rowNumber = creating
+          ? existingRows.length +
+            (record.settings.firstRow === "headers" ? 2 : 1)
+          : update.rowNumber;
+        if (creating) {
+          record.rawRows.push({});
+          record.analysis.rows.push({
+            rowNumber,
+            category:
+              record.settings.category === "All Categories"
+                ? ""
+                : record.settings.category,
+          });
+        }
         const index = (record.analysis.rows as PackagingRow[]).findIndex(
-          (row) => row.rowNumber === update.rowNumber,
+          (row) => row.rowNumber === rowNumber,
         );
         if (index < 0) throw new Error("Row not found");
         const composition = structuredClone(update.composition);
@@ -152,7 +192,7 @@ export async function PATCH(
             {
               _id: assetId,
               importId: id,
-              rowNumber: update.rowNumber,
+              rowNumber,
               componentId,
               createdBy: user.id,
               name: file.name.slice(0, 180),
@@ -177,7 +217,7 @@ export async function PATCH(
         await database.collection("packagingAssets").deleteMany(
           {
             importId: id,
-            rowNumber: update.rowNumber,
+            rowNumber,
             _id: { $nin: retainedImages },
           },
           { session },
@@ -241,7 +281,17 @@ export async function PATCH(
             analysis.rows.map((row) => ({
               updateOne: {
                 filter: { importId: id, rowNumber: row.rowNumber },
-                update: { $set: { ...row, updatedAt: now } },
+                update: {
+                  $set: {
+                    ...row,
+                    clientId: record.clientId,
+                    importId: id,
+                    plant: settings.plant,
+                    updatedAt: now,
+                  },
+                  $setOnInsert: { createdAt: now },
+                },
+                upsert: creating,
               },
             })),
             { session },
@@ -271,7 +321,7 @@ export async function PATCH(
         };
       }),
     );
-    return Response.json(response);
+    return Response.json(response, { status: creating ? 201 : 200 });
   } catch (error) {
     if (
       error instanceof Error &&
@@ -279,8 +329,11 @@ export async function PATCH(
     )
       return Response.json(
         {
-          error:
-            "Could not save. Check your field values and use PNG/JPEG images up to 2 MB.",
+          error: ["This SKU already", "Enter a product", "Use a maximum"].some(
+            (prefix) => error.message.startsWith(prefix),
+          )
+            ? error.message
+            : "Could not save. Check your field values and use PNG/JPEG images up to 2 MB.",
         },
         { status: 400 },
       );
