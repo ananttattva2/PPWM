@@ -192,7 +192,18 @@ export default function PackagingView({
                     )}
                   </div>
                   <div className="composition-component-fields">
-                    <h4>{component.name || `Component ${index + 1}`}</h4>
+                    <div className="component-view-heading">
+                      <h4>{component.name || `Component ${index + 1}`}</h4>
+                      <Link
+                        className="gallery-analyse-link component-analyse-link"
+                        href={`/dashboard/packaging/${importId}/${row.rowNumber}/analyse?component=${encodeURIComponent(component.id)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Analyse ${component.name || `component ${index + 1}`} (opens in a new tab)`}
+                      >
+                        <ChartNoAxesCombined size={15} /> Analyse
+                      </Link>
+                    </div>
                     <dl className="composition-view-facts component-facts">
                       {[
                         ["Material", component.material],

@@ -15,8 +15,10 @@ import type { PackagingRow } from "@/lib/packaging-import-schema";
 export const metadata = { title: "Packaging analysis" };
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; rowNumber: string }>;
+  searchParams: Promise<{ component?: string | string[] }>;
 }) {
   const { id, rowNumber } = await params;
   const user = await currentUser();
@@ -48,6 +50,170 @@ export default async function Page({
   );
   if (!row) notFound();
   const analysis = packagingAnalysis(row);
+  const { component: componentId } = await searchParams;
+  const selectedComponent =
+    typeof componentId === "string"
+      ? row.composition?.components.find(
+          (component) => component.id === componentId,
+        )
+      : undefined;
+  if (componentId !== undefined && !selectedComponent) notFound();
+  if (selectedComponent) {
+    const details = [
+      ["Material", selectedComponent.material],
+      ["Colour", selectedComponent.colour],
+      ["Weight (g)", selectedComponent.weight],
+      ["Label coverage (%)", selectedComponent.labelCoverage],
+      ["Adhesive type", selectedComponent.adhesiveType],
+      ["Barrier layer details", selectedComponent.barrierLayer],
+      ["Printing / ink details", selectedComponent.printingInk],
+    ];
+    const missing = details.filter(([, value]) => !value);
+    const weight = Number(selectedComponent.weight) || 0;
+    const share =
+      analysis.total > 0 && selectedComponent.weight
+        ? `${((weight / analysis.total) * 100).toFixed(1)}%`
+        : "Not available";
+    const checks: [string, boolean | null][] = [
+      ["Material provided", selectedComponent.material ? true : null],
+      [
+        "Positive component weight",
+        selectedComponent.weight ? weight > 0 : null,
+      ],
+      [
+        "Label coverage between 0 and 100",
+        selectedComponent.labelCoverage
+          ? /^\d+(\.\d+)?$/.test(selectedComponent.labelCoverage) &&
+            Number(selectedComponent.labelCoverage) <= 100
+          : null,
+      ],
+    ];
+    return (
+      <div className="composition-builder packaging-analysis component-analysis">
+        <header className="composition-heading">
+          <div>
+            <span className="composition-eyebrow">
+              PACKAGING WORKSPACE / {row.sku || "SKU PENDING"}
+            </span>
+            <h1>Component analysis</h1>
+            <p>
+              {selectedComponent.name || "Unnamed component"} ·{" "}
+              {row.productName || "Product name pending"}. Based on saved
+              component details.
+            </p>
+          </div>
+          <Link
+            className="gallery-analyse-link"
+            href={`/dashboard/packaging/${id}/${number}/analyse`}
+          >
+            <ArrowLeft size={16} /> Full packaging analysis
+          </Link>
+        </header>
+        <div className="composition-view-notice">
+          <ChartNoAxesCombined size={18} />
+          <span>
+            {selectedComponent.name || "Unnamed component"} ·{" "}
+            {row.sku || "SKU pending"}
+          </span>
+        </div>
+        <div className="analysis-stats">
+          {[
+            [
+              "Component weight",
+              selectedComponent.weight
+                ? `${weight.toFixed(2)} g`
+                : "Not provided",
+            ],
+            ["Share of component total", share],
+            [
+              "Imported packaging weight",
+              row.weight === null
+                ? "Not provided"
+                : `${row.weight.toFixed(2)} g`,
+            ],
+            ["Missing component details", String(missing.length)],
+          ].map(([label, value]) => (
+            <section className="composition-card" key={label}>
+              <small>{label}</small>
+              <b>{value}</b>
+            </section>
+          ))}
+        </div>
+        <div className="composition-view-grid">
+          <section className="composition-card">
+            <h3>Component preview</h3>
+            <div className="composition-sku-title">
+              <Package size={24} />
+              <div>
+                <b>{selectedComponent.name || "Unnamed component"}</b>
+                <small>{row.productName || row.sku}</small>
+              </div>
+            </div>
+            {selectedComponent.image ? (
+              <a
+                className="composition-view-photo"
+                href={`/api/packaging-imports/${id}/assets/${selectedComponent.image}`}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Open component photo"
+              >
+                <img
+                  src={`/api/packaging-imports/${id}/assets/${selectedComponent.image}`}
+                  alt={selectedComponent.name || "Component"}
+                />
+              </a>
+            ) : (
+              <div className="composition-view-placeholder">
+                <Package size={36} />
+                <p>No component photo uploaded</p>
+              </div>
+            )}
+            <h3 className="analysis-material-heading">Data checks</h3>
+            <div className="composition-validation">
+              {checks.map(([label, valid]) => (
+                <p key={label} className={valid === true ? "valid" : "pending"}>
+                  {valid === true ? (
+                    <CheckCircle2 size={16} />
+                  ) : (
+                    <AlertCircle size={16} />
+                  )}
+                  {label} ·{" "}
+                  {valid === null
+                    ? "Not provided"
+                    : valid
+                      ? "Passed"
+                      : "Needs correction"}
+                </p>
+              ))}
+            </div>
+          </section>
+          <section className="composition-card">
+            <h3>Saved component details</h3>
+            <dl className="composition-view-facts component-facts">
+              {details.map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{value || "Not provided"}</dd>
+                </div>
+              ))}
+            </dl>
+            <h3 className="analysis-material-heading">Details to complete</h3>
+            {missing.length ? (
+              <ul className="composition-view-issues">
+                {missing.map(([label]) => (
+                  <li key={label}>{label}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="composition-help">
+                All component details have values.
+              </p>
+            )}
+          </section>
+        </div>
+      </div>
+    );
+  }
   const colours = ["#21a675", "#5685ee", "#f7ae28", "#c67ee6", "#e57386"];
   return (
     <div className="composition-builder packaging-analysis">

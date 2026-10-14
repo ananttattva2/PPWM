@@ -1125,3 +1125,23 @@
     scroll-behavior: auto;
   }
 }
+.component-view-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.composition-saved-component .component-view-heading h4 {
+  margin: 0;
+}
+.component-analyse-link {
+  padding: 7px 10px;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+@media (max-width: 600px) {
+  .component-view-heading {
+    flex-wrap: wrap;
+  }
+}

@@ -593,6 +593,53 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       fullPage: true,
     });
     await analysisPage.close();
+    await expect(page.locator(".component-analyse-link")).toHaveCount(2);
+    for (const [name, weight] of [
+      ["Bottle", "21.00 g"],
+      ["Cap", "2.50 g"],
+    ]) {
+      const componentOpened = page.context().waitForEvent("page");
+      await page
+        .getByRole("link", {
+          name: `Analyse ${name} (opens in a new tab)`,
+          exact: true,
+        })
+        .click();
+      const componentPage = await componentOpened;
+      await expect(
+        componentPage.getByRole("heading", {
+          name: "Component analysis",
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(
+        componentPage
+          .locator(".composition-sku-title")
+          .getByText(name, { exact: true }),
+      ).toBeVisible();
+      await expect(
+        componentPage.getByText(weight, { exact: true }),
+      ).toBeVisible();
+      if (name === "Cap") {
+        await componentPage.screenshot({
+          path: "artifacts/component-analysis-desktop.png",
+          fullPage: true,
+        });
+        await componentPage.setViewportSize({ width: 390, height: 844 });
+        await expect
+          .poll(() =>
+            componentPage.evaluate(
+              () => document.documentElement.scrollWidth <= innerWidth,
+            ),
+          )
+          .toBe(true);
+        await componentPage.screenshot({
+          path: "artifacts/component-analysis-mobile.png",
+          fullPage: true,
+        });
+      }
+      await componentPage.close();
+    }
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
     await page.screenshot({
       path: "artifacts/packaging-view-desktop.png",
