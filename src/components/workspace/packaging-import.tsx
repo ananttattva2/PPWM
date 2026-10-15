@@ -1,7 +1,7 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Checkbox, RingProgress } from "@mantine/core";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
 import {
   UploadCloud,
@@ -164,6 +164,12 @@ export default function PackagingImport({
       onBusy(false);
     }
   }
+  const reducedMotion = useReducedMotion();
+  const [chartReady, setChartReady] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setChartReady(true), 60);
+    return () => window.clearTimeout(timer);
+  }, []);
   const summary = result?.analysis.summary || {
     total: 0,
     complete: 0,
@@ -568,8 +574,9 @@ export default function PackagingImport({
             <RingProgress
               size={94}
               thickness={9}
+              transitionDuration={reducedMotion ? 0 : 900}
               sections={
-                summary.total
+                (chartReady || reducedMotion) && summary.total
                   ? [
                       {
                         value: (summary.complete / summary.total) * 100,

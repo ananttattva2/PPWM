@@ -8,7 +8,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       defaultColorScheme="light"
       theme={createTheme({
         primaryColor: "orange",
-        fontFamily: "Arial, sans-serif",
+        fontFamily: '"Geist", "Segoe UI", system-ui, sans-serif',
         defaultRadius: "md",
         components: {
           InputWrapper: InputWrapper.extend({

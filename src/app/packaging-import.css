@@ -1838,3 +1838,20 @@
     transition: none !important;
   }
 }
+/* Keep the data preview comfortably readable at normal browser zoom. */
+.workspace .packaging-import-workspace .import-preview-table th {
+  font-size: 13px;
+}
+.workspace .packaging-import-workspace .import-preview-table td {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.workspace .packaging-import-workspace .import-preview-table td b {
+  font-size: 15px;
+}
+.workspace .packaging-import-workspace .import-preview-table td small {
+  font-size: 13px;
+}
+.packaging-import-workspace .preview-caption {
+  font-size: 14px;
+}

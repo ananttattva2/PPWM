@@ -11,6 +11,7 @@ import {
   Pencil,
   CheckCircle2,
   ChartNoAxesCombined,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { importFields, type PackagingRow } from "@/lib/packaging-import-schema";
@@ -33,6 +34,7 @@ export default function PackagingView({
   const top = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
   const [uploading, setUploading] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   useEffect(() => {
     top.current?.focus();
     top.current?.scrollIntoView({ behavior: "instant", block: "start" });
@@ -76,9 +78,7 @@ export default function PackagingView({
           <Link
             className="gallery-analyse-link"
             href={`/dashboard/packaging/${importId}/${row.rowNumber}/analyse`}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Analyse packaging (opens in a new tab)"
+            aria-label="Analyse packaging"
           >
             <ChartNoAxesCombined size={16} /> Analyse
           </Link>
@@ -100,42 +100,6 @@ export default function PackagingView({
       </div>
       <div className="composition-view-grid">
         <aside className="composition-left">
-          <section className="composition-card">
-            <h3>Product information</h3>
-            <div className="composition-sku-title">
-              <Package size={24} />
-              <div>
-                <b>{row.productName || "Product name pending"}</b>
-                <small>{row.sku || "SKU pending"}</small>
-              </div>
-            </div>
-            <dl className="composition-view-facts">
-              {[
-                ["Brand", composition?.brand],
-                ["Product volume", composition?.netContent],
-                ...importFields
-                  .filter((field) =>
-                    [
-                      "category",
-                      "packagingType",
-                      "material",
-                      "weight",
-                      "components",
-                    ].includes(field.key),
-                  )
-                  .map((field) => [field.label, row[field.key]]),
-              ].map(([label, value]) => (
-                <div key={String(label)}>
-                  <dt>{label}</dt>
-                  <dd>
-                    {value === "" || value === undefined || value === null
-                      ? "Not provided"
-                      : String(value)}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </section>
           <PackagingGallery
             row={row}
             importId={importId}
@@ -145,6 +109,15 @@ export default function PackagingView({
               onBusy(busy);
             }}
           />
+          <section className="composition-card product-identity">
+            <div className="composition-sku-title">
+              <Package size={24} />
+              <div>
+                <b>{row.productName || "Product name pending"}</b>
+                <small>{row.sku || "SKU pending"}</small>
+              </div>
+            </div>
+          </section>
         </aside>
         <section
           className="composition-middle"
@@ -194,32 +167,62 @@ export default function PackagingView({
                   <div className="composition-component-fields">
                     <div className="component-view-heading">
                       <h4>{component.name || `Component ${index + 1}`}</h4>
-                      <Link
-                        className="gallery-analyse-link component-analyse-link"
-                        href={`/dashboard/packaging/${importId}/${row.rowNumber}/analyse?component=${encodeURIComponent(component.id)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Analyse ${component.name || `component ${index + 1}`} (opens in a new tab)`}
-                      >
-                        <ChartNoAxesCombined size={15} /> Analyse
-                      </Link>
+                      <div className="component-view-actions">
+                        <Link
+                          className="gallery-analyse-link component-analyse-link"
+                          href={`/dashboard/packaging/${importId}/${row.rowNumber}/analyse?component=${encodeURIComponent(component.id)}`}
+                          aria-label={`Analyse ${component.name || `component ${index + 1}`}`}
+                        >
+                          <ChartNoAxesCombined size={15} /> Analyse
+                        </Link>
+                        <button
+                          type="button"
+                          className="component-details-toggle"
+                          aria-expanded={!!expanded[component.id]}
+                          aria-controls={`component-details-${component.id}`}
+                          aria-label={`${expanded[component.id] ? "Collapse" : "Expand"} ${component.name || `component ${index + 1}`} details`}
+                          onClick={() =>
+                            setExpanded((current) => ({
+                              ...current,
+                              [component.id]: !current[component.id],
+                            }))
+                          }
+                        >
+                          <ChevronDown size={18} />
+                        </button>
+                      </div>
                     </div>
-                    <dl className="composition-view-facts component-facts">
-                      {[
-                        ["Polymer", component.material],
-                        ["Colour", component.colour],
-                        ["Weight (g)", component.weight],
-                        ["Label coverage (%)", component.labelCoverage],
-                        ["Adhesive type", component.adhesiveType],
-                        ["Barrier layer details", component.barrierLayer],
-                        ["Printing / ink details", component.printingInk],
-                      ].map(([label, value]) => (
-                        <div key={label}>
-                          <dt>{label}</dt>
-                          <dd>{value || "Not provided"}</dd>
-                        </div>
-                      ))}
-                    </dl>
+                    <motion.div
+                      id={`component-details-${component.id}`}
+                      initial={false}
+                      animate={{
+                        height: expanded[component.id] ? "auto" : 0,
+                        opacity: expanded[component.id] ? 1 : 0,
+                      }}
+                      transition={{
+                        duration: reducedMotion ? 0 : 0.28,
+                        ease: "easeInOut",
+                      }}
+                      style={{ overflow: "hidden" }}
+                      aria-hidden={!expanded[component.id]}
+                    >
+                      <dl className="composition-view-facts component-facts">
+                        {[
+                          ["Polymer", component.material],
+                          ["Colour", component.colour],
+                          ["Weight (g)", component.weight],
+                          ["Label coverage (%)", component.labelCoverage],
+                          ["Adhesive type", component.adhesiveType],
+                          ["Barrier layer details", component.barrierLayer],
+                          ["Printing / ink details", component.printingInk],
+                        ].map(([label, value]) => (
+                          <div key={label}>
+                            <dt>{label}</dt>
+                            <dd>{value || "Not provided"}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </motion.div>
                   </div>
                 </article>
               ))

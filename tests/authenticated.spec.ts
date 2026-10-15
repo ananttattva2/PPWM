@@ -675,6 +675,20 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     const facts = page
       .locator(".composition-saved-component .component-facts")
       .first();
+    const detailsToggle = page.getByRole("button", {
+      name: "Expand Bottle details",
+      exact: true,
+    });
+    await expect(detailsToggle).toHaveAttribute("aria-expanded", "false");
+    await expect(facts.locator("..")).toHaveCSS("height", "0px");
+    await detailsToggle.click();
+    await expect(
+      page.getByRole("button", {
+        name: "Collapse Bottle details",
+        exact: true,
+      }),
+    ).toHaveAttribute("aria-expanded", "true");
+    await expect(facts.locator("..")).not.toHaveCSS("height", "0px");
     const firstFacts = await facts
       .locator(":scope > div")
       .evaluateAll((nodes) =>
@@ -682,8 +696,14 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       );
     expect(firstFacts).toHaveLength(3);
     expect(Math.max(...firstFacts) - Math.min(...firstFacts)).toBeLessThan(1);
-    await expect(page.getByText("500 ml", { exact: true })).toBeVisible();
-    await expect(page.getByText("Aqua QA", { exact: true })).toBeVisible();
+    await expect(page.locator(".product-identity")).toContainText(
+      "Mineral Water 500ml",
+    );
+    await expect(
+      page.locator(
+        ".composition-left > .composition-card .composition-view-facts",
+      ),
+    ).toHaveCount(0);
     await expect(
       page.locator('.composition-view input:not([type="file"])'),
     ).toHaveCount(0);
@@ -724,14 +744,13 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await expect(
       page.getByRole("button", { name: "Show product photo 3", exact: true }),
     ).toBeVisible();
-    const analysisOpened = page.context().waitForEvent("page");
-    await page
-      .getByRole("link", {
-        name: "Analyse packaging (opens in a new tab)",
-        exact: true,
-      })
-      .click();
-    const analysisPage = await analysisOpened;
+    const analysisLink = page.getByRole("link", {
+      name: "Analyse packaging",
+      exact: true,
+    });
+    await expect(analysisLink).not.toHaveAttribute("target", "_blank");
+    const analysisPage = await page.context().newPage();
+    await analysisPage.goto((await analysisLink.getAttribute("href"))!);
     await expect(
       analysisPage.getByRole("heading", {
         name: "Packaging analysis",
@@ -763,14 +782,13 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       ["Bottle", "PET — rigid bottles"],
       ["Cap", "PP — rigid"],
     ]) {
-      const componentOpened = page.context().waitForEvent("page");
-      await page
-        .getByRole("link", {
-          name: `Analyse ${name} (opens in a new tab)`,
-          exact: true,
-        })
-        .click();
-      const componentPage = await componentOpened;
+      const componentLink = page.getByRole("link", {
+        name: `Analyse ${name}`,
+        exact: true,
+      });
+      await expect(componentLink).not.toHaveAttribute("target", "_blank");
+      const componentPage = await page.context().newPage();
+      await componentPage.goto((await componentLink.getAttribute("href"))!);
       await expect(
         componentPage.getByRole("heading", { name, exact: true }),
       ).toBeVisible();

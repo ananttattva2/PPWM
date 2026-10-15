@@ -1459,3 +1459,106 @@
     transform: none;
   }
 }
+/* Saved packaging: components on the left, product preview on the right. */
+.composition-view .composition-view-grid {
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.8fr);
+}
+.composition-view .composition-middle {
+  grid-column: 1;
+  grid-row: 1;
+}
+.composition-view .composition-left {
+  grid-column: 2;
+  grid-row: 1;
+}
+.product-identity .composition-sku-title {
+  margin: 0;
+}
+.component-view-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.component-details-toggle {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: 1px solid var(--composition-border);
+  border-radius: 8px;
+  background: var(--composition-soft);
+  color: var(--composition-text);
+}
+.component-details-toggle svg {
+  transition: transform 0.28s ease;
+}
+.component-details-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+.composition-saved-component .composition-component-fields {
+  min-width: 0;
+  flex: 1;
+}
+.classification-workspace {
+  padding: 4px 0 20px;
+}
+.classification-heading {
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.classification-heading h1 {
+  margin: 6px 0;
+  font-size: 28px;
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+}
+.classification-heading p {
+  margin-bottom: 0;
+}
+.classification-progress {
+  padding: 14px 18px;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.classification-intro {
+  margin-bottom: 16px;
+}
+.classification-intro h2 {
+  letter-spacing: -0.35px;
+  line-height: 1.35;
+  font-size: clamp(20px, 1.7vw, 25px);
+}
+.classification-intro p {
+  margin-bottom: 0;
+}
+.material-choice-grid {
+  max-width: none;
+  gap: 16px;
+}
+.material-choice {
+  padding: 14px 16px 18px;
+  border-radius: 14px;
+}
+.material-choice .classification-art {
+  height: clamp(100px, 11vh, 135px);
+  margin-bottom: 8px;
+}
+.material-choice strong {
+  font-size: 18px;
+}
+@media (max-width: 850px) {
+  .composition-view .composition-view-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .composition-view .composition-left,
+  .composition-view .composition-middle {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .component-details-toggle svg {
+    transition: none;
+  }
+}
