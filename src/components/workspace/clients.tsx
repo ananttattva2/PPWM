@@ -596,30 +596,32 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
           </Button>
         </div>
       </Modal>
-      <div className="page-heading">
-        <div>
-          <span className="eyebrow">A CONNECTED PORTFOLIO</span>
-          <h1>Client onboarding</h1>
-          <p>Start with the right details. Build a stronger partnership.</p>
+      {!show && (
+        <div className="page-heading">
+          <div>
+            <span className="eyebrow">A CONNECTED PORTFOLIO</span>
+            <h1>Client onboarding</h1>
+            <p>Start with the right details. Build a stronger partnership.</p>
+          </div>
+          {canEdit && !show && (
+            <Button
+              disabled={busy || importBusy || editorOpen}
+              onClick={() => {
+                setShow(true);
+                setEditingClient(null);
+                setForm(initial);
+                setFiles([]);
+                setPackagingImport(null);
+                setPackagingFile(null);
+                setStep(0);
+                setError("");
+              }}
+            >
+              <Plus size={18} /> New client
+            </Button>
+          )}
         </div>
-        {canEdit && !show && (
-          <Button
-            disabled={busy || importBusy || editorOpen}
-            onClick={() => {
-              setShow(true);
-              setEditingClient(null);
-              setForm(initial);
-              setFiles([]);
-              setPackagingImport(null);
-              setPackagingFile(null);
-              setStep(0);
-              setError("");
-            }}
-          >
-            <Plus size={18} /> New client
-          </Button>
-        )}
-      </div>
+      )}
       {!show && pendingImports.length > 0 && (
         <section className="panel pending-imports" aria-label="Pending imports">
           <div className="panel-heading">
@@ -659,8 +661,10 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       )}
       {show ? (
         <section key="client-form" className="panel onboarding-panel">
-          <div className="panel-heading">
+          <div className="panel-heading onboarding-form-heading">
             <div>
+              <h1>Client onboarding</h1>
+              <p>Start with the right details. Build a stronger partnership.</p>
               <h3>
                 {editingClient ? "Edit client profile" : "New client profile"}
               </h3>

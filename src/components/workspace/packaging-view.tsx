@@ -6,7 +6,6 @@ import type { PackagingComposition } from "@/lib/packaging-composition";
 import { motion, useReducedMotion } from "motion/react";
 import {
   ArrowLeft,
-  Eye,
   Package,
   Pencil,
   CheckCircle2,
@@ -14,7 +13,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Button } from "../ui/button";
-import { importFields, type PackagingRow } from "@/lib/packaging-import-schema";
+import { type PackagingRow } from "@/lib/packaging-import-schema";
 
 export default function PackagingView({
   row,
@@ -78,6 +77,7 @@ export default function PackagingView({
           <Link
             className="gallery-analyse-link"
             href={`/dashboard/packaging/${importId}/${row.rowNumber}/analyse`}
+            target="_self"
             aria-label="Analyse packaging"
           >
             <ChartNoAxesCombined size={16} /> Analyse
@@ -87,28 +87,8 @@ export default function PackagingView({
           </Button>
         </div>
       </header>
-      <div className="composition-view-notice">
-        <Eye size={17} />
-        <span>View mode · Saved details</span>
-        <span className={`import-row-status ${row.status}`}>
-          {row.status === "complete"
-            ? "Complete"
-            : row.status === "missing"
-              ? "Missing data"
-              : "Validation error"}
-        </span>
-      </div>
       <div className="composition-view-grid">
         <aside className="composition-left">
-          <PackagingGallery
-            row={row}
-            importId={importId}
-            onSaved={onPhotosSaved}
-            onBusy={(busy) => {
-              setUploading(busy);
-              onBusy(busy);
-            }}
-          />
           <section className="composition-card product-identity">
             <div className="composition-sku-title">
               <Package size={24} />
@@ -118,6 +98,15 @@ export default function PackagingView({
               </div>
             </div>
           </section>
+          <PackagingGallery
+            row={row}
+            importId={importId}
+            onSaved={onPhotosSaved}
+            onBusy={(busy) => {
+              setUploading(busy);
+              onBusy(busy);
+            }}
+          />
         </aside>
         <section
           className="composition-middle"
@@ -171,6 +160,7 @@ export default function PackagingView({
                         <Link
                           className="gallery-analyse-link component-analyse-link"
                           href={`/dashboard/packaging/${importId}/${row.rowNumber}/analyse?component=${encodeURIComponent(component.id)}`}
+                          target="_self"
                           aria-label={`Analyse ${component.name || `component ${index + 1}`}`}
                         >
                           <ChartNoAxesCombined size={15} /> Analyse
@@ -235,31 +225,6 @@ export default function PackagingView({
                 </p>
               </div>
             )}
-          </section>
-          <section className="composition-card">
-            <h3>Packaging details from import</h3>
-            <dl className="composition-view-facts component-facts">
-              {importFields
-                .filter((field) =>
-                  [
-                    "labelCoverage",
-                    "adhesiveType",
-                    "barrierLayer",
-                    "componentWeight",
-                    "printingInk",
-                  ].includes(field.key),
-                )
-                .map((field) => (
-                  <div key={field.key}>
-                    <dt>{field.label}</dt>
-                    <dd>
-                      {row[field.key] === null || row[field.key] === ""
-                        ? "Not provided"
-                        : row[field.key]}
-                    </dd>
-                  </div>
-                ))}
-            </dl>
           </section>
           {row.issues.length > 0 && (
             <section className="composition-card">
