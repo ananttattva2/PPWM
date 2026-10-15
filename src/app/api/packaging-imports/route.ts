@@ -6,9 +6,12 @@ import {
   importSettingsSchema,
   MAX_IMPORT_SIZE,
   type ColumnMapping,
-  importFields,
 } from "@/lib/packaging-import-schema";
-import { analysePackaging, parsePackagingFile } from "@/lib/packaging-import";
+import {
+  analysePackaging,
+  parsePackagingFile,
+  resolvePackagingMapping,
+} from "@/lib/packaging-import";
 export const runtime = "nodejs";
 export async function GET() {
   try {
@@ -64,21 +67,14 @@ export async function POST(req: Request) {
       JSON.parse(String(body.get("settings") || "{}")),
     );
     const bytes = Buffer.from(await file.arrayBuffer());
-    const parsed = await parsePackagingFile(bytes, file.name, settings);
-    let mapping = parsed.suggested;
+    const parsed = await parsePackagingFile(bytes, file.name, settings, false);
     const rawMapping = body.get("mapping");
-    if (typeof rawMapping === "string") {
-      const candidate = JSON.parse(rawMapping) as ColumnMapping;
-      mapping = {};
-      for (const field of importFields) {
-        const header = candidate[field.key];
-        if (header) {
-          if (typeof header !== "string" || !parsed.headers.includes(header))
-            throw new Error("A mapped column is not present in this file.");
-          mapping[field.key] = header;
-        }
-      }
-    }
+    const mapping = resolvePackagingMapping(
+      parsed.headers,
+      typeof rawMapping === "string"
+        ? (JSON.parse(rawMapping) as ColumnMapping)
+        : undefined,
+    );
     parsed.rawRows = groupComponentRows(parsed.rawRows, mapping);
     const analysis = analysePackaging(parsed.rawRows, mapping, settings);
     if (

@@ -473,3 +473,124 @@ test("component imports can inherit repeated product values and reject reserved 
     /reserved/,
   );
 });
+import { resolvePackagingMapping } from "../src/lib/packaging-import";
+import { hydrateImportSuppliers } from "../src/lib/hydrate-import-suppliers";
+test("older mappings inherit new supplier headers but preserve deliberate unmapped fields", async () => {
+  const parsed = await componentTemplate();
+  const old = {
+    sku: parsed.suggested.sku,
+    productName: parsed.suggested.productName,
+    category: parsed.suggested.category,
+    packagingType: parsed.suggested.packagingType,
+    weight: parsed.suggested.weight,
+    components: parsed.suggested.components,
+  };
+  const mapping = resolvePackagingMapping(parsed.headers, old);
+  assert.equal(mapping.supplierName, "Supplier Name");
+  assert.equal(mapping.foodGrade, "Food Grade (Yes/No)");
+  assert.equal(mapping.componentName, "Component Name");
+  assert.equal(
+    resolvePackagingMapping(parsed.headers, { ...old, supplierEmail: "" })
+      .supplierEmail,
+    undefined,
+  );
+  assert.throws(
+    () =>
+      resolvePackagingMapping(parsed.headers, {
+        supplierName: "Missing column",
+      }),
+    /not present/,
+  );
+  const reprocessed = analysePackaging(parsed.rawRows, mapping, settings);
+  assert.equal(
+    reprocessed.rows[0].composition!.components[1].supplierName,
+    "Cap Supplier",
+  );
+});
+test("saved legacy SKU imports recover supplier data from original spreadsheet without replacing edits", async () => {
+  const parsed = await parsePackagingFile(
+    Buffer.from(
+      "SKU,Product Name,Category,Packaging Type,Total Weight (g),Components,Food Grade (Yes/No),Supplier Name,Supplier Address,Supplier Contact Number,Supplier Email,Supplier Authorised Person Name\nS1,Water,Beverages,Bottle,23.5,3,Yes,Bottle Supplier,Mumbai,00919876543210,bottles@example.com,Bottle Contact\n",
+    ),
+    "old.csv",
+    settings,
+  );
+  const {
+    foodGrade,
+    supplierName,
+    supplierAddress,
+    supplierContactNumber,
+    supplierEmail,
+    supplierAuthorisedPersonName,
+    ...oldMapping
+  } = parsed.suggested;
+  const stale = analysePackaging(parsed.rawRows, oldMapping, settings);
+  assert.equal(stale.rows[0].supplierName, "");
+  stale.rows[0].productName = "Edited product title";
+  const record = {
+    headers: parsed.headers,
+    mapping: oldMapping,
+    rawRows: parsed.rawRows,
+    settings,
+    analysis: stale,
+  };
+  const before = JSON.stringify(record);
+  const fixed = hydrateImportSuppliers(record);
+  assert.equal(fixed.analysis.rows[0].supplierName, "Bottle Supplier");
+  assert.equal(fixed.analysis.rows[0].supplierContactNumber, "00919876543210");
+  assert.equal(fixed.analysis.rows[0].supplierEmail, "bottles@example.com");
+  assert.equal(
+    fixed.analysis.rows[0].supplierAuthorisedPersonName,
+    "Bottle Contact",
+  );
+  assert.equal(fixed.analysis.rows[0].foodGrade, "Yes");
+  assert.equal(fixed.analysis.rows[0].productName, "Edited product title");
+  assert.equal(JSON.stringify(record), before);
+});
+test("saved component suppliers recover independently while photos and explicit edits remain intact", async () => {
+  const parsed = await componentTemplate();
+  const analysis = analysePackaging(parsed.rawRows, parsed.suggested, settings);
+  for (const row of analysis.rows)
+    for (const component of row.composition!.components) {
+      component.supplierName = undefined;
+      component.supplierAddress = undefined;
+      component.supplierContactNumber = undefined;
+      component.supplierEmail = undefined;
+      component.supplierAuthorisedPersonName = undefined;
+      component.foodGrade = undefined;
+    }
+  const bottle = analysis.rows[0].composition!.components[0];
+  bottle.supplierName = "Edited Bottle Supplier";
+  bottle.image = "123456789012345678901234";
+  analysis.rows[0].composition!.components[1].supplierEmail = "";
+  const repaired = hydrateImportSuppliers({
+    ...parsed,
+    mapping: parsed.suggested,
+    settings,
+    analysis,
+  });
+  const components = repaired.analysis.rows[0].composition!.components;
+  assert.equal(components[0].supplierName, "Edited Bottle Supplier");
+  assert.equal(components[0].image, "123456789012345678901234");
+  assert.equal(components[1].supplierName, "Cap Supplier");
+  assert.equal(components[1].supplierEmail, "");
+  assert.equal(components[2].supplierName, "Label Supplier");
+  assert.equal(components[1].foodGrade, "Yes");
+});
+test("custom component mapping groups original rows only after final column choices", async () => {
+  const parsed = await parsePackagingFile(
+    Buffer.from(packagingTemplateCsv()),
+    "components.csv",
+    settings,
+    false,
+  );
+  assert.equal(parsed.rawRows.length, 7);
+  const mapped = resolvePackagingMapping(parsed.headers, {});
+  const grouped = groupComponentRows(parsed.rawRows, mapped);
+  assert.equal(grouped.length, 2);
+  assert.equal(
+    analysePackaging(grouped, mapped, settings).rows[0].composition!
+      .components[2].supplierName,
+    "Label Supplier",
+  );
+});

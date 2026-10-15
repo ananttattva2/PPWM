@@ -67,11 +67,20 @@ const aliases: Record<ImportField, string[]> = {
   packagingType: ["packagingtype", "packaging", "packtype"],
   componentName: ["componentname", "packagingcomponent", "component"],
   material: ["polymer", "material", "packagingmaterial"],
-  foodGrade: ["foodgrade", "foodgradeyesno", "foodgredeyesno", "foodcontact"],
-  supplierName: ["suppliername"],
+  foodGrade: [
+    "foodgrade",
+    "foodgradeyesno",
+    "foodgradeyesorno",
+    "foodgradecontact",
+    "foodgredeyesno",
+    "foodcontact",
+  ],
+  supplierName: ["suppliername", "suppliercompanyname", "vendorname"],
   supplierAddress: ["supplieraddress"],
   supplierContactNumber: [
     "suppliercontactnumber",
+    "suppliercontactno",
+    "suppliermobilenumber",
     "supplierphone",
     "suppliertelephone",
   ],
@@ -80,6 +89,9 @@ const aliases: Record<ImportField, string[]> = {
     "supplierauthorisedpersonname",
     "supplierauthorizedpersonname",
     "supplierauthrizepersonname",
+    "supplierauthorizepersonname",
+    "supplierauthorisedperson",
+    "supplierauthorizedperson",
   ],
   weight: ["totalweightg", "totalweight", "weightg", "weight"],
   components: ["components", "componentcount", "numberofcomponents"],
@@ -89,6 +101,37 @@ const aliases: Record<ImportField, string[]> = {
   componentWeight: ["componentweightg", "componentweight"],
   printingInk: ["printinginkdetails", "printingink", "ink"],
 };
+export function suggestedPackagingMapping(headers: string[]): ColumnMapping {
+  const suggested: ColumnMapping = {};
+  for (const field of importFields) {
+    const match = headers.find((header) =>
+      aliases[field.key].includes(normal(header)),
+    );
+    if (match) suggested[field.key] = match;
+  }
+  return suggested;
+}
+export function resolvePackagingMapping(
+  headers: string[],
+  candidate?: ColumnMapping,
+): ColumnMapping {
+  const mapping = suggestedPackagingMapping(headers);
+  if (!candidate) return mapping;
+  if (typeof candidate !== "object" || Array.isArray(candidate))
+    throw new Error("Invalid column mapping.");
+  for (const field of importFields) {
+    if (!Object.hasOwn(candidate, field.key)) continue;
+    const header = candidate[field.key];
+    if (!header) {
+      delete mapping[field.key];
+      continue;
+    }
+    if (typeof header !== "string" || !headers.includes(header))
+      throw new Error("A mapped column is not present in this file.");
+    mapping[field.key] = header;
+  }
+  return mapping;
+}
 function cellText(value: ExcelJS.CellValue): string {
   if (value === null || value === undefined) return "";
   if (typeof value === "object") {
@@ -103,6 +146,7 @@ export async function parsePackagingFile(
   bytes: Buffer,
   name: string,
   settings: ImportSettings,
+  groupComponents = true,
 ) {
   let matrix: string[][];
   if (name.toLowerCase().endsWith(".csv")) {
@@ -182,14 +226,10 @@ export async function parsePackagingFile(
   const rawRows = matrix.map((row) =>
     Object.fromEntries(headers.map((h, i) => [h, (row[i] || "").trim()])),
   );
-  const suggested: ColumnMapping = {};
-  for (const field of importFields) {
-    const match = headers.find((h) => aliases[field.key].includes(normal(h)));
-    if (match) suggested[field.key] = match;
-  }
+  const suggested = suggestedPackagingMapping(headers);
   return {
     headers,
-    rawRows: groupComponentRows(rawRows, suggested),
+    rawRows: groupComponents ? groupComponentRows(rawRows, suggested) : rawRows,
     suggested,
   };
 }

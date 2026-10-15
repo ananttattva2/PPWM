@@ -5,6 +5,7 @@ import {
   compositionUpdateSchema,
   type PackagingComposition,
 } from "@/lib/packaging-composition";
+import { hydrateImportSuppliers } from "@/lib/hydrate-import-suppliers";
 import { syncComponentSources } from "@/lib/component-import";
 import { analysePackaging } from "@/lib/packaging-import";
 import {
@@ -47,13 +48,20 @@ export async function GET(
       });
     }
     const { data, ...file } = record.file;
+    const hydrated = hydrateImportSuppliers({
+      headers: record.headers,
+      mapping: record.mapping || {},
+      rawRows: record.rawRows,
+      settings: record.settings,
+      analysis: record.analysis,
+    });
     return Response.json({
       id: record._id.toString(),
       file,
       settings: record.settings,
-      mapping: record.mapping,
+      mapping: hydrated.mapping,
       headers: record.headers,
-      analysis: record.analysis,
+      analysis: hydrated.analysis,
       clientId: record.clientId,
       status: record.status,
     });

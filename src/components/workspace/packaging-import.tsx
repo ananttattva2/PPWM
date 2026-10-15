@@ -965,7 +965,10 @@ export default function PackagingImport({
                               ] as const
                             ).map((key) => (
                               <td key={key}>
-                                {row.componentSuppliers ? (
+                                {row.componentSuppliers ||
+                                row.composition?.components.some((component) =>
+                                  Boolean(component[key]),
+                                ) ? (
                                   <div className="import-component-suppliers">
                                     {row.composition?.components.map(
                                       (component) => (
