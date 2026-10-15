@@ -300,55 +300,81 @@ export default function ComponentClassification({
                 family === "Plastic" && !categoryQuery.trim()
               }
             >
-              {categories.map((category) => (
-                <button
-                  type="button"
-                  key={category.id}
-                  className={`material-choice category-choice ${categoryId === category.id ? "selected" : ""}`}
-                  aria-label={category.title}
-                  aria-pressed={categoryId === category.id}
-                  disabled={busy || !canEdit}
-                  onClick={() => void chooseCategory(category.id)}
-                >
-                  <span className="category-photo material-photo">
-                    <img
-                      src={
-                        categoryImages[category.id] ||
-                        `/images/materials/${materialImages[category.family]}.webp`
-                      }
-                      alt=""
-                      width={200}
-                      height={170}
-                    />
-                  </span>
-                  <span className="category-choice-content">
-                    <strong>{category.title}</strong>
-                    <small>{category.detail}</small>
-                    <span className="category-choice-arrow" aria-hidden="true">
-                      <ArrowRight size={18} />
-                    </span>
-                  </span>
-                  {categoryId === category.id && (
-                    <span className="choice-check">
-                      <Check size={16} />
-                    </span>
-                  )}
-                </button>
-              ))}
-              {categories.length === 0 && (
-                <div className="category-empty" role="status">
-                  <Search size={28} />
-                  <h3>No matching packaging categories</h3>
-                  <p>Try another material, polymer or packaging type.</p>
-                  <button
+              <AnimatePresence initial={false} mode="popLayout">
+                {categories.map((category) => (
+                  <motion.button
                     type="button"
-                    className="text-button"
-                    onClick={() => setCategoryQuery("")}
+                    key={category.id}
+                    layout={reduce ? false : "position"}
+                    initial={{ opacity: 0, y: reduce ? 0 : 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: reduce ? 0 : -8 }}
+                    whileHover={reduce ? undefined : { y: -4 }}
+                    transition={{
+                      layout: {
+                        duration: reduce ? 0 : 0.3,
+                        ease: [0.22, 1, 0.36, 1],
+                      },
+                      opacity: { duration: reduce ? 0 : 0.2 },
+                      y: { duration: reduce ? 0 : 0.25 },
+                    }}
+                    className={`material-choice category-choice ${categoryId === category.id ? "selected" : ""}`}
+                    aria-label={category.title}
+                    aria-pressed={categoryId === category.id}
+                    disabled={busy || !canEdit}
+                    onClick={() => void chooseCategory(category.id)}
                   >
-                    Clear search
-                  </button>
-                </div>
-              )}
+                    <span className="category-photo material-photo">
+                      <img
+                        src={
+                          categoryImages[category.id] ||
+                          `/images/materials/${materialImages[category.family]}.webp`
+                        }
+                        alt=""
+                        width={200}
+                        height={170}
+                      />
+                    </span>
+                    <span className="category-choice-content">
+                      <strong>{category.title}</strong>
+                      <small>{category.detail}</small>
+                      <span
+                        className="category-choice-arrow"
+                        aria-hidden="true"
+                      >
+                        <ArrowRight size={18} />
+                      </span>
+                    </span>
+                    {categoryId === category.id && (
+                      <span className="choice-check">
+                        <Check size={16} />
+                      </span>
+                    )}
+                  </motion.button>
+                ))}
+                {categories.length === 0 && (
+                  <motion.div
+                    key="category-empty"
+                    className="category-empty"
+                    role="status"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: reduce ? 0 : 0.15 }}
+                  >
+                    <Search size={28} />
+                    <h3>No matching packaging categories</h3>
+                    <p>Try another material, polymer or packaging type.</p>
+                    <button
+                      type="button"
+                      className="text-button"
+                      onClick={() => setCategoryQuery("")}
+                    >
+                      Clear search
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
           {busy && (

@@ -2181,7 +2181,8 @@
   opacity: 0.9;
 }
 .classification-category-step .category-choice-grid {
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  position: relative;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 16px;
 }
 .classification-category-step .category-choice {
