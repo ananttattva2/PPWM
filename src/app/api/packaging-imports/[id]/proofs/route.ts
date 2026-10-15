@@ -52,7 +52,7 @@ export async function GET(req: Request, context: Context) {
       return new Response(new Uint8Array((proof.data as Binary).buffer), {
         headers: {
           "Content-Type": proof.type,
-          "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(proof.name)}`,
+          "Content-Disposition": `${new URL(req.url).searchParams.get("preview") === "1" ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(proof.name)}`,
           "Cache-Control": "private, no-store",
           "X-Content-Type-Options": "nosniff",
         },
