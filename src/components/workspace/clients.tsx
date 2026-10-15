@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Modal, MultiSelect } from "@mantine/core";
 import PackagingImport from "./packaging-import";
+import PackagingTabs from "./packaging-tabs";
 import OnboardingProgress from "./onboarding-progress";
 import type { ImportResult } from "@/lib/packaging-import-schema";
 import { TextInput, Select, Textarea } from "../ui/floating-fields";
@@ -94,6 +95,9 @@ type PendingImport = {
   expiresAt: string;
 };
 export default function Clients({ canEdit }: { canEdit: boolean }) {
+  const [packagingScope, setPackagingScope] = useState<"sales" | "group">(
+    "sales",
+  );
   const [exemptionOpen, setExemptionOpen] = useState(false);
   const [exemptionBlocked, setExemptionBlocked] = useState(false);
   const [exemptionBusy, setExemptionBusy] = useState(false);
@@ -214,6 +218,10 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
         return;
       }
       if (!(await saveOrganisation())) return;
+      setFieldErrors({});
+      setExemptionBlocked(false);
+      setExemptionOpen(true);
+      return;
     }
     if (step === 1) {
       if (
@@ -225,8 +233,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
         );
         return;
       }
-      setExemptionBlocked(false);
-      setExemptionOpen(true);
+      await save(true);
       return;
     }
     setFieldErrors({});
@@ -349,7 +356,13 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       if (answer === "yes") setExemptionBlocked(true);
       else {
         setExemptionOpen(false);
-        await save(true);
+        setPackagingScope("sales");
+        setStep(1);
+        requestAnimationFrame(() =>
+          document
+            .querySelector(".onboarding-progress")
+            ?.scrollIntoView({ block: "start", behavior: "smooth" }),
+        );
       }
     } catch (failure) {
       toast.error((failure as Error).message);
@@ -412,7 +425,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
           setStep(1);
         }
         setFiles([]);
-        toast.success("Client updated successfully");
+        toast.success("Client updated successfully", { id: notification });
         await load();
         return;
       }
@@ -476,6 +489,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       setFiles([]);
       setFieldErrors({});
       setError("");
+      setPackagingScope("sales");
       setStep(1);
       setShow(true);
       requestAnimationFrame(() =>
@@ -549,18 +563,24 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
           key="packaging-workspace"
           className="panel packaging-step-layout"
         >
-          <PackagingImport
-            key={managedImport.id}
-            result={managedImport}
-            onChange={(updated) => {
-              if (updated) setManagedImport(updated);
-            }}
-            onBusy={setImportBusy}
-            sourceFile={null}
-            onFileChange={() => {}}
-            organisationName={managedImport.settings.plant}
-            onEditorChange={setEditorOpen}
-          />
+          <PackagingTabs
+            value={packagingScope}
+            onChange={setPackagingScope}
+            disabled={busy || importBusy}
+          >
+            <PackagingImport
+              key={managedImport.id}
+              result={managedImport}
+              onChange={(updated) => {
+                if (updated) setManagedImport(updated);
+              }}
+              onBusy={setImportBusy}
+              sourceFile={null}
+              onFileChange={() => {}}
+              organisationName={managedImport.settings.plant}
+              onEditorChange={setEditorOpen}
+            />
+          </PackagingTabs>
         </section>
       </>
     );
@@ -661,19 +681,13 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       )}
       {show ? (
         <section key="client-form" className="panel onboarding-panel">
-          <div className="panel-heading onboarding-form-heading">
-            <div>
-              <h1>Client onboarding</h1>
-              <p>Start with the right details. Build a stronger partnership.</p>
-              <h3>
-                {editingClient ? "Edit client profile" : "New client profile"}
-              </h3>
-              <p>
-                {step === 1 && !editingClient?.packagingImport
-                  ? "Organisation saved. Add packaging now or return from your client list later."
-                  : "Add organisation details and supporting documents to get started."}
-              </p>
-            </div>
+          <div className="onboarding-step-header">
+            <OnboardingProgress
+              active={step}
+              onBack={(index) => {
+                if (!busy && !importBusy && !editorOpen) setStep(index);
+              }}
+            />
             <button
               disabled={busy || importBusy || editorOpen}
               onClick={() => {
@@ -685,12 +699,6 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
               Close form
             </button>
           </div>
-          <OnboardingProgress
-            active={step}
-            onBack={(index) => {
-              if (!busy && !importBusy && !editorOpen) setStep(index);
-            }}
-          />
           <form
             noValidate
             onSubmit={(e) => {
@@ -960,15 +968,21 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                   </fieldset>
                 </>
               ) : (
-                <PackagingImport
-                  result={packagingImport}
-                  onChange={(updated) => void rememberPackaging(updated)}
-                  onBusy={setImportBusy}
-                  sourceFile={packagingFile}
-                  onFileChange={setPackagingFile}
-                  organisationName={form.legalName}
-                  onEditorChange={setEditorOpen}
-                />
+                <PackagingTabs
+                  value={packagingScope}
+                  onChange={setPackagingScope}
+                  disabled={busy || importBusy}
+                >
+                  <PackagingImport
+                    result={packagingImport}
+                    onChange={(updated) => void rememberPackaging(updated)}
+                    onBusy={setImportBusy}
+                    sourceFile={packagingFile}
+                    onFileChange={setPackagingFile}
+                    organisationName={form.legalName}
+                    onEditorChange={setEditorOpen}
+                  />
+                </PackagingTabs>
               )}
             </motion.div>
             {error && (
@@ -976,7 +990,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                 {error}
               </p>
             )}
-            {!editorOpen && (
+            {!editorOpen && (step === 0 || packagingScope === "sales") && (
               <div className="form-actions onboarding-actions">
                 <span>
                   <ShieldCheck size={14} />{" "}

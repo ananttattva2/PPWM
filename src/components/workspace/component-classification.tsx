@@ -2,7 +2,13 @@
 import { useId, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ArrowLeft, Check, ChevronRight, LoaderCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronRight,
+  LoaderCircle,
+  Boxes,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   materialFamilies,
@@ -145,6 +151,15 @@ function MaterialArt({
   );
 }
 
+const materialDescriptions: Record<string, string> = {
+  Plastic: "PET, PE, PP, HDPE, LDPE, PVC, PS and other plastic materials.",
+  "Paper/cardboard": "Paper, cardboard and composite paper packaging.",
+  Glass: "Glass and composite packaging, majority glass.",
+  Wood: "Wooden packaging including pallets, crates and boxes.",
+  Metals: "Steel, aluminium and other metal packaging.",
+  "Multi-material": "Composite packaging with multiple materials.",
+};
+
 export default function ComponentClassification({
   importId,
   rowNumber,
@@ -218,6 +233,9 @@ export default function ComponentClassification({
             {productName} <span>· Polymer: {polymer || "Not provided"}</span>
           </p>
         </div>
+        <div className="classification-banner-art" aria-hidden="true">
+          <MaterialArt family="Plastic" />
+        </div>
         <Link className="gallery-analyse-link" href="/dashboard/clients">
           <ArrowLeft size={16} /> Packaging workspace
         </Link>
@@ -229,20 +247,36 @@ export default function ComponentClassification({
           onClick={() => setStep(1)}
           aria-current={step === 1 ? "step" : undefined}
         >
-          <span>{step === 2 ? <Check size={16} /> : "1"}</span> Material
+          <span>{step === 2 ? <Check size={16} /> : "1"}</span>
+          <div className="classification-step-copy">
+            <b>Material</b>
+            <small>Select material type</small>
+          </div>
         </button>
-        <ChevronRight size={16} />
+        <span
+          className={`classification-connector ${step === 2 ? "complete" : ""}`}
+          aria-hidden="true"
+        />
         <button
           type="button"
           disabled={!family || busy}
           onClick={() => setStep(2)}
           aria-current={step === 2 ? "step" : undefined}
         >
-          <span>2</span> Packaging category
+          <span>2</span>
+          <div className="classification-step-copy">
+            <b>Packaging category</b>
+            <small>Choose packaging category</small>
+          </div>
         </button>
-        <ChevronRight size={16} />
+        <span className="classification-connector" aria-hidden="true" />
         <span className="classification-upcoming">
-          3 · Supplier details <small>Coming soon</small>
+          <span className="classification-upcoming-number">3</span>
+          <span className="classification-step-copy">
+            <b>Supplier details</b>
+            <small>Add supplier information</small>
+          </span>
+          <small className="classification-soon">Coming soon</small>
         </span>
       </nav>
       {!canEdit && (
@@ -262,6 +296,9 @@ export default function ComponentClassification({
           transition={{ duration: reduce ? 0 : 0.2 }}
         >
           <div className="classification-intro">
+            <span className="classification-intro-icon" aria-hidden="true">
+              <Boxes size={28} />
+            </span>
             <div>
               <h2>
                 {step === 1
@@ -270,7 +307,7 @@ export default function ComponentClassification({
               </h2>
               <p>
                 {step === 1
-                  ? "Select one material to continue."
+                  ? "Select one material to continue. This helps us identify the right packaging category and compliance requirements."
                   : `${family} · Select the category that best describes this component.`}
               </p>
             </div>
@@ -290,6 +327,7 @@ export default function ComponentClassification({
                 <button
                   type="button"
                   key={material}
+                  aria-label={material}
                   className={`material-choice ${family === material ? "selected" : ""}`}
                   aria-pressed={family === material}
                   disabled={busy}
@@ -301,7 +339,13 @@ export default function ComponentClassification({
                   }}
                 >
                   <MaterialArt family={material} />
-                  <strong>{material}</strong>
+                  <span className="material-choice-copy">
+                    <strong>{material}</strong>
+                    <small>{materialDescriptions[material]}</small>
+                  </span>
+                  <span className="material-choice-arrow" aria-hidden="true">
+                    <ChevronRight size={17} />
+                  </span>
                   {family === material && (
                     <span className="choice-check">
                       <Check size={16} />

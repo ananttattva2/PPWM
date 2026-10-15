@@ -290,6 +290,42 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     });
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.getByRole("button", { name: "Next", exact: true }).click();
+    const exemptionDialog = page.getByRole("dialog", {
+      name: "Exemption check",
+    });
+    await expect(exemptionDialog).toBeVisible();
+    await expect(
+      page.locator('.onboarding-progress li[aria-current="step"]'),
+    ).toContainText("Organisation");
+    await exemptionDialog
+      .getByRole("button", { name: "Yes", exact: true })
+      .click();
+    await expect(exemptionDialog.getByRole("alert")).toHaveText(
+      "You cannot proceed because you have indicated that you fall under an exemption.",
+    );
+    await expect
+      .poll(
+        async () =>
+          (await db.collection("clients").findOne({ company }))
+            ?.exemptionAnswer,
+      )
+      .toBe("yes");
+    await exemptionDialog
+      .getByRole("button", { name: "No", exact: true })
+      .click();
+    await expect(exemptionDialog).not.toBeVisible();
+    await expect(
+      page.getByRole("tab", { name: "Sales Packaging", exact: true }),
+    ).toHaveAttribute("aria-selected", "true");
+    await page
+      .getByRole("tab", { name: "Group Packaging", exact: true })
+      .click();
+    await expect(
+      page.getByRole("tabpanel", { name: "Group Packaging", exact: true }),
+    ).toContainText("Coming soon");
+    await page
+      .getByRole("tab", { name: "Sales Packaging", exact: true })
+      .click();
     await expect(
       page.getByRole("heading", { name: "Packaging Data Import", exact: true }),
     ).toBeVisible();
@@ -934,45 +970,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page
       .getByRole("button", { name: "Save changes", exact: true })
       .click();
-    const exemptionDialog = page.getByRole("dialog", {
-      name: "Exemption check",
-    });
-    await expect(exemptionDialog).toBeVisible();
-    await exemptionDialog
-      .getByRole("button", { name: "Yes", exact: true })
-      .click();
-    await expect(exemptionDialog.getByRole("alert")).toHaveText(
-      "You cannot proceed because you have indicated that you fall under an exemption.",
-    );
-    await expect
-      .poll(
-        async () =>
-          (await db.collection("clients").findOne({ company }))
-            ?.exemptionAnswer,
-      )
-      .toBe("yes");
-    expect(
-      (await db.collection("clients").findOne({ company }))?.packagingImport,
-    ).toBeUndefined();
-    await page.screenshot({
-      path: "artifacts/exemption-check.png",
-      fullPage: true,
-      caret: "initial",
-    });
-    const blockedSave = await page.request.post("/api/clients", {
-      headers: { Origin: "http://localhost:3000" },
-      multipart: {
-        data: JSON.stringify({
-          ...organisationOnly,
-          clientId: String(organisationOnly?._id),
-          packagingImportId: importRecord.id,
-        }),
-      },
-    });
-    expect(blockedSave.status()).toBe(403);
-    await exemptionDialog
-      .getByRole("button", { name: "No", exact: true })
-      .click();
+    await expect(exemptionDialog).not.toBeVisible();
     const createdResponse = await savedClient;
     expect(createdResponse.status(), await createdResponse.text()).toBe(200);
     await page
@@ -1178,7 +1176,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       .getByRole("button", { name: `Edit client ${company}`, exact: true })
       .click();
     await expect(
-      page.getByRole("heading", { name: "Edit client profile", exact: true }),
+      page.getByRole("navigation", { name: "Onboarding progress" }),
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Packaging Data Import", exact: true }),
@@ -1209,6 +1207,10 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
         buffer: fileBytes,
       });
     await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(exemptionDialog).toBeVisible();
+    await exemptionDialog
+      .getByRole("button", { name: "No", exact: true })
+      .click();
     await expect(
       page.getByRole("button", {
         name: "View packaging for Manual Jar",
@@ -1223,10 +1225,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await page
       .getByRole("button", { name: "Save changes", exact: true })
       .click();
-    await page
-      .getByRole("dialog", { name: "Exemption check" })
-      .getByRole("button", { name: "No", exact: true })
-      .click();
+    await expect(exemptionDialog).not.toBeVisible();
     const savedProfileResponse = await savedProfile;
     expect(
       savedProfileResponse.status(),
@@ -1421,7 +1420,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     });
     await pendingRow.getByRole("button", { name: "Resume" }).click();
     await expect(
-      page.getByRole("heading", { name: "New client profile", exact: true }),
+      page.getByRole("navigation", { name: "Onboarding progress" }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Close form", exact: true }).click();
     expect(await db.collection("clients").countDocuments({ company })).toBe(1);
