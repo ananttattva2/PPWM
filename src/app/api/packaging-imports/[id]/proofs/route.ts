@@ -81,9 +81,12 @@ export async function GET(req: Request, context: Context) {
 export async function POST(req: Request, context: Context) {
   try {
     const { key, record, user } = await scope(req, context, true);
-    if (Number(req.headers.get("content-length")) > 13 * 1024 * 1024)
+    if (
+      Number(req.headers.get("content-length")) >
+      PROOF_MAX_SIZE * PROOF_BATCH_LIMIT + 1024 * 1024
+    )
       return Response.json(
-        { error: "Upload up to 6 files, 2 MB each." },
+        { error: "Upload up to 6 files, 10 MB each." },
         { status: 400 },
       );
     const form = await req.formData();
@@ -115,7 +118,7 @@ export async function POST(req: Request, context: Context) {
     for (const file of files) {
       if (!(file instanceof File) || !file.size || file.size > PROOF_MAX_SIZE)
         return Response.json(
-          { error: "Each proof must be a non-empty image or PDF up to 2 MB." },
+          { error: "Each proof must be a non-empty image or PDF up to 10 MB." },
           { status: 400 },
         );
       const bytes = new Uint8Array(await file.arrayBuffer());

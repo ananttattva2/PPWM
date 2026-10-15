@@ -1,17 +1,9 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import {
-  CloudUpload,
-  Download,
-  Eye,
-  FileText,
-  ImageIcon,
-  LoaderCircle,
-  Plus,
-  X,
-} from "lucide-react";
+import { Download, Eye, FileText, ImageIcon, Plus, X } from "lucide-react";
 import { Button } from "../ui/button";
+import ProofUploadChoices from "./proof-upload-choices";
 import {
   PROOF_BATCH_LIMIT,
   PROOF_MAX_SIZE,
@@ -35,12 +27,10 @@ export default function SustainabilityProofUpload({
   proofs: SustainabilityProof[];
   onUploaded: (proofs: SustainabilityProof[]) => void;
 }) {
-  const input = useRef<HTMLInputElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const headingId = useId();
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
-  const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -89,7 +79,7 @@ export default function SustainabilityProofUpload({
           ].includes(file.type),
       )
     ) {
-      setError("Choose up to 6 PNG, JPEG, WebP or PDF files, 2 MB each.");
+      setError("Choose up to 6 PNG, JPEG, WebP or PDF files, 10 MB each.");
       return;
     }
     setBusy(true);
@@ -176,74 +166,11 @@ export default function SustainabilityProofUpload({
                 </Button>
               </header>
               {canEdit && (
-                <section
-                  className={`proof-dropzone ${dragging ? "proof-dropzone-active" : ""} ${busy ? "proof-dropzone-busy" : ""}`}
-                  aria-label="Proof upload area"
-                  onDragOver={(event) => {
-                    event.preventDefault();
-                    if (!busy) setDragging(true);
-                  }}
-                  onDragLeave={(event) => {
-                    if (
-                      !event.currentTarget.contains(event.relatedTarget as Node)
-                    )
-                      setDragging(false);
-                  }}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    setDragging(false);
-                    void upload(Array.from(event.dataTransfer.files));
-                  }}
-                >
-                  <div className="proof-upload-art" aria-hidden="true">
-                    <span className="proof-art-ring" />
-                    <FileText className="proof-art-document" />
-                    <CloudUpload className="proof-art-cloud proof-art-cloud-left" />
-                    <CloudUpload className="proof-art-cloud proof-art-cloud-right" />
-                    <span className="proof-art-spark">✦</span>
-                    <span className="proof-art-plus">+</span>
-                  </div>
-                  <h3>
-                    {busy
-                      ? "Uploading your proofs…"
-                      : dragging
-                        ? "Drop your files here"
-                        : "Drag & drop your proof here"}
-                  </h3>
-                  <p>
-                    Images, certificates or test reports — keep everything
-                    together.
-                  </p>
-                  <input
-                    ref={input}
-                    type="file"
-                    multiple
-                    accept="image/png,image/jpeg,image/webp,application/pdf"
-                    hidden
-                    aria-label={`Upload proofs for ${title}`}
-                    disabled={busy}
-                    onChange={(event) => {
-                      const files = Array.from(event.target.files || []);
-                      event.target.value = "";
-                      void upload(files);
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => input.current?.click()}
-                  >
-                    {busy ? (
-                      <LoaderCircle size={17} className="animate-spin" />
-                    ) : (
-                      <Plus size={17} />
-                    )}{" "}
-                    {busy ? "Uploading…" : "Browse files"}
-                  </Button>
-                  <small>
-                    PNG, JPG, WebP & PDF · Up to 6 files at once · 2 MB per file
-                  </small>
-                </section>
+                <ProofUploadChoices
+                  title={title}
+                  busy={busy}
+                  onUpload={upload}
+                />
               )}
               <p className="sustainability-proof-status" role="status">
                 {message}
