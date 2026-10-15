@@ -17,7 +17,6 @@ import {
   groupCountKey,
   groupCountsPayload,
   groupPackagingSchema,
-  groupTotals,
   MAX_GROUP_COUNT,
   type GroupCounts,
 } from "@/lib/group-packaging";
@@ -37,8 +36,9 @@ export default function GroupPackaging({
   const [componentsOpen, setComponentsOpen] = useState(false);
   const [zoom, setZoom] = useState(false);
   const [counts, setCounts] = useState<GroupCounts>({});
+  const [skuCounts, setSkuCounts] = useState<GroupCounts>({});
   const [dirty, setDirty] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(imported?.id));
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
@@ -46,6 +46,7 @@ export default function GroupPackaging({
   const importId = imported?.id;
   useEffect(() => {
     setCounts({});
+    setSkuCounts({});
     setDirty(false);
     setLoadError("");
     setSaveError("");
@@ -68,11 +69,19 @@ export default function GroupPackaging({
           );
         const saved = parsed.data;
         const restored: GroupCounts = {};
+        const restoredSkuCounts: GroupCounts = {};
+        for (const group of saved.groups) {
+          if (group.count !== undefined)
+            restoredSkuCounts[String(group.rowNumber)] = String(group.count);
+        }
         for (const group of saved.groups)
           for (const component of group.components)
             restored[groupCountKey(group.rowNumber, component.componentId)] =
               String(component.count);
-        if (!controller.signal.aborted) setCounts(restored);
+        if (!controller.signal.aborted) {
+          setCounts(restored);
+          setSkuCounts(restoredSkuCounts);
+        }
       } catch (failure) {
         if (!controller.signal.aborted)
           setLoadError(
@@ -88,14 +97,11 @@ export default function GroupPackaging({
   const rows = imported?.analysis.rows || [];
   const row = rows.find((row) => row.rowNumber === selectedRow) || rows[0];
   const components = row?.composition?.components || [];
-  const totals = row
-    ? groupTotals(row, counts)
-    : { count: 0, weight: 0, weightComplete: true };
   const photo =
     row?.composition?.productImage || row?.composition?.productImages?.[0];
   const image = (assetId: string) =>
     `/api/packaging-imports/${importId}/assets/${assetId}`;
-  const invalid = Object.values(counts).some(
+  const invalid = Object.values(skuCounts).some(
     (value) =>
       value.trim() !== "" &&
       (!Number.isInteger(Number(value)) ||
@@ -106,7 +112,7 @@ export default function GroupPackaging({
   async function save() {
     if (!imported || locked || !dirty) return;
     const parsed = groupPackagingSchema.safeParse(
-      groupCountsPayload(rows, counts),
+      groupCountsPayload(rows, counts, skuCounts),
     );
     if (!parsed.success) {
       setSaveError("Enter whole-number counts between 0 and 100,000.");
@@ -153,10 +159,7 @@ export default function GroupPackaging({
         <div>
           <span className="composition-eyebrow">GROUP PACKAGING</span>
           <h2>Component count matrix</h2>
-          <p>
-            Choose a SKU and enter how many of each component belong in one
-            group.
-          </p>
+          <p>Enter the group count for each SKU and save your changes.</p>
         </div>
         <span
           className={`group-save-state ${dirty ? "unsaved" : ""}`}
@@ -183,25 +186,29 @@ export default function GroupPackaging({
       )}
       <div className="group-packaging-grid">
         <section className="group-product-card composition-card">
-          <label className="group-sku-picker">
-            SKU
-            <select
-              aria-label="Choose group packaging SKU"
-              value={row.rowNumber}
-              disabled={saving}
-              onChange={(event) => {
-                setSelectedRow(Number(event.target.value));
-                setComponentsOpen(false);
-              }}
+          {rows.length > 1 && (
+            <nav
+              className="group-sku-navigation"
+              aria-label="Group packaging products"
             >
               {rows.map((item) => (
-                <option key={item.rowNumber} value={item.rowNumber}>
-                  {item.productName || "Unnamed product"} ·{" "}
+                <button
+                  key={item.rowNumber}
+                  type="button"
+                  aria-current={
+                    row.rowNumber === item.rowNumber ? "true" : undefined
+                  }
+                  disabled={saving}
+                  onClick={() => {
+                    setSelectedRow(item.rowNumber);
+                    setComponentsOpen(false);
+                  }}
+                >
                   {item.sku || `Row ${item.rowNumber}`}
-                </option>
+                </button>
               ))}
-            </select>
-          </label>
+            </nav>
+          )}
           <div className="group-product-photo">
             {photo ? (
               <img
@@ -263,11 +270,9 @@ export default function GroupPackaging({
                   type="button"
                   key={component.id}
                   disabled={locked}
-                  aria-label={`Enter count for ${component.name || `component ${index + 1}`}`}
+                  aria-label={`View ${component.name || `component ${index + 1}`}`}
                   onClick={() =>
-                    document
-                      .getElementById(`${id}-${row.rowNumber}-${component.id}`)
-                      ?.focus()
+                    document.getElementById(`${id}-group-count`)?.focus()
                   }
                 >
                   <span className="group-component-thumb">
@@ -307,6 +312,32 @@ export default function GroupPackaging({
               {components.length} components
             </span>
           </div>
+          <label className="group-count-field" htmlFor={`${id}-group-count`}>
+            Group count
+            <input
+              id={`${id}-group-count`}
+              aria-label="Group count"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={MAX_GROUP_COUNT}
+              step={1}
+              placeholder="0"
+              value={skuCounts[String(row.rowNumber)] ?? ""}
+              disabled={locked}
+              aria-invalid={invalid || undefined}
+              onChange={(event) => {
+                const value = event.target.value;
+                setSkuCounts((current) => ({
+                  ...current,
+                  [String(row.rowNumber)]: value,
+                }));
+                setDirty(true);
+                setSaveError("");
+              }}
+            />
+            <small>Number of groups for this SKU.</small>
+          </label>
           {components.length ? (
             <div className="group-matrix-scroll">
               <table>
@@ -316,21 +347,11 @@ export default function GroupPackaging({
                 <thead>
                   <tr>
                     <th scope="col">Component</th>
-                    <th scope="col">Count per group</th>
                     <th scope="col">Weight each (g)</th>
-                    <th scope="col">Group weight (g)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {components.map((component, index) => {
-                    const key = groupCountKey(row.rowNumber, component.id);
-                    const value = counts[key] || "";
-                    const quantity = Number(value || 0);
-                    const bad =
-                      value.trim() !== "" &&
-                      (!Number.isInteger(quantity) ||
-                        quantity < 0 ||
-                        quantity > MAX_GROUP_COUNT);
                     const hasWeight = component.weight.trim() !== "";
                     return (
                       <tr key={component.id}>
@@ -358,54 +379,14 @@ export default function GroupPackaging({
                           </span>
                         </th>
                         <td>
-                          <input
-                            id={`${id}-${row.rowNumber}-${component.id}`}
-                            type="number"
-                            inputMode="numeric"
-                            min={0}
-                            max={MAX_GROUP_COUNT}
-                            step={1}
-                            value={value}
-                            placeholder="0"
-                            aria-label={`Count per group for ${component.name || `component ${index + 1}`}`}
-                            aria-invalid={bad || undefined}
-                            disabled={locked}
-                            onChange={(event) => {
-                              setCounts((current) => ({
-                                ...current,
-                                [key]: event.target.value,
-                              }));
-                              setDirty(true);
-                              setSaveError("");
-                            }}
-                          />
-                        </td>
-                        <td>
                           {hasWeight
                             ? Number(component.weight).toFixed(2)
                             : "—"}
-                        </td>
-                        <td>
-                          {bad || !hasWeight
-                            ? "—"
-                            : (quantity * Number(component.weight)).toFixed(2)}
                         </td>
                       </tr>
                     );
                   })}
                 </tbody>
-                <tfoot>
-                  <tr>
-                    <th scope="row">Total per group</th>
-                    <td>{totals.count} items</td>
-                    <td />
-                    <td>
-                      {totals.weightComplete
-                        ? `${totals.weight.toFixed(2)} g`
-                        : "—"}
-                    </td>
-                  </tr>
-                </tfoot>
               </table>
             </div>
           ) : (
@@ -416,12 +397,6 @@ export default function GroupPackaging({
               </p>
             </div>
           )}
-          {!totals.weightComplete && (
-            <p className="group-matrix-hint">
-              Add missing component weights in Sales Packaging to calculate the
-              full group weight.
-            </p>
-          )}
           {(invalid || saveError) && (
             <p className="group-packaging-error" role="alert">
               {saveError ||
@@ -430,8 +405,7 @@ export default function GroupPackaging({
           )}
           <footer className="group-matrix-footer">
             <span>
-              Counts for all SKUs save together. Leave unused components blank
-              or enter 0.
+              Group counts for all SKUs save together. Enter 0 for unused SKUs.
             </span>
             {canEdit && (
               <button

@@ -790,14 +790,11 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       }),
     ).toBeVisible();
     const bottleCount = page.getByRole("spinbutton", {
-      name: "Count per group for Bottle",
+      name: "Group count",
       exact: true,
     });
     await expect(bottleCount).toBeEnabled();
     await bottleCount.fill("6");
-    await page
-      .getByRole("spinbutton", { name: "Count per group for Cap", exact: true })
-      .fill("6");
     const groupSaved = page.waitForResponse(
       (response) =>
         response
@@ -813,11 +810,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     const savedGroup = await db
       .collection("groupPackaging")
       .findOne({ _id: new ObjectId(importRecord.id) });
-    expect(
-      savedGroup?.groups[0].components.map(
-        (component: { count: number }) => component.count,
-      ),
-    ).toEqual([6, 6]);
+    expect(savedGroup?.groups[0].count).toBe(6);
     const anonymousGroup = await request.put(
       `/api/packaging-imports/${importRecord.id}/group-packaging`,
       { headers: { Origin: "http://localhost:3000" }, data: { groups: [] } },

@@ -3436,3 +3436,48 @@
     transition: none;
   }
 }
+.group-count-field {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0 24px;
+  color: var(--text);
+  font-weight: 600;
+}
+.group-count-field input {
+  width: min(100%, 300px);
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.group-count-field input:focus {
+  outline: none;
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px #ff71081a;
+}
+.group-count-field small {
+  color: var(--muted);
+  font-weight: 400;
+}
+.group-sku-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.group-sku-navigation button {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+}
+.group-sku-navigation button[aria-current] {
+  color: var(--orange);
+  border-color: var(--orange);
+}

@@ -10,6 +10,7 @@ export const groupPackagingSchema = z.object({
     .array(
       z.object({
         rowNumber: z.number().int().min(1).max(1001),
+        count: z.number().int().min(0).max(MAX_GROUP_COUNT).optional(),
         components: z
           .array(componentCountSchema)
           .max(30)
@@ -36,11 +37,15 @@ export function groupCountKey(rowNumber: number, componentId: string) {
 export function groupCountsPayload(
   rows: PackagingRow[],
   counts: GroupCounts,
+  skuCounts: GroupCounts = {},
 ): GroupPackagingData {
   return {
     groups: rows
       .map((row) => ({
         rowNumber: row.rowNumber,
+        ...(skuCounts[String(row.rowNumber)]?.trim()
+          ? { count: Number(skuCounts[String(row.rowNumber)]) }
+          : {}),
         components: (row.composition?.components || []).flatMap((component) => {
           const value = counts[groupCountKey(row.rowNumber, component.id)];
           return value === undefined || value.trim() === ""
@@ -48,7 +53,9 @@ export function groupCountsPayload(
             : [{ componentId: component.id, count: Number(value) }];
         }),
       }))
-      .filter((group) => group.components.length > 0),
+      .filter(
+        (group) => group.components.length > 0 || group.count !== undefined,
+      ),
   };
 }
 export function groupReferencesExist(

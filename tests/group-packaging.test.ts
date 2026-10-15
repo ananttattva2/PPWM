@@ -114,3 +114,22 @@ test("group totals multiply quantities and do not claim missing weights are know
     weightComplete: false,
   });
 });
+test("SKU group counts persist independently and validate whole numbers", () => {
+  const payload = groupCountsPayload(rows, {}, { "2": "24", "3": "0" });
+  assert.deepEqual(payload, {
+    groups: [
+      { rowNumber: 2, count: 24, components: [] },
+      { rowNumber: 3, count: 0, components: [] },
+    ],
+  });
+  assert.deepEqual(groupPackagingSchema.parse(payload), payload);
+  assert.equal(groupReferencesExist(payload, rows), true);
+  for (const count of [-1, 1.5, 100001])
+    assert.equal(
+      groupPackagingSchema.safeParse({
+        groups: [{ rowNumber: 2, count, components: [] }],
+      }).success,
+      false,
+    );
+  assert.deepEqual(groupCountsPayload(rows, {}, { "2": "" }), { groups: [] });
+});
