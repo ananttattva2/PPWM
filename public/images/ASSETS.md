@@ -19,3 +19,7 @@ Final generation prompt:
 ## Packaging category photographs
 
 The `categories/` directory contains individually generated studio product photographs for the category-selection screen: storage tub, rigid jug, foil pouch, spouted pouch, foam tray, EPS block, rigid plastic assortment, film roll, biodegradable cups, and a bottle splash with leaves. Generated with the built-in image generator on 2026-10-15, with transparent backgrounds and no branding. Assets are optimized as WebP while preserving alpha. PET/PP storage tubs, flexible pouches, and PE/HDPE jugs intentionally share representative product images. Labels and selection controls remain HTML.
+
+## Illustrated empty search state
+
+`categories/empty-search.webp` is a transparent 3D editorial illustration generated with the built-in image generator on 2026-10-15. It depicts a blue magnifying glass emerging from a packaging box, floating packaging cards and leaves. Search fields, explanatory copy, recovery actions and all animations are implemented in the website. Original generation output remains in the local image library.

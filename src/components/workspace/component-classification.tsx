@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
@@ -10,6 +10,8 @@ import {
   Boxes,
   Search,
   ArrowRight,
+  RotateCcw,
+  SlidersHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -81,6 +83,8 @@ export default function ComponentClassification({
   const [savedThisSession, setSavedThisSession] = useState(false);
   const [error, setError] = useState("");
   const reduce = useReducedMotion();
+  const categorySearchRef = useRef<HTMLInputElement>(null);
+  const emptySearchRef = useRef<HTMLInputElement>(null);
   const categories = packagingCategories.filter(
     (category) =>
       (family === "Multi-material" || category.family === family) &&
@@ -88,6 +92,17 @@ export default function ComponentClassification({
         .toLowerCase()
         .includes(categoryQuery.trim().toLowerCase()),
   );
+  useEffect(() => {
+    if (
+      categories.length > 0 &&
+      document.activeElement === emptySearchRef.current
+    ) {
+      const cursor =
+        emptySearchRef.current?.selectionStart ?? categoryQuery.length;
+      categorySearchRef.current?.focus({ preventScroll: true });
+      categorySearchRef.current?.setSelectionRange(cursor, cursor);
+    }
+  }, [categories.length, categoryQuery]);
   async function chooseCategory(id: string) {
     if (!canEdit || !family || busy) return;
     setBusy(true);
@@ -238,6 +253,7 @@ export default function ComponentClassification({
               <label className="category-search">
                 <Search size={20} aria-hidden="true" />
                 <input
+                  ref={categorySearchRef}
                   type="search"
                   aria-label="Search packaging category"
                   placeholder="Search packaging category..."
@@ -356,22 +372,94 @@ export default function ComponentClassification({
                   <motion.div
                     key="category-empty"
                     className="category-empty"
-                    role="status"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: reduce ? 0 : 0.15 }}
+                    role="region"
+                    aria-label="No matching categories"
+                    initial={{
+                      opacity: 0,
+                      y: reduce ? 0 : 20,
+                      scale: reduce ? 1 : 0.985,
+                    }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: reduce ? 0 : -10 }}
+                    transition={{
+                      duration: reduce ? 0 : 0.35,
+                      ease: [0.22, 1, 0.36, 1],
+                    }}
                   >
-                    <Search size={28} />
-                    <h3>No matching packaging categories</h3>
-                    <p>Try another material, polymer or packaging type.</p>
-                    <button
-                      type="button"
-                      className="text-button"
-                      onClick={() => setCategoryQuery("")}
+                    <div className="category-empty-ambient" aria-hidden="true">
+                      <img src="/images/materials/paper.webp" alt="" />
+                      <img src="/images/materials/plastic.webp" alt="" />
+                    </div>
+                    <motion.div
+                      className="category-empty-art"
+                      aria-hidden="true"
+                      initial={{ opacity: 0, x: reduce ? 0 : -18 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: reduce ? 0 : 0.5 }}
                     >
-                      Clear search
-                    </button>
+                      <img
+                        src="/images/categories/empty-search.webp"
+                        alt=""
+                        width={600}
+                        height={600}
+                      />
+                    </motion.div>
+                    <motion.div
+                      className="category-empty-copy"
+                      initial={{ opacity: 0, y: reduce ? 0 : 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: reduce ? 0 : 0.35,
+                        delay: reduce ? 0 : 0.08,
+                      }}
+                    >
+                      <div role="status">
+                        <h3>No matching packaging categories</h3>
+                        <p>
+                          Try another material, polymer or packaging type, or
+                          clear your filters to see more results.
+                        </p>
+                      </div>
+                      <label className="category-empty-search">
+                        <Search size={22} aria-hidden="true" />
+                        <input
+                          ref={emptySearchRef}
+                          type="search"
+                          aria-label="Refine packaging category search"
+                          placeholder="Search packaging category..."
+                          value={categoryQuery}
+                          onChange={(event) =>
+                            setCategoryQuery(event.target.value)
+                          }
+                        />
+                      </label>
+                      <div className="category-empty-actions">
+                        <button
+                          type="button"
+                          className="category-empty-clear"
+                          onClick={() => {
+                            setCategoryQuery("");
+                            categorySearchRef.current?.focus({
+                              preventScroll: true,
+                            });
+                          }}
+                        >
+                          <RotateCcw size={21} aria-hidden="true" />
+                          Clear search
+                        </button>
+                        <button
+                          type="button"
+                          className="category-empty-adjust"
+                          onClick={() => {
+                            setCategoryQuery("");
+                            setStep(1);
+                          }}
+                        >
+                          <SlidersHorizontal size={21} aria-hidden="true" />
+                          Adjust filters
+                        </button>
+                      </div>
+                    </motion.div>
                   </motion.div>
                 )}
               </AnimatePresence>

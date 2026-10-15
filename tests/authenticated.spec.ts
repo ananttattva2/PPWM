@@ -858,6 +858,27 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
             exact: true,
           }),
         ).toBeVisible();
+        const recoveryPanel = componentPage.getByRole("region", {
+          name: "No matching categories",
+          exact: true,
+        });
+        await expect(
+          recoveryPanel.getByRole("button", {
+            name: "Adjust filters",
+            exact: true,
+          }),
+        ).toBeVisible();
+        await recoveryPanel
+          .getByRole("searchbox", {
+            name: "Refine packaging category search",
+            exact: true,
+          })
+          .fill("HDPE");
+        await expect(
+          componentPage.locator(".category-choice-grid > button"),
+        ).toHaveCount(1);
+        await expect(categorySearch).toBeFocused();
+        await categorySearch.fill("no-matching-category");
         await componentPage
           .getByRole("button", { name: "Clear search", exact: true })
           .click();
