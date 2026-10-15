@@ -15,7 +15,11 @@ export default function SustainabilityChecklist({
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     heading.current?.focus({ preventScroll: true });
-  }, []);
+    heading.current?.scrollIntoView({
+      behavior: reduce ? "instant" : "smooth",
+      block: "start",
+    });
+  }, [reduce]);
   return (
     <section
       className="sustainability-checklist"

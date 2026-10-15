@@ -1009,7 +1009,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
         componentPage.getByText("Material and packaging category saved.", {
           exact: true,
         }),
-      ).toBeVisible();
+      ).toHaveCount(0);
       await expect(
         componentPage.getByRole("heading", {
           name: "Sustainability Checklist",

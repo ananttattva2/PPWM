@@ -14,7 +14,6 @@ import {
   Package,
   Building2,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "../ui/button";
 import type { CompositionComponent } from "@/lib/packaging-composition";
 import SustainabilityChecklist from "./sustainability-checklist";
@@ -146,9 +145,6 @@ export default function ComponentClassification({
       setCategoryId(id);
       setSavedThisSession(true);
       setStep(3);
-      toast.success("Material and packaging category saved.", {
-        description: "Your material and packaging category have been saved.",
-      });
     } catch (failure) {
       setError((failure as Error).message);
     } finally {
