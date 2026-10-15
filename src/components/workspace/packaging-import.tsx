@@ -346,21 +346,23 @@ export default function PackagingImport({
     <div
       className={`packaging-import-workspace ${result?.clientId ? "confirmed-import" : ""}`}
     >
-      <div className="import-workspace-heading">
-        <div>
-          <h3>Packaging Data Import</h3>
-          <p>
-            {result?.clientId
-              ? "Use the edit icon to complete packaging details. Changes are saved to this client’s SKUs."
-              : "Upload your file, map its columns and add packaging details. Missing data can be completed later."}
-          </p>
+      {!result?.clientId && (
+        <div className="import-workspace-heading">
+          <div>
+            <h3>Packaging Data Import</h3>
+            <p>
+              {result?.clientId
+                ? "Use the edit icon to complete packaging details. Changes are saved to this client’s SKUs."
+                : "Upload your file, map its columns and add packaging details. Missing data can be completed later."}
+            </p>
+          </div>
+          <div className="import-heading-actions">
+            <Button type="button" variant="outline" onClick={template}>
+              <Download size={14} /> Download template
+            </Button>
+          </div>
         </div>
-        <div className="import-heading-actions">
-          <Button type="button" variant="outline" onClick={template}>
-            <Download size={14} /> Download template
-          </Button>
-        </div>
-      </div>
+      )}
       <div className="import-flow" aria-label="Packaging import progress">
         {[
           ["Upload file", Boolean(file || result)],
@@ -577,111 +579,118 @@ export default function PackagingImport({
           File to refresh and save your results.
         </div>
       )}
-      <div className="import-summary-grid">
-        <section className="import-panel import-summary">
-          <h4>Import Summary</h4>
-          <div>
-            {[
-              [Package, "Total SKUs Detected", summary.total, "mint"],
-              [CheckCircle2, "Ready for Assessment", summary.complete, "green"],
-              [AlertCircle, "Incomplete Data", summary.missing, "amber"],
-              [AlertTriangle, "Validation Errors", summary.errors, "red"],
-            ].map(([Icon, label, count, tone]) => {
-              const I = Icon as typeof FileText;
-              return (
-                <motion.div
-                  className={`import-stat ${tone}`}
-                  key={label as string}
-                  animate={{ opacity: 1, scale: 1 }}
-                  initial={{ opacity: 0.7, scale: 0.98 }}
-                >
-                  <I size={24} />
-                  <div>
-                    <small>{label as string}</small>
-                    <b>{count as number}</b>
-                    <em>
-                      {label === "Total SKUs Detected"
-                        ? "Uploaded rows"
-                        : percentage(count as number)}
-                    </em>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </section>
-        <section className="import-panel completeness-panel">
-          <h4>Data Completeness</h4>
-          <div className="completeness-body">
-            <RingProgress
-              size={result?.clientId ? 68 : 94}
-              thickness={result?.clientId ? 7 : 9}
-              transitionDuration={reducedMotion ? 0 : 900}
-              sections={
-                (chartReady || reducedMotion) && summary.total
-                  ? [
-                      {
-                        value: (summary.complete / summary.total) * 100,
-                        color: "green",
-                      },
-                      {
-                        value: (summary.missing / summary.total) * 100,
-                        color: "orange",
-                      },
-                      {
-                        value: (summary.errors / summary.total) * 100,
-                        color: "red",
-                      },
-                    ]
-                  : []
-              }
-              label={<b>{summary.completeness}%</b>}
-            />
-            <ul>
+      {!result?.clientId && (
+        <div className="import-summary-grid">
+          <section className="import-panel import-summary">
+            <h4>Import Summary</h4>
+            <div>
               {[
-                ["Complete", summary.complete, "green"],
-                ["Incomplete", summary.missing, "amber"],
-                ["Errors", summary.errors, "red"],
-              ].map(([label, count, tone]) => (
-                <li key={label as string}>
-                  <i className={tone as string} />
-                  {label as string}
-                  <b>{count as number}</b>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <p>Based on required packaging fields in this file.</p>
-        </section>
-        <section className="import-panel import-next-steps">
-          <h4>Next Steps</h4>
-          {[
-            "Map required columns",
-            "Review missing fields",
-            "Fix validation errors",
-            "Save client & finish later",
-          ].map((label, index) => (
-            <button
-              type="button"
-              key={label}
-              onClick={() =>
-                openTab(
-                  index === 0
-                    ? "Column Mapping"
-                    : index === 1
-                      ? "Missing Fields"
-                      : index === 2
-                        ? "Validation Issues"
-                        : "Data Preview",
-                )
-              }
-            >
-              <span>{index + 1}</span>
-              {label}
-            </button>
-          ))}
-        </section>
-      </div>
+                [Package, "Total SKUs Detected", summary.total, "mint"],
+                [
+                  CheckCircle2,
+                  "Ready for Assessment",
+                  summary.complete,
+                  "green",
+                ],
+                [AlertCircle, "Incomplete Data", summary.missing, "amber"],
+                [AlertTriangle, "Validation Errors", summary.errors, "red"],
+              ].map(([Icon, label, count, tone]) => {
+                const I = Icon as typeof FileText;
+                return (
+                  <motion.div
+                    className={`import-stat ${tone}`}
+                    key={label as string}
+                    animate={{ opacity: 1, scale: 1 }}
+                    initial={{ opacity: 0.7, scale: 0.98 }}
+                  >
+                    <I size={24} />
+                    <div>
+                      <small>{label as string}</small>
+                      <b>{count as number}</b>
+                      <em>
+                        {label === "Total SKUs Detected"
+                          ? "Uploaded rows"
+                          : percentage(count as number)}
+                      </em>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </section>
+          <section className="import-panel completeness-panel">
+            <h4>Data Completeness</h4>
+            <div className="completeness-body">
+              <RingProgress
+                size={result?.clientId ? 68 : 94}
+                thickness={result?.clientId ? 7 : 9}
+                transitionDuration={reducedMotion ? 0 : 900}
+                sections={
+                  (chartReady || reducedMotion) && summary.total
+                    ? [
+                        {
+                          value: (summary.complete / summary.total) * 100,
+                          color: "green",
+                        },
+                        {
+                          value: (summary.missing / summary.total) * 100,
+                          color: "orange",
+                        },
+                        {
+                          value: (summary.errors / summary.total) * 100,
+                          color: "red",
+                        },
+                      ]
+                    : []
+                }
+                label={<b>{summary.completeness}%</b>}
+              />
+              <ul>
+                {[
+                  ["Complete", summary.complete, "green"],
+                  ["Incomplete", summary.missing, "amber"],
+                  ["Errors", summary.errors, "red"],
+                ].map(([label, count, tone]) => (
+                  <li key={label as string}>
+                    <i className={tone as string} />
+                    {label as string}
+                    <b>{count as number}</b>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <p>Based on required packaging fields in this file.</p>
+          </section>
+          <section className="import-panel import-next-steps">
+            <h4>Next Steps</h4>
+            {[
+              "Map required columns",
+              "Review missing fields",
+              "Fix validation errors",
+              "Save client & finish later",
+            ].map((label, index) => (
+              <button
+                type="button"
+                key={label}
+                onClick={() =>
+                  openTab(
+                    index === 0
+                      ? "Column Mapping"
+                      : index === 1
+                        ? "Missing Fields"
+                        : index === 2
+                          ? "Validation Issues"
+                          : "Data Preview",
+                  )
+                }
+              >
+                <span>{index + 1}</span>
+                {label}
+              </button>
+            ))}
+          </section>
+        </div>
+      )}
       {result && (
         <div
           className={`import-review-banner ${summary.missing || summary.errors ? "needs-review" : "ready"}`}
