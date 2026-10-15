@@ -1,6 +1,7 @@
 import { Binary, ObjectId } from "mongodb";
 import { db, getClient } from "@/lib/db";
 import { apiError, checkOrigin, requireUser } from "@/lib/access";
+import { hydrateImportSuppliers } from "@/lib/hydrate-import-suppliers";
 import { initialComposition } from "@/lib/packaging-composition";
 import type { PackagingComposition } from "@/lib/packaging-composition";
 import type { PackagingRow } from "@/lib/packaging-import-schema";
@@ -20,6 +21,12 @@ export async function POST(
     const form = await req.formData();
     const rowNumber = Number(form.get("rowNumber"));
     const files = form.getAll("photos");
+    const componentId = String(form.get("componentId") || "");
+    if (
+      componentId &&
+      (!/^[a-zA-Z0-9-]{1,60}$/.test(componentId) || files.length !== 1)
+    )
+      throw new Error("Choose one photo for a saved component.");
     if (
       !Number.isInteger(rowNumber) ||
       rowNumber < 1 ||
@@ -71,16 +78,33 @@ export async function POST(
           (row) => row.rowNumber === rowNumber,
         );
         if (index < 0) throw new Error("SKU not found.");
+        const hydrated = hydrateImportSuppliers({
+          headers: record.headers,
+          mapping: record.mapping || {},
+          rawRows: record.rawRows,
+          settings: record.settings,
+          analysis: record.analysis,
+        });
         composition = structuredClone(
-          initialComposition(record.analysis.rows[index]),
+          initialComposition(hydrated.analysis.rows[index]),
         );
-        if (!record.analysis.rows[index].composition)
+        const component = componentId
+          ? composition.components.find(
+              (component) => component.id === componentId,
+            )
+          : undefined;
+        if (componentId && !component)
+          throw new Error(
+            "Component not found. Reload this SKU before uploading.",
+          );
+        if (!record.analysis.rows[index].composition && !componentId)
           composition.components = [];
         if (
+          !componentId &&
           composition.productImages.length +
             (composition.productImage ? 1 : 0) +
             uploads.length >
-          12
+            12
         )
           throw new Error("Keep a maximum of 12 product photos per SKU.");
         for (const upload of uploads) {
@@ -91,14 +115,15 @@ export async function POST(
               ...upload,
               importId: id,
               rowNumber,
-              componentId: "gallery",
+              componentId: componentId || "gallery",
               createdBy: user.id,
               createdAt: new Date(),
               ...(record.expiresAt ? { expiresAt: record.expiresAt } : {}),
             },
             { session },
           );
-          if (!composition.productImage)
+          if (component) component.image = assetId.toString();
+          else if (!composition.productImage)
             composition.productImage = assetId.toString();
           else composition.productImages.push(assetId.toString());
         }
@@ -134,6 +159,8 @@ export async function POST(
           error: [
             "Use PNG",
             "Choose 1",
+            "Choose one",
+            "Component not",
             "Upload up",
             "A photo",
             "Keep a maximum",

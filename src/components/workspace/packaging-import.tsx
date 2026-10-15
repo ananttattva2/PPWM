@@ -301,6 +301,7 @@ export default function PackagingImport({
         }
       >
         <PackagingView
+          canEdit={canEdit}
           key={`${result.id}-${viewedRow.rowNumber}`}
           row={viewedRow}
           importId={result.id}

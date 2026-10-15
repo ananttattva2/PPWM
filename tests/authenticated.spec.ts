@@ -708,30 +708,55 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await expect(
       page.getByRole("heading", { name: "Packaging details", exact: true }),
     ).toBeVisible();
-    const facts = page
-      .locator(".composition-saved-component .component-facts")
-      .first();
-    const detailsToggle = page.getByRole("button", {
-      name: "Expand Bottle details",
-      exact: true,
-    });
-    await expect(detailsToggle).toHaveAttribute("aria-expanded", "false");
-    await expect(facts.locator("..")).toHaveCSS("height", "0px");
-    await detailsToggle.click();
     await expect(
-      page.getByRole("button", {
-        name: "Collapse Bottle details",
-        exact: true,
-      }),
-    ).toHaveAttribute("aria-expanded", "true");
-    await expect(facts.locator("..")).not.toHaveCSS("height", "0px");
-    const firstFacts = await facts
-      .locator(":scope > div")
-      .evaluateAll((nodes) =>
-        nodes.slice(0, 3).map((node) => node.getBoundingClientRect().top),
-      );
-    expect(firstFacts).toHaveLength(3);
-    expect(Math.max(...firstFacts) - Math.min(...firstFacts)).toBeLessThan(1);
+      page.locator(".composition-saved-component .component-facts"),
+    ).toHaveCount(0);
+    await expect(page.locator(".component-details-toggle")).toHaveCount(0);
+    const componentPhotoSaved = page.waitForResponse(
+      (response) =>
+        response
+          .url()
+          .endsWith(`/api/packaging-imports/${importRecord.id}/photos`) &&
+        response.request().method() === "POST",
+    );
+    await page
+      .getByLabel("Upload Bottle photo", { exact: true })
+      .setInputFiles({
+        name: "bottle-preview.png",
+        mimeType: "image/png",
+        buffer: png,
+      });
+    const photoResponse = await componentPhotoSaved;
+    expect(photoResponse.status()).toBe(200);
+    const uploadedComponent = (
+      await photoResponse.json()
+    ).composition.components.find(
+      (component: { name: string }) => component.name === "Bottle",
+    );
+    expect(uploadedComponent.image).toMatch(/^[a-f0-9]{24}$/);
+    await expect(
+      page.locator(".composition-view-component-photo img").first(),
+    ).toHaveAttribute("src", new RegExp(uploadedComponent.image));
+    const persistedComponentPhoto = await db
+      .collection("packagingSkus")
+      .findOne({ importId: importRecord.id, rowNumber: 2 });
+    expect(
+      persistedComponentPhoto?.composition.components.find(
+        (component: { name: string }) => component.name === "Bottle",
+      ).image,
+    ).toBe(uploadedComponent.image);
+    const unknownComponent = await page.request.post(
+      `/api/packaging-imports/${importRecord.id}/photos`,
+      {
+        headers: { Origin: "http://localhost:3000" },
+        multipart: {
+          rowNumber: "2",
+          componentId: "missing-component",
+          photos: { name: "test.png", mimeType: "image/png", buffer: png },
+        },
+      },
+    );
+    expect(unknownComponent.status()).toBe(400);
     await expect(page.locator(".product-identity")).toContainText(
       "Mineral Water 500ml",
     );

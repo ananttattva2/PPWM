@@ -11,8 +11,10 @@ import {
   Pencil,
   CheckCircle2,
   ChartNoAxesCombined,
-  ChevronDown,
+  Upload,
+  LoaderCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { type PackagingRow } from "@/lib/packaging-import-schema";
 
@@ -23,7 +25,9 @@ export default function PackagingView({
   onEdit,
   onPhotosSaved,
   onBusy,
+  canEdit = true,
 }: {
+  canEdit?: boolean;
   row: PackagingRow;
   importId: string;
   onBack: () => void;
@@ -34,7 +38,9 @@ export default function PackagingView({
   const top = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
   const [uploading, setUploading] = useState(false);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [uploadingComponent, setUploadingComponent] = useState<string | null>(
+    null,
+  );
   useEffect(() => {
     top.current?.focus();
     top.current?.scrollIntoView({ behavior: "instant", block: "start" });
@@ -47,6 +53,41 @@ export default function PackagingView({
   );
   const image = (id: string) =>
     `/api/packaging-imports/${importId}/assets/${id}`;
+  async function uploadComponent(componentId: string, file?: File) {
+    if (!file || uploading || !canEdit) return;
+    if (
+      !file.size ||
+      file.size > 2 * 1024 * 1024 ||
+      !["image/png", "image/jpeg"].includes(file.type)
+    ) {
+      toast.error("Use a PNG or JPEG photo up to 2 MB.");
+      return;
+    }
+    setUploading(true);
+    setUploadingComponent(componentId);
+    onBusy(true);
+    try {
+      const data = new FormData();
+      data.append("rowNumber", String(row.rowNumber));
+      data.append("componentId", componentId);
+      data.append("photos", file);
+      const response = await fetch(
+        `/api/packaging-imports/${importId}/photos`,
+        { method: "POST", body: data },
+      );
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(result.error || "Could not save component photo.");
+      onPhotosSaved(result.composition);
+      toast.success("Component photo uploaded and saved");
+    } catch (error) {
+      toast.error((error as Error).message);
+    } finally {
+      setUploading(false);
+      setUploadingComponent(null);
+      onBusy(false);
+    }
+  }
   return (
     <motion.div
       ref={top}
@@ -104,6 +145,7 @@ export default function PackagingView({
           </section>
           <PackagingGallery
             row={row}
+            disabled={Boolean(uploadingComponent) || !canEdit}
             importId={importId}
             onSaved={onPhotosSaved}
             onBusy={(busy) => {
@@ -124,7 +166,7 @@ export default function PackagingView({
                   <span className="composition-count">{components.length}</span>
                 </h3>
                 <p>
-                  All saved materials, weights and component-specific details.
+                  Upload component photos or analyse each packaging component.
                 </p>
               </div>
               <span className="composition-view-total">
@@ -141,18 +183,50 @@ export default function PackagingView({
                     {index + 1}
                   </div>
                   <div className="composition-view-component-photo">
-                    {component.image ? (
-                      <a
-                        href={image(component.image)}
-                        target="_blank"
-                        rel="noreferrer"
-                        aria-label={`Open ${component.name || `component ${index + 1}`} photo`}
+                    {canEdit ? (
+                      <label
+                        className={`component-photo-upload ${uploading ? "is-busy" : ""}`}
                       >
-                        <img
-                          src={image(component.image)}
-                          alt={component.name || `Component ${index + 1}`}
+                        <input
+                          type="file"
+                          className="sr-only"
+                          accept="image/png,image/jpeg"
+                          disabled={uploading}
+                          aria-label={`Upload ${component.name || `component ${index + 1}`} photo`}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            event.target.value = "";
+                            void uploadComponent(component.id, file);
+                          }}
                         />
-                      </a>
+                        {component.image ? (
+                          <img
+                            src={image(component.image)}
+                            alt={component.name || `Component ${index + 1}`}
+                          />
+                        ) : (
+                          <Package size={28} aria-hidden="true" />
+                        )}
+                        <span className="component-photo-upload-action">
+                          {uploadingComponent === component.id ? (
+                            <LoaderCircle size={16} className="spin" />
+                          ) : (
+                            <Upload size={16} />
+                          )}
+                          <span>
+                            {uploadingComponent === component.id
+                              ? "Saving…"
+                              : component.image
+                                ? "Replace"
+                                : "Upload"}
+                          </span>
+                        </span>
+                      </label>
+                    ) : component.image ? (
+                      <img
+                        src={image(component.image)}
+                        alt={component.name || `Component ${index + 1}`}
+                      />
                     ) : (
                       <Package size={28} />
                     )}
@@ -172,66 +246,8 @@ export default function PackagingView({
                         >
                           <ChartNoAxesCombined size={15} /> Analyse
                         </Link>
-                        <button
-                          type="button"
-                          className="component-details-toggle"
-                          aria-expanded={!!expanded[component.id]}
-                          aria-controls={`component-details-${component.id}`}
-                          aria-label={`${expanded[component.id] ? "Collapse" : "Expand"} ${component.name || `component ${index + 1}`} details`}
-                          onClick={() =>
-                            setExpanded((current) => ({
-                              ...current,
-                              [component.id]: !current[component.id],
-                            }))
-                          }
-                        >
-                          <ChevronDown size={18} />
-                        </button>
                       </div>
                     </div>
-                    <motion.div
-                      id={`component-details-${component.id}`}
-                      initial={false}
-                      animate={{
-                        height: expanded[component.id] ? "auto" : 0,
-                        opacity: expanded[component.id] ? 1 : 0,
-                      }}
-                      transition={{
-                        duration: reducedMotion ? 0 : 0.28,
-                        ease: "easeInOut",
-                      }}
-                      style={{ overflow: "hidden" }}
-                      aria-hidden={!expanded[component.id]}
-                    >
-                      <dl className="composition-view-facts component-facts">
-                        {[
-                          ["Polymer", component.material],
-                          ["Food grade", component.foodGrade],
-                          ["Supplier name", component.supplierName],
-                          ["Supplier address", component.supplierAddress],
-                          [
-                            "Supplier contact number",
-                            component.supplierContactNumber,
-                          ],
-                          ["Supplier email", component.supplierEmail],
-                          [
-                            "Supplier authorised person name",
-                            component.supplierAuthorisedPersonName,
-                          ],
-                          ["Colour", component.colour],
-                          ["Weight (g)", component.weight],
-                          ["Label coverage (%)", component.labelCoverage],
-                          ["Adhesive type", component.adhesiveType],
-                          ["Barrier layer details", component.barrierLayer],
-                          ["Printing / ink details", component.printingInk],
-                        ].map(([label, value]) => (
-                          <div key={label}>
-                            <dt>{label}</dt>
-                            <dd>{value || "Not provided"}</dd>
-                          </div>
-                        ))}
-                      </dl>
-                    </motion.div>
                   </div>
                 </article>
               ))
@@ -260,7 +276,8 @@ export default function PackagingView({
       <footer className="composition-footer">
         <span>
           <CheckCircle2 size={16} />
-          Viewing saved details. Changes are made in edit mode.
+          Component photos save automatically. Other details are available in
+          edit mode.
         </span>
         <Button type="button" onClick={onEdit} disabled={uploading}>
           <Pencil size={16} /> Edit details

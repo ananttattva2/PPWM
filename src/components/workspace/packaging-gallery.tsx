@@ -19,7 +19,9 @@ export default function PackagingGallery({
   importId,
   onSaved,
   onBusy,
+  disabled = false,
 }: {
+  disabled?: boolean;
   row: PackagingRow;
   importId: string;
   onSaved: (composition: PackagingComposition) => void;
@@ -62,7 +64,7 @@ export default function PackagingGallery({
     setSelected(photos[(next + photos.length) % photos.length]);
   }
   async function upload(files: File[]) {
-    if (!files.length || busy) return;
+    if (!files.length || busy || disabled) return;
     if (
       files.length > 6 ||
       files.some(
@@ -241,7 +243,7 @@ export default function PackagingGallery({
         <button
           type="button"
           className="gallery-upload"
-          disabled={busy}
+          disabled={busy || disabled}
           onClick={() => input.current?.click()}
         >
           {busy ? (
@@ -259,7 +261,7 @@ export default function PackagingGallery({
         multiple
         accept="image/png,image/jpeg"
         aria-label="Upload additional product photos"
-        disabled={busy}
+        disabled={busy || disabled}
         onChange={(event) => {
           void upload(Array.from(event.target.files || []));
           event.target.value = "";

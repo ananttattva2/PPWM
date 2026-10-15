@@ -3517,3 +3517,57 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+.component-photo-upload {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+  cursor: pointer;
+  overflow: hidden;
+  border-radius: 9px;
+  border: 1px dashed transparent;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.component-photo-upload:hover,
+.component-photo-upload:focus-within {
+  background: #ff71080b;
+  border-color: var(--orange);
+}
+.component-photo-upload:focus-within {
+  outline: 2px solid var(--orange);
+  outline-offset: 3px;
+}
+.component-photo-upload.is-busy {
+  cursor: wait;
+}
+.component-photo-upload-action {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  inset: auto 0 0;
+  padding: 7px 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--orange);
+  background: #fff8efef;
+  transition: background 0.2s;
+}
+.component-photo-upload:hover .component-photo-upload-action {
+  background: #ff7108;
+  color: #fff;
+}
+[data-mantine-color-scheme="dark"] .component-photo-upload-action {
+  background: #1b2738ed;
+}
+@media (prefers-reduced-motion: reduce) {
+  .component-photo-upload,
+  .component-photo-upload-action {
+    transition: none;
+  }
+}
