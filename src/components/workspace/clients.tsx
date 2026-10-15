@@ -4,8 +4,6 @@ import { useSearchParams } from "next/navigation";
 import { clearPackagingWorkspaceLocation } from "@/lib/packaging-navigation";
 import { Modal, MultiSelect } from "@mantine/core";
 import PackagingImport from "./packaging-import";
-import PackagingTabs from "./packaging-tabs";
-import GroupPackaging from "./group-packaging";
 import PpwrTimeline from "./ppwr-timeline";
 import OnboardingProgress from "./onboarding-progress";
 import type { ImportResult } from "@/lib/packaging-import-schema";
@@ -98,9 +96,6 @@ type PendingImport = {
   expiresAt: string;
 };
 export default function Clients({ canEdit }: { canEdit: boolean }) {
-  const [packagingScope, setPackagingScope] = useState<"sales" | "group">(
-    "sales",
-  );
   const [exemptionOpen, setExemptionOpen] = useState(false);
   const [exemptionBlocked, setExemptionBlocked] = useState(false);
   const [exemptionBusy, setExemptionBusy] = useState(false);
@@ -143,7 +138,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
           );
         if (active) {
           setManagedImport(imported);
-          setPackagingScope("sales");
+
           setShow(false);
         }
       } catch (failure) {
@@ -401,7 +396,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       if (answer === "yes") setExemptionBlocked(true);
       else {
         setExemptionOpen(false);
-        setPackagingScope("sales");
+
         setStep(1);
         requestAnimationFrame(() =>
           document
@@ -534,7 +529,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       setFiles([]);
       setFieldErrors({});
       setError("");
-      setPackagingScope("sales");
+
       setStep(1);
       setShow(true);
       requestAnimationFrame(() =>
@@ -615,31 +610,19 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
           key="packaging-workspace"
           className="panel packaging-step-layout"
         >
-          <PackagingTabs
-            groupContent={
-              <GroupPackaging
-                imported={managedImport}
-                canEdit={canEdit}
-                onBusy={setImportBusy}
-              />
-            }
-            value={packagingScope}
-            onChange={setPackagingScope}
-            disabled={busy || importBusy}
-          >
-            <PackagingImport
-              key={managedImport.id}
-              result={managedImport}
-              onChange={(updated) => {
-                if (updated) setManagedImport(updated);
-              }}
-              onBusy={setImportBusy}
-              sourceFile={null}
-              onFileChange={() => {}}
-              organisationName={managedImport.settings.plant}
-              onEditorChange={setEditorOpen}
-            />
-          </PackagingTabs>
+          <PackagingImport
+            canEdit={canEdit}
+            key={managedImport.id}
+            result={managedImport}
+            onChange={(updated) => {
+              if (updated) setManagedImport(updated);
+            }}
+            onBusy={setImportBusy}
+            sourceFile={null}
+            onFileChange={() => {}}
+            organisationName={managedImport.settings.plant}
+            onEditorChange={setEditorOpen}
+          />
         </section>
       </>
     );
@@ -1030,28 +1013,16 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                   </fieldset>
                 </>
               ) : (
-                <PackagingTabs
-                  groupContent={
-                    <GroupPackaging
-                      imported={packagingImport}
-                      canEdit={canEdit}
-                      onBusy={setImportBusy}
-                    />
-                  }
-                  value={packagingScope}
-                  onChange={setPackagingScope}
-                  disabled={busy || importBusy}
-                >
-                  <PackagingImport
-                    result={packagingImport}
-                    onChange={(updated) => void rememberPackaging(updated)}
-                    onBusy={setImportBusy}
-                    sourceFile={packagingFile}
-                    onFileChange={setPackagingFile}
-                    organisationName={form.legalName}
-                    onEditorChange={setEditorOpen}
-                  />
-                </PackagingTabs>
+                <PackagingImport
+                  canEdit={canEdit}
+                  result={packagingImport}
+                  onChange={(updated) => void rememberPackaging(updated)}
+                  onBusy={setImportBusy}
+                  sourceFile={packagingFile}
+                  onFileChange={setPackagingFile}
+                  organisationName={form.legalName}
+                  onEditorChange={setEditorOpen}
+                />
               )}
             </motion.div>
             {error && (
@@ -1059,7 +1030,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                 {error}
               </p>
             )}
-            {!editorOpen && (step === 0 || packagingScope === "sales") && (
+            {!editorOpen && (
               <div className="form-actions onboarding-actions">
                 <span>
                   <ShieldCheck size={14} />{" "}

@@ -547,3 +547,57 @@
   background: #1b2738;
   color: #e6edf6;
 }
+
+/* A short banner leaves room for the timeline itself. */
+.ppwr-timeline-hero {
+  gap: 14px;
+  padding: 14px 20px;
+  border-radius: 12px;
+}
+.ppwr-hero-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+.ppwr-hero-icon > svg {
+  width: 25px;
+  height: 25px;
+}
+.ppwr-eyebrow {
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+.ppwr-timeline-hero h2 {
+  font-size: clamp(20px, 1.6vw, 27px);
+  margin: 3px 0 4px;
+}
+.ppwr-timeline-hero p {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.ppwr-timeline-hero > a {
+  padding: 9px 12px;
+  font-size: 12px;
+}
+.ppwr-timeline-toolbar {
+  margin: 14px 0 10px;
+}
+.ppwr-modal-body {
+  padding-top: 12px;
+}
+@media (max-width: 700px) {
+  .ppwr-timeline-hero {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  .ppwr-hero-icon {
+    display: none;
+  }
+  .ppwr-timeline-hero > div {
+    min-width: 0;
+    flex-basis: 100%;
+  }
+  .ppwr-timeline-hero h2 {
+    font-size: 20px;
+  }
+}

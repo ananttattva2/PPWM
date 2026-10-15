@@ -32,6 +32,8 @@ import { Button } from "../ui/button";
 import { Select } from "../ui/floating-fields";
 import PackagingComposition from "./packaging-composition";
 import PackagingView from "./packaging-view";
+import PackagingTabs from "./packaging-tabs";
+import GroupPackaging from "./group-packaging";
 import {
   importCategories,
   importFields,
@@ -61,7 +63,9 @@ export default function PackagingImport({
   onFileChange,
   organisationName,
   onEditorChange,
+  canEdit = true,
 }: {
+  canEdit?: boolean;
   result: ImportResult | null;
   onChange: (result: ImportResult | null) => void;
   onBusy: (busy: boolean) => void;
@@ -70,6 +74,10 @@ export default function PackagingImport({
   organisationName: string;
   onEditorChange?: (open: boolean) => void;
 }) {
+  const [packagingScope, setPackagingScope] = useState<"sales" | "group">(
+    "sales",
+  );
+  const [groupBusy, setGroupBusy] = useState(false);
   const [result, setResult] = useState(parentResult);
   const [dirty, setDirty] = useState(false);
   const [file, setFile] = useState<File | null>(sourceFile),
@@ -253,37 +261,56 @@ export default function PackagingImport({
   );
   if (result && viewedRow)
     return (
-      <PackagingView
-        key={`${result.id}-${viewedRow.rowNumber}`}
-        row={viewedRow}
-        importId={result.id}
-        onBusy={onBusy}
-        onPhotosSaved={(composition) => {
-          const updated = {
-            ...result,
-            analysis: {
-              ...result.analysis,
-              rows: result.analysis.rows.map((row) =>
-                row.rowNumber === viewedRow.rowNumber
-                  ? { ...row, composition }
-                  : row,
-              ),
-            },
-          };
-          setResult(updated);
-          onChange(updated);
-        }}
-        onBack={() => {
-          rememberPackagingWorkspace(result.id);
-          setViewingRow(null);
-          onEditorChange?.(false);
-        }}
-        onEdit={() => {
-          rememberPackagingWorkspace(result.id);
-          setEditingRow(viewedRow.rowNumber);
-          setViewingRow(null);
-        }}
-      />
+      <PackagingTabs
+        value={packagingScope}
+        onChange={setPackagingScope}
+        disabled={busy || groupBusy}
+        groupContent={
+          <GroupPackaging
+            key={`${result.id}-${viewedRow.rowNumber}`}
+            initialRowNumber={viewedRow.rowNumber}
+            imported={result}
+            canEdit={canEdit}
+            onBusy={(saving) => {
+              setGroupBusy(saving);
+              onBusy(saving);
+            }}
+          />
+        }
+      >
+        <PackagingView
+          key={`${result.id}-${viewedRow.rowNumber}`}
+          row={viewedRow}
+          importId={result.id}
+          onBusy={onBusy}
+          onPhotosSaved={(composition) => {
+            const updated = {
+              ...result,
+              analysis: {
+                ...result.analysis,
+                rows: result.analysis.rows.map((row) =>
+                  row.rowNumber === viewedRow.rowNumber
+                    ? { ...row, composition }
+                    : row,
+                ),
+              },
+            };
+            setResult(updated);
+            onChange(updated);
+          }}
+          onBack={() => {
+            rememberPackagingWorkspace(result.id);
+            setViewingRow(null);
+            setPackagingScope("sales");
+            onEditorChange?.(false);
+          }}
+          onEdit={() => {
+            rememberPackagingWorkspace(result.id);
+            setEditingRow(viewedRow.rowNumber);
+            setViewingRow(null);
+          }}
+        />
+      </PackagingTabs>
     );
   if (result && selectedRow)
     return (
@@ -587,8 +614,8 @@ export default function PackagingImport({
           <h4>Data Completeness</h4>
           <div className="completeness-body">
             <RingProgress
-              size={94}
-              thickness={9}
+              size={result?.clientId ? 68 : 94}
+              thickness={result?.clientId ? 7 : 9}
               transitionDuration={reducedMotion ? 0 : 900}
               sections={
                 (chartReady || reducedMotion) && summary.total

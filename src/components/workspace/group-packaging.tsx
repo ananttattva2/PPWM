@@ -25,14 +25,18 @@ export default function GroupPackaging({
   imported,
   canEdit,
   onBusy,
+  initialRowNumber,
 }: {
+  initialRowNumber?: number;
   imported: ImportResult | null;
   canEdit: boolean;
   onBusy?: (busy: boolean) => void;
 }) {
   const id = useId();
   const reduce = useReducedMotion();
-  const [selectedRow, setSelectedRow] = useState<number | null>(null);
+  const [selectedRow, setSelectedRow] = useState<number | null>(
+    initialRowNumber ?? null,
+  );
   const [componentsOpen, setComponentsOpen] = useState(false);
   const [zoom, setZoom] = useState(false);
   const [counts, setCounts] = useState<GroupCounts>({});
