@@ -1,3 +1,4 @@
+import { groupComponentRows } from "@/lib/component-import";
 import { Binary, ObjectId } from "mongodb";
 import { db } from "@/lib/db";
 import { requireUser, checkOrigin, apiError } from "@/lib/access";
@@ -78,6 +79,7 @@ export async function POST(req: Request) {
         }
       }
     }
+    parsed.rawRows = groupComponentRows(parsed.rawRows, mapping);
     const analysis = analysePackaging(parsed.rawRows, mapping, settings);
     if (
       Buffer.byteLength(

@@ -5,6 +5,7 @@ import {
   compositionUpdateSchema,
   type PackagingComposition,
 } from "@/lib/packaging-composition";
+import { syncComponentSources } from "@/lib/component-import";
 import { analysePackaging } from "@/lib/packaging-import";
 import {
   importFields,
@@ -254,6 +255,7 @@ async function saveRow(
           const header = mapping[field.key];
           if (header) rawRows[index][header] = update.fields[field.key] || "";
         }
+        syncComponentSources(rawRows[index], mapping, headers, composition);
         const analysis = analysePackaging(rawRows, mapping, settings);
         analysis.rows.forEach((row, rowIndex) => {
           const saved = record.analysis.rows[rowIndex].composition;

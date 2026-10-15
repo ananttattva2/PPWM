@@ -206,6 +206,18 @@ export default function PackagingView({
                       <dl className="composition-view-facts component-facts">
                         {[
                           ["Polymer", component.material],
+                          ["Food grade", component.foodGrade],
+                          ["Supplier name", component.supplierName],
+                          ["Supplier address", component.supplierAddress],
+                          [
+                            "Supplier contact number",
+                            component.supplierContactNumber,
+                          ],
+                          ["Supplier email", component.supplierEmail],
+                          [
+                            "Supplier authorised person name",
+                            component.supplierAuthorisedPersonName,
+                          ],
                           ["Colour", component.colour],
                           ["Weight (g)", component.weight],
                           ["Label coverage (%)", component.labelCoverage],

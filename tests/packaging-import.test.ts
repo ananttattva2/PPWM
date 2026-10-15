@@ -71,7 +71,7 @@ test("composition drafts preserve source values without inventing component weig
   const draft = initialComposition(row);
   assert.equal(draft.components[0].weight, "");
   assert.equal(rowFields(row).weight, "23.5");
-  assert.equal(Object.keys(rowFields(row)).length, 18);
+  assert.equal(Object.keys(rowFields(row)).length, 19);
   assert.ok(compositionSchema.safeParse(draft).success);
   assert.ok(
     !compositionSchema.safeParse({
@@ -294,77 +294,182 @@ test("Component classification accepts matching categories and rejects cross-mat
     false,
   );
 });
-
-import { packagingTemplateCsv } from "../src/lib/packaging-import-template";
-test("new spreadsheet template omits polymer and round-trips all supplier fields", async () => {
-  const text = packagingTemplateCsv();
-  const parsed = await parsePackagingFile(
-    Buffer.from(text),
-    "template.csv",
-    settings,
-  );
-  assert.equal(parsed.headers.includes("Polymer"), false);
-  assert.equal(parsed.headers.length, 17);
-  assert.equal(parsed.suggested.material, undefined);
-  const analysis = analysePackaging(parsed.rawRows, parsed.suggested, settings);
-  assert.equal(analysis.summary.complete, 2);
-  const row = analysis.rows[0];
-  assert.equal(row.material, "");
-  assert.equal(row.foodGrade, "Yes");
-  assert.equal(row.supplierName, "Sample Supplier");
-  assert.equal(row.supplierAddress, "Mumbai India");
-  assert.equal(row.supplierContactNumber, "+91 9876543210");
-  assert.equal(row.supplierEmail, "supplier@example.com");
-  assert.equal(row.supplierAuthorisedPersonName, "Sample Contact");
-  assert.equal(rowFields(row).supplierEmail, row.supplierEmail);
-  const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet("Packaging");
-  sheet.addRow(parsed.headers);
-  sheet.addRow(parsed.headers.map((header) => parsed.rawRows[0][header]));
-  const bytes = Buffer.from(await workbook.xlsx.writeBuffer());
-  const xlsx = await parsePackagingFile(bytes, "suppliers.xlsx", settings);
-  const restored = analysePackaging(xlsx.rawRows, xlsx.suggested, settings)
-    .rows[0];
-  assert.deepEqual(restored, row);
-});
-test("supplier validation accepts optional blanks and rejects invalid food grade, email and phone", async () => {
-  const parsed = await parsePackagingFile(
+import {
+  packagingTemplateCsv,
+  packagingTemplateFields,
+} from "../src/lib/packaging-import-template";
+import { packagingTemplateWorkbook } from "../src/lib/packaging-import-workbook";
+import {
+  componentSources,
+  groupComponentRows,
+  syncComponentSources,
+} from "../src/lib/component-import";
+import { compositionUpdateSchema } from "../src/lib/packaging-composition";
+async function componentTemplate() {
+  return parsePackagingFile(
     Buffer.from(packagingTemplateCsv()),
-    "template.csv",
+    "components.csv",
     settings,
   );
-  const row = {
-    ...parsed.rawRows[0],
-    "Food Grade (Yes/No)": "Maybe",
-    "Supplier Email": "bad-email",
-    "Supplier Contact Number": "not a phone",
-  };
-  const invalid = analysePackaging([row], parsed.suggested, settings);
-  assert.equal(invalid.summary.errors, 1);
+}
+test("component rows group into two SKUs with independent suppliers and correct weights", async () => {
+  const parsed = await componentTemplate();
+  const analysis = analysePackaging(parsed.rawRows, parsed.suggested, settings);
+  assert.equal(parsed.headers.includes("Polymer"), false);
+  assert.equal(parsed.headers.length, 18);
+  assert.equal(parsed.rawRows.length, 2);
+  assert.deepEqual(analysis.summary, {
+    total: 2,
+    complete: 2,
+    missing: 0,
+    errors: 0,
+    completeness: 100,
+  });
+  const water = analysis.rows[0];
+  assert.equal(water.weight, 23.5);
+  assert.equal(water.components, 3);
+  assert.equal(water.componentSuppliers, true);
+  assert.equal(water.supplierName, "");
   assert.deepEqual(
-    invalid.validationErrors.map((issue) => issue.field).sort(),
-    ["Food Grade (Yes/No)", "Supplier Contact Number", "Supplier Email"],
+    water.composition!.components.map((c) => [
+      c.name,
+      c.supplierName,
+      c.weight,
+    ]),
+    [
+      ["Bottle", "Bottle Supplier", "20"],
+      ["Cap", "Cap Supplier", "2.5"],
+      ["Label", "Label Supplier", "1"],
+    ],
   );
-  const empty = { ...parsed.rawRows[0] };
-  for (const header of [
-    "Food Grade (Yes/No)",
-    "Supplier Name",
-    "Supplier Address",
-    "Supplier Contact Number",
-    "Supplier Email",
-    "Supplier Authorised Person Name",
-  ])
-    empty[header] = "";
+  assert.equal(analysis.rows[1].composition!.components.length, 4);
   assert.equal(
-    analysePackaging([empty], parsed.suggested, settings).summary.complete,
-    1,
+    water.composition!.components[1].supplierEmail,
+    "caps@example.com",
   );
-  const no = {
-    ...parsed.rawRows[0],
-    "Food Grade (Yes/No)": "no",
-    "Supplier Contact Number": "00919876543210",
-  };
-  const valid = analysePackaging([no], parsed.suggested, settings).rows[0];
-  assert.equal(valid.foodGrade, "No");
-  assert.equal(valid.supplierContactNumber, "00919876543210");
+  assert.ok(
+    compositionUpdateSchema.safeParse({
+      rowNumber: water.rowNumber,
+      fields: rowFields(water),
+      composition: water.composition,
+    }).success,
+  );
+});
+test("Excel template has seven component rows, instructions, dropdowns and CSV-equivalent import", async () => {
+  const book = packagingTemplateWorkbook();
+  const sheet = book.worksheets[0];
+  assert.equal(book.worksheets[1].name, "Instructions");
+  const foodCol =
+    packagingTemplateFields.findIndex((field) => field.key === "foodGrade") + 1;
+  assert.equal(sheet.getCell(2, foodCol).dataValidation.type, "list");
+  const bytes = Buffer.from(await book.xlsx.writeBuffer());
+  const xlsx = await parsePackagingFile(bytes, "template.xlsx", settings);
+  const csv = await componentTemplate();
+  assert.deepEqual(
+    analysePackaging(xlsx.rawRows, xlsx.suggested, settings),
+    analysePackaging(csv.rawRows, csv.suggested, settings),
+  );
+});
+test("component validation identifies supplier errors, count mismatches and conflicting SKU fields", async () => {
+  const parsed = await componentTemplate();
+  const sources = componentSources(parsed.rawRows[0])!;
+  sources[1]["Supplier Email"] = "bad-email";
+  sources[1]["Food Grade (Yes/No)"] = "Maybe";
+  sources[1]["Supplier Contact Number"] = "bad phone";
+  const grouped = groupComponentRows(sources, parsed.suggested);
+  const invalid = analysePackaging(grouped, parsed.suggested, settings);
+  assert.equal(invalid.rows[0].status, "error");
+  assert.equal(invalid.issues.length, 3);
+  assert.ok(invalid.issues.every((i) => i.message.startsWith("Cap:")));
+  sources[1]["Total weight (g)"] = "100";
+  sources[1]["Component Name"] = "Bottle";
+  const conflicts = analysePackaging(
+    groupComponentRows(sources, parsed.suggested),
+    parsed.suggested,
+    settings,
+  );
+  assert.ok(
+    conflicts.issues.some((i) =>
+      i.message.includes("Duplicate component name"),
+    ),
+  );
+  assert.ok(conflicts.issues.some((i) => i.message.includes("must agree")));
+  const count = analysePackaging(
+    groupComponentRows(
+      componentSources(parsed.rawRows[0])!.slice(0, 2),
+      parsed.suggested,
+    ),
+    parsed.suggested,
+    settings,
+  );
+  assert.ok(count.issues.some((i) => i.field === "Components"));
+});
+test("saving component supplier edits and removals survives revalidation without replacing other suppliers", async () => {
+  const parsed = await componentTemplate();
+  const analysis = analysePackaging(parsed.rawRows, parsed.suggested, settings);
+  const composition = analysis.rows[0].composition!;
+  composition.components[1].supplierName = "New Cap Supplier";
+  composition.components[1].supplierContactNumber = "00919876543210";
+  syncComponentSources(
+    parsed.rawRows[0],
+    parsed.suggested,
+    parsed.headers,
+    composition,
+  );
+  const restored = analysePackaging(parsed.rawRows, parsed.suggested, settings)
+    .rows[0];
+  assert.equal(
+    restored.composition!.components[1].supplierName,
+    "New Cap Supplier",
+  );
+  assert.equal(
+    restored.composition!.components[1].supplierContactNumber,
+    "00919876543210",
+  );
+  assert.equal(
+    restored.composition!.components[0].supplierName,
+    "Bottle Supplier",
+  );
+  composition.components.pop();
+  parsed.rawRows[0][parsed.suggested.components!] = "2";
+  syncComponentSources(
+    parsed.rawRows[0],
+    parsed.suggested,
+    parsed.headers,
+    composition,
+  );
+  const removed = analysePackaging(parsed.rawRows, parsed.suggested, settings)
+    .rows[0];
+  assert.equal(removed.status, "complete");
+  assert.equal(removed.composition!.components.length, 2);
+});
+test("component imports can inherit repeated product values and reject reserved headers", async () => {
+  const parsed = await componentTemplate();
+  const sources = componentSources(parsed.rawRows[0])!;
+  for (const source of sources.slice(1))
+    for (const key of [
+      "Product name",
+      "Category",
+      "Packaging type",
+      "Total weight (g)",
+      "Components",
+    ])
+      source[key] = "";
+  assert.equal(
+    analysePackaging(
+      groupComponentRows(sources, parsed.suggested),
+      parsed.suggested,
+      settings,
+    ).rows[0].status,
+    "complete",
+  );
+  await assert.rejects(
+    () =>
+      parsePackagingFile(
+        Buffer.from("SKU,__ppwr_component_rows\nS1,malicious\n"),
+        "bad.csv",
+        settings,
+      ),
+    /reserved/,
+  );
 });

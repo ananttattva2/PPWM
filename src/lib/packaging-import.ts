@@ -1,5 +1,12 @@
 import ExcelJS from "exceljs";
 import { z } from "zod";
+import {
+  COMPONENT_SOURCE,
+  componentSources,
+  groupComponentRows,
+  productImportKeys,
+  componentImportKeys,
+} from "./component-import";
 import JSZip from "jszip";
 import { posix } from "node:path";
 import { parse } from "csv-parse/sync";
@@ -58,6 +65,7 @@ const aliases: Record<ImportField, string[]> = {
   productName: ["productname", "product", "name", "productnamesku"],
   category: ["category", "productcategory"],
   packagingType: ["packagingtype", "packaging", "packtype"],
+  componentName: ["componentname", "packagingcomponent", "component"],
   material: ["polymer", "material", "packagingmaterial"],
   foodGrade: ["foodgrade", "foodgradeyesno", "foodgredeyesno", "foodcontact"],
   supplierName: ["suppliername"],
@@ -164,6 +172,10 @@ export async function parsePackagingFile(
     settings.firstRow === "headers"
       ? matrix.shift()!.map((h, i) => h.trim() || `Column ${i + 1}`)
       : matrix[0].map((_, i) => `Column ${i + 1}`);
+  if (headers.some((header) => header.startsWith("__ppwr_")))
+    throw new Error(
+      "Column headers beginning __ppwr_ are reserved. Rename these columns.",
+    );
   if (new Set(headers).size !== headers.length)
     throw new Error("Column headers must be unique.");
   if (!matrix.length) throw new Error("Add at least one packaging data row.");
@@ -175,7 +187,11 @@ export async function parsePackagingFile(
     const match = headers.find((h) => aliases[field.key].includes(normal(h)));
     if (match) suggested[field.key] = match;
   }
-  return { headers, rawRows, suggested };
+  return {
+    headers,
+    rawRows: groupComponentRows(rawRows, suggested),
+    suggested,
+  };
 }
 const materials = [
   "PET",
@@ -212,6 +228,7 @@ export function analysePackaging(
     if (sku) seen.set(sku, [...(seen.get(sku) || []), i]);
   });
   const rows: PackagingRow[] = rawRows.map((raw, index) => {
+    const sources = componentSources(raw);
     const get = (key: ImportField) => raw[mapping[key] || ""] || "";
     const rowNumber = index + (settings.firstRow === "headers" ? 2 : 1);
     const sku = get("sku");
@@ -224,6 +241,7 @@ export function analysePackaging(
     if (settings.category !== "All Categories")
       values.category = settings.category;
     for (const field of importFields) {
+      if (sources && componentImportKeys.includes(field.key)) continue;
       const supplierField =
         field.key === "foodGrade" || field.key.startsWith("supplier");
       if (
@@ -232,6 +250,7 @@ export function analysePackaging(
       )
         add(field.label, `${field.label} is missing`, "missing");
     }
+    if (sources) for (const key of componentImportKeys) values[key] = "";
     const foodGrade = values.foodGrade.trim().toLowerCase();
     if (foodGrade && !["yes", "no"].includes(foodGrade))
       add("Food Grade (Yes/No)", "Food grade must be Yes or No", "error");
@@ -301,8 +320,89 @@ export function analysePackaging(
         "Label coverage must be between 0 and 100",
         "error",
       );
+    let composition: PackagingRow["composition"];
+    if (sources) {
+      const names = new Set<string>();
+      const importedComponents = sources.map((source, componentIndex) => {
+        const inherited = { ...source };
+        delete inherited[COMPONENT_SOURCE];
+        for (const key of productImportKeys)
+          if (mapping[key] && !inherited[mapping[key]!])
+            inherited[mapping[key]!] = raw[mapping[key]!] || "";
+        const analysed = analysePackaging([inherited], mapping, settings)
+          .rows[0];
+        const name = source[mapping.componentName || ""]?.trim() || "";
+        if (!name)
+          add(
+            "Component Name",
+            `Component ${componentIndex + 1} name is missing`,
+            "missing",
+          );
+        else if (names.has(name.toLowerCase()))
+          add("Component Name", `Duplicate component name: ${name}`, "error");
+        names.add(name.toLowerCase());
+        for (const issue of analysed.issues) {
+          const field = importFields.find(
+            (field) => field.label === issue.field,
+          );
+          if (field && productImportKeys.includes(field.key)) continue;
+          if (issue.kind === "missing" && field && !field.required) continue;
+          add(
+            issue.field,
+            `${name || `Component ${componentIndex + 1}`}: ${issue.message}`,
+            issue.kind,
+          );
+        }
+        for (const key of productImportKeys.filter((key) => key !== "sku")) {
+          const header = mapping[key];
+          if (
+            header &&
+            source[header] &&
+            source[header].trim().toLowerCase() !==
+              (raw[header] || "").trim().toLowerCase()
+          )
+            add(
+              importFields.find((field) => field.key === key)!.label,
+              `${name || "Component"}: product-level values must agree across rows for this SKU`,
+              "error",
+            );
+        }
+        return {
+          id: `component-${componentIndex + 1}`,
+          name,
+          material: analysed.material,
+          colour: "",
+          weight: source[mapping.componentWeight || ""] || "",
+          labelCoverage: analysed.labelCoverage,
+          adhesiveType: analysed.adhesiveType,
+          barrierLayer: analysed.barrierLayer,
+          printingInk: analysed.printingInk,
+          image: "",
+          foodGrade: analysed.foodGrade,
+          supplierName: analysed.supplierName,
+          supplierAddress: analysed.supplierAddress,
+          supplierContactNumber: analysed.supplierContactNumber,
+          supplierEmail: analysed.supplierEmail,
+          supplierAuthorisedPersonName: analysed.supplierAuthorisedPersonName,
+        };
+      });
+      if (components !== null && components !== sources.length)
+        add(
+          "Components",
+          `Expected ${components} components but found ${sources.length} component rows`,
+          "error",
+        );
+      composition = {
+        brand: "",
+        netContent: "",
+        productImage: "",
+        productImages: [],
+        components: importedComponents,
+      };
+    }
     issues.push(...rowIssues);
     return {
+      ...(composition ? { composition, componentSuppliers: true } : {}),
       rowNumber,
       sku,
       productName: values.productName,

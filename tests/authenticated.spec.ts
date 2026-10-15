@@ -494,7 +494,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     await expect(page.locator(".import-preview-table tbody tr")).toHaveCount(1);
     await page.getByLabel("Filter packaging status").selectOption("all");
     await page
-      .getByRole("button", { name: "All 17 fields", exact: true })
+      .getByRole("button", { name: "All 18 fields", exact: true })
       .click();
     await expect(
       page.getByRole("columnheader", {

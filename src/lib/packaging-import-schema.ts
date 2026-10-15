@@ -15,6 +15,7 @@ export const importFields = [
   { key: "productName", label: "Product name", required: true },
   { key: "category", label: "Category", required: true },
   { key: "packagingType", label: "Packaging type", required: true },
+  { key: "componentName", label: "Component Name", required: false },
   { key: "material", label: "Material (legacy)", required: false },
   { key: "foodGrade", label: "Food Grade (Yes/No)", required: false },
   { key: "supplierName", label: "Supplier Name", required: false },
@@ -67,6 +68,8 @@ export type PackagingRow = {
   productName: string;
   category: string;
   packagingType: string;
+  componentSuppliers?: boolean;
+  componentName?: string;
   material: string;
   foodGrade?: string;
   supplierName?: string;

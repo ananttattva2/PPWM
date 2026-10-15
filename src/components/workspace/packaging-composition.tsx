@@ -335,7 +335,13 @@ export default function PackagingComposition({
                       "componentWeight",
                       "printingInk",
                       "material",
-                    ].includes(item.key),
+                      "componentName",
+                    ].includes(item.key) &&
+                    !(
+                      row.componentSuppliers &&
+                      (item.key === "foodGrade" ||
+                        item.key.startsWith("supplier"))
+                    ),
                 )
                 .map((item) => (
                   <label key={item.key}>
@@ -554,6 +560,68 @@ export default function PackagingComposition({
                         />
                       </label>
                     </div>
+                    <fieldset className="component-supplier-fields">
+                      <legend>
+                        Supplier details for{" "}
+                        {item.name || `component ${index + 1}`}
+                      </legend>
+                      <div className="composition-component-grid">
+                        <label>
+                          Food Grade (Yes/No)
+                          <select
+                            aria-label={`Component ${index + 1} food grade`}
+                            disabled={busy}
+                            value={item.foodGrade || ""}
+                            onChange={(event) =>
+                              component(
+                                item.id,
+                                "foodGrade",
+                                event.target.value,
+                              )
+                            }
+                          >
+                            <option value="">Not provided</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                          </select>
+                        </label>
+                        {(
+                          [
+                            ["supplierName", "Supplier name"],
+                            ["supplierAddress", "Supplier address"],
+                            [
+                              "supplierContactNumber",
+                              "Supplier contact number",
+                            ],
+                            ["supplierEmail", "Supplier email"],
+                            [
+                              "supplierAuthorisedPersonName",
+                              "Supplier authorised person name",
+                            ],
+                          ] as const
+                        ).map(([key, label]) => (
+                          <label key={key}>
+                            {label}
+                            <input
+                              aria-label={`Component ${index + 1} ${label.toLowerCase()}`}
+                              disabled={busy}
+                              maxLength={200}
+                              type={
+                                key === "supplierEmail"
+                                  ? "email"
+                                  : key === "supplierContactNumber"
+                                    ? "tel"
+                                    : "text"
+                              }
+                              value={item[key] || ""}
+                              onChange={(event) =>
+                                component(item.id, key, event.target.value)
+                              }
+                            />
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
                     <button
                       type="button"
                       className="composition-more"

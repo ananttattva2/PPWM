@@ -81,6 +81,7 @@ export default function PackagingImport({
   const [packagingScope, setPackagingScope] = useState<"sales" | "group">(
     "sales",
   );
+  const [templateBusy, setTemplateBusy] = useState(false);
   const [groupBusy, setGroupBusy] = useState(false);
   const [result, setResult] = useState(parentResult);
   const [dirty, setDirty] = useState(false);
@@ -223,6 +224,24 @@ export default function PackagingImport({
   }
   const percentage = (count: number) =>
     summary.total ? `${((count / summary.total) * 100).toFixed(1)}%` : "—";
+  async function downloadExcelTemplate() {
+    setTemplateBusy(true);
+    try {
+      const response = await fetch("/api/packaging-imports/template");
+      if (!response.ok)
+        throw new Error("Could not download the Excel template. Please retry.");
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "packaging-components-template.xlsx";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error((error as Error).message);
+    } finally {
+      setTemplateBusy(false);
+    }
+  }
   function template() {
     const text = packagingTemplateCsv();
     const url = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
@@ -356,12 +375,21 @@ export default function PackagingImport({
             <p>
               {result?.clientId
                 ? "Use the edit icon to complete packaging details. Changes are saved to this client’s SKUs."
-                : "Upload your file, map its columns and add packaging details. Missing data can be completed later."}
+                : "One row per component. Repeat the SKU for Bottle, Cap and Label, with each component’s own supplier details."}
             </p>
           </div>
           <div className="import-heading-actions">
-            <Button type="button" variant="outline" onClick={template}>
-              <Download size={14} /> Download template
+            <Button
+              type="button"
+              variant="outline"
+              disabled={templateBusy}
+              onClick={() => void downloadExcelTemplate()}
+            >
+              <Download size={14} />{" "}
+              {templateBusy ? "Downloading…" : "Download template"}
+            </Button>
+            <Button type="button" variant="ghost" onClick={template}>
+              Download CSV
             </Button>
           </div>
         </div>
@@ -926,12 +954,33 @@ export default function PackagingImport({
                             </td>
                             <td>{row.category || "—"}</td>
                             <td>{row.packagingType || "—"}</td>
-                            <td>{row.foodGrade || "—"}</td>
-                            <td>{row.supplierName || "—"}</td>
-                            <td>{row.supplierAddress || "—"}</td>
-                            <td>{row.supplierContactNumber || "—"}</td>
-                            <td>{row.supplierEmail || "—"}</td>
-                            <td>{row.supplierAuthorisedPersonName || "—"}</td>
+                            {(
+                              [
+                                "foodGrade",
+                                "supplierName",
+                                "supplierAddress",
+                                "supplierContactNumber",
+                                "supplierEmail",
+                                "supplierAuthorisedPersonName",
+                              ] as const
+                            ).map((key) => (
+                              <td key={key}>
+                                {row.componentSuppliers ? (
+                                  <div className="import-component-suppliers">
+                                    {row.composition?.components.map(
+                                      (component) => (
+                                        <span key={component.id}>
+                                          <strong>{component.name}:</strong>{" "}
+                                          {component[key] || "—"}
+                                        </span>
+                                      ),
+                                    )}
+                                  </div>
+                                ) : (
+                                  row[key] || "—"
+                                )}
+                              </td>
+                            ))}
                             <td>{row.weight?.toFixed(2) ?? "—"}</td>
                             <td>{row.components ?? "—"}</td>
                             {details && (

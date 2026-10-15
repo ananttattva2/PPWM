@@ -12,6 +12,30 @@ export const compositionComponentSchema = z.object({
     .regex(/^[a-zA-Z0-9-]{1,60}$/)
     .refine((value) => value !== "product"),
   name: text,
+  foodGrade: text
+    .refine(
+      (value) => ["", "Yes", "No"].includes(value),
+      "Food grade must be Yes or No",
+    )
+    .optional(),
+  supplierName: text.optional(),
+  supplierAddress: text.optional(),
+  supplierContactNumber: text
+    .refine(
+      (value) =>
+        !value ||
+        (/^[+()\d .-]{5,30}$/.test(value) &&
+          value.replace(/\D/g, "").length >= 5),
+      "Enter a valid supplier contact number",
+    )
+    .optional(),
+  supplierEmail: text
+    .refine(
+      (value) => !value || z.email().safeParse(value).success,
+      "Enter a valid supplier email address",
+    )
+    .optional(),
+  supplierAuthorisedPersonName: text.optional(),
   material: text,
   colour: text,
   weight: z
