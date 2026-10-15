@@ -1907,3 +1907,13 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+/* Supplier details remain readable in the horizontally scrollable preview. */
+.workspace .packaging-import-workspace .import-preview-table table {
+  min-width: 1900px;
+}
+.workspace
+  .packaging-import-workspace
+  .import-preview-table.show-details
+  table {
+  min-width: 2750px;
+}

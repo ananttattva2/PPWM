@@ -71,7 +71,7 @@ test("composition drafts preserve source values without inventing component weig
   const draft = initialComposition(row);
   assert.equal(draft.components[0].weight, "");
   assert.equal(rowFields(row).weight, "23.5");
-  assert.equal(Object.keys(rowFields(row)).length, 12);
+  assert.equal(Object.keys(rowFields(row)).length, 18);
   assert.ok(compositionSchema.safeParse(draft).success);
   assert.ok(
     !compositionSchema.safeParse({
@@ -293,4 +293,78 @@ test("Component classification accepts matching categories and rejects cross-mat
     classificationSchema.safeParse({ ...input, categoryId: "unknown" }).success,
     false,
   );
+});
+
+import { packagingTemplateCsv } from "../src/lib/packaging-import-template";
+test("new spreadsheet template omits polymer and round-trips all supplier fields", async () => {
+  const text = packagingTemplateCsv();
+  const parsed = await parsePackagingFile(
+    Buffer.from(text),
+    "template.csv",
+    settings,
+  );
+  assert.equal(parsed.headers.includes("Polymer"), false);
+  assert.equal(parsed.headers.length, 17);
+  assert.equal(parsed.suggested.material, undefined);
+  const analysis = analysePackaging(parsed.rawRows, parsed.suggested, settings);
+  assert.equal(analysis.summary.complete, 2);
+  const row = analysis.rows[0];
+  assert.equal(row.material, "");
+  assert.equal(row.foodGrade, "Yes");
+  assert.equal(row.supplierName, "Sample Supplier");
+  assert.equal(row.supplierAddress, "Mumbai India");
+  assert.equal(row.supplierContactNumber, "+91 9876543210");
+  assert.equal(row.supplierEmail, "supplier@example.com");
+  assert.equal(row.supplierAuthorisedPersonName, "Sample Contact");
+  assert.equal(rowFields(row).supplierEmail, row.supplierEmail);
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("Packaging");
+  sheet.addRow(parsed.headers);
+  sheet.addRow(parsed.headers.map((header) => parsed.rawRows[0][header]));
+  const bytes = Buffer.from(await workbook.xlsx.writeBuffer());
+  const xlsx = await parsePackagingFile(bytes, "suppliers.xlsx", settings);
+  const restored = analysePackaging(xlsx.rawRows, xlsx.suggested, settings)
+    .rows[0];
+  assert.deepEqual(restored, row);
+});
+test("supplier validation accepts optional blanks and rejects invalid food grade, email and phone", async () => {
+  const parsed = await parsePackagingFile(
+    Buffer.from(packagingTemplateCsv()),
+    "template.csv",
+    settings,
+  );
+  const row = {
+    ...parsed.rawRows[0],
+    "Food Grade (Yes/No)": "Maybe",
+    "Supplier Email": "bad-email",
+    "Supplier Contact Number": "not a phone",
+  };
+  const invalid = analysePackaging([row], parsed.suggested, settings);
+  assert.equal(invalid.summary.errors, 1);
+  assert.deepEqual(
+    invalid.validationErrors.map((issue) => issue.field).sort(),
+    ["Food Grade (Yes/No)", "Supplier Contact Number", "Supplier Email"],
+  );
+  const empty = { ...parsed.rawRows[0] };
+  for (const header of [
+    "Food Grade (Yes/No)",
+    "Supplier Name",
+    "Supplier Address",
+    "Supplier Contact Number",
+    "Supplier Email",
+    "Supplier Authorised Person Name",
+  ])
+    empty[header] = "";
+  assert.equal(
+    analysePackaging([empty], parsed.suggested, settings).summary.complete,
+    1,
+  );
+  const no = {
+    ...parsed.rawRows[0],
+    "Food Grade (Yes/No)": "no",
+    "Supplier Contact Number": "00919876543210",
+  };
+  const valid = analysePackaging([no], parsed.suggested, settings).rows[0];
+  assert.equal(valid.foodGrade, "No");
+  assert.equal(valid.supplierContactNumber, "00919876543210");
 });

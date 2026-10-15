@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { z } from "zod";
 import JSZip from "jszip";
 import { posix } from "node:path";
 import { parse } from "csv-parse/sync";
@@ -58,6 +59,20 @@ const aliases: Record<ImportField, string[]> = {
   category: ["category", "productcategory"],
   packagingType: ["packagingtype", "packaging", "packtype"],
   material: ["polymer", "material", "packagingmaterial"],
+  foodGrade: ["foodgrade", "foodgradeyesno", "foodgredeyesno", "foodcontact"],
+  supplierName: ["suppliername"],
+  supplierAddress: ["supplieraddress"],
+  supplierContactNumber: [
+    "suppliercontactnumber",
+    "supplierphone",
+    "suppliertelephone",
+  ],
+  supplierEmail: ["supplieremail", "supplieremailaddress"],
+  supplierAuthorisedPersonName: [
+    "supplierauthorisedpersonname",
+    "supplierauthorizedpersonname",
+    "supplierauthrizepersonname",
+  ],
   weight: ["totalweightg", "totalweight", "weightg", "weight"],
   components: ["components", "componentcount", "numberofcomponents"],
   labelCoverage: ["labelcoverage", "labelcoveragepercent"],
@@ -209,9 +224,32 @@ export function analysePackaging(
     if (settings.category !== "All Categories")
       values.category = settings.category;
     for (const field of importFields) {
-      if ((field.required || mapping[field.key]) && !values[field.key])
+      const supplierField =
+        field.key === "foodGrade" || field.key.startsWith("supplier");
+      if (
+        (field.required || (!supplierField && mapping[field.key])) &&
+        !values[field.key]
+      )
         add(field.label, `${field.label} is missing`, "missing");
     }
+    const foodGrade = values.foodGrade.trim().toLowerCase();
+    if (foodGrade && !["yes", "no"].includes(foodGrade))
+      add("Food Grade (Yes/No)", "Food grade must be Yes or No", "error");
+    if (
+      values.supplierEmail &&
+      !z.email().safeParse(values.supplierEmail).success
+    )
+      add("Supplier Email", "Enter a valid supplier email address", "error");
+    if (
+      values.supplierContactNumber &&
+      (!/^[+()\d .-]{5,30}$/.test(values.supplierContactNumber) ||
+        values.supplierContactNumber.replace(/\D/g, "").length < 5)
+    )
+      add(
+        "Supplier Contact Number",
+        "Enter a valid supplier contact number",
+        "error",
+      );
     const weight =
       values.weight && /^\d+(\.\d+)?$/.test(values.weight)
         ? Number(values.weight)
@@ -271,6 +309,17 @@ export function analysePackaging(
       category: category || values.category,
       packagingType: values.packagingType,
       material: material || values.material,
+      foodGrade:
+        foodGrade === "yes"
+          ? "Yes"
+          : foodGrade === "no"
+            ? "No"
+            : values.foodGrade,
+      supplierName: values.supplierName,
+      supplierAddress: values.supplierAddress,
+      supplierContactNumber: values.supplierContactNumber,
+      supplierEmail: values.supplierEmail,
+      supplierAuthorisedPersonName: values.supplierAuthorisedPersonName,
       weight,
       components,
       labelCoverage: values.labelCoverage,

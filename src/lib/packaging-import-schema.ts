@@ -15,7 +15,21 @@ export const importFields = [
   { key: "productName", label: "Product name", required: true },
   { key: "category", label: "Category", required: true },
   { key: "packagingType", label: "Packaging type", required: true },
-  { key: "material", label: "Polymer", required: true },
+  { key: "material", label: "Material (legacy)", required: false },
+  { key: "foodGrade", label: "Food Grade (Yes/No)", required: false },
+  { key: "supplierName", label: "Supplier Name", required: false },
+  { key: "supplierAddress", label: "Supplier Address", required: false },
+  {
+    key: "supplierContactNumber",
+    label: "Supplier Contact Number",
+    required: false,
+  },
+  { key: "supplierEmail", label: "Supplier Email", required: false },
+  {
+    key: "supplierAuthorisedPersonName",
+    label: "Supplier Authorised Person Name",
+    required: false,
+  },
   { key: "weight", label: "Total weight (g)", required: true },
   { key: "components", label: "Components", required: true },
   { key: "labelCoverage", label: "Label coverage (%)", required: false },
@@ -54,6 +68,12 @@ export type PackagingRow = {
   category: string;
   packagingType: string;
   material: string;
+  foodGrade?: string;
+  supplierName?: string;
+  supplierAddress?: string;
+  supplierContactNumber?: string;
+  supplierEmail?: string;
+  supplierAuthorisedPersonName?: string;
   weight: number | null;
   components: number | null;
   labelCoverage: string;

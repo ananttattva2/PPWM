@@ -32,6 +32,10 @@ import { Button } from "../ui/button";
 import { Select } from "../ui/floating-fields";
 import PackagingComposition from "./packaging-composition";
 import PackagingView from "./packaging-view";
+import {
+  packagingTemplateCsv,
+  packagingTemplateFields,
+} from "@/lib/packaging-import-template";
 import PackagingTabs from "./packaging-tabs";
 import GroupPackaging from "./group-packaging";
 import {
@@ -204,7 +208,7 @@ export default function PackagingImport({
   const filteredRows = rows.filter(
     (row) =>
       (statusFilter === "all" || row.status === statusFilter) &&
-      `${row.productName} ${row.sku} ${row.category} ${row.material}`
+      `${row.productName} ${row.sku} ${row.category} ${row.supplierName || ""} ${row.supplierEmail || ""}`
         .toLowerCase()
         .includes(query.trim().toLowerCase()),
   );
@@ -220,8 +224,7 @@ export default function PackagingImport({
   const percentage = (count: number) =>
     summary.total ? `${((count / summary.total) * 100).toFixed(1)}%` : "—";
   function template() {
-    const text =
-      "Product Name,SKU,Category,Packaging Type,Polymer,Total Weight (g),Components,Label Coverage (%),Adhesive Type,Barrier Layer Details,Component Weight (g),Printing / Ink Details\nMineral Water 500ml,SKU-001,Beverages,Bottle,PET,23.5,3,80,Water-based,None,20,Low coverage\nSnack Pouch,SKU-002,Snacks,Pouch,Multi-layer (Plastic),6.8,4,60,Solvent-free,PE,5,Standard\n";
+    const text = packagingTemplateCsv();
     const url = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
     const a = document.createElement("a");
     a.href = url;
@@ -818,7 +821,7 @@ export default function PackagingImport({
                       <Search size={16} />
                       <input
                         aria-label="Search packaging data"
-                        placeholder="Search product, SKU or polymer…"
+                        placeholder="Search product, SKU or supplier…"
                         value={query}
                         onChange={(event) => {
                           setQuery(event.target.value);
@@ -851,7 +854,9 @@ export default function PackagingImport({
                       onClick={() => setDetails(!details)}
                     >
                       <SlidersHorizontal size={15} />
-                      {details ? "Summary columns" : "All 12 fields"}
+                      {details
+                        ? "Summary columns"
+                        : `All ${packagingTemplateFields.length} fields`}
                     </button>
                     <button
                       type="button"
@@ -890,7 +895,12 @@ export default function PackagingImport({
                           <th>Product Name / SKU</th>
                           <th>Category</th>
                           <th>Packaging Type</th>
-                          <th>Polymer</th>
+                          <th>Food Grade (Yes/No)</th>
+                          <th>Supplier Name</th>
+                          <th>Supplier Address</th>
+                          <th>Supplier Contact Number</th>
+                          <th>Supplier Email</th>
+                          <th>Supplier Authorised Person Name</th>
                           <th>Total Weight (g)</th>
                           <th>Components</th>
                           {details && (
@@ -916,7 +926,12 @@ export default function PackagingImport({
                             </td>
                             <td>{row.category || "—"}</td>
                             <td>{row.packagingType || "—"}</td>
-                            <td>{row.material || "—"}</td>
+                            <td>{row.foodGrade || "—"}</td>
+                            <td>{row.supplierName || "—"}</td>
+                            <td>{row.supplierAddress || "—"}</td>
+                            <td>{row.supplierContactNumber || "—"}</td>
+                            <td>{row.supplierEmail || "—"}</td>
+                            <td>{row.supplierAuthorisedPersonName || "—"}</td>
                             <td>{row.weight?.toFixed(2) ?? "—"}</td>
                             <td>{row.components ?? "—"}</td>
                             {details && (
@@ -991,7 +1006,7 @@ export default function PackagingImport({
                     <span>
                       {details
                         ? "Scroll horizontally to explore all packaging fields."
-                        : "Select “All 12 fields” to inspect labels, adhesives and component weights."}
+                        : "Select “All fields” to inspect labels, adhesives and component weights."}
                     </span>
                     <b>{filteredRows.length} SKUs</b>
                   </div>

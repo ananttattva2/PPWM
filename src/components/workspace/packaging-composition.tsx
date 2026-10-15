@@ -334,6 +334,7 @@ export default function PackagingComposition({
                       "barrierLayer",
                       "componentWeight",
                       "printingInk",
+                      "material",
                     ].includes(item.key),
                 )
                 .map((item) => (
@@ -354,9 +355,29 @@ export default function PackagingComposition({
                           <option key={category}>{category}</option>
                         ))}
                       </select>
+                    ) : item.key === "foodGrade" ? (
+                      <select
+                        aria-label={item.label}
+                        disabled={busy}
+                        value={fields.foodGrade}
+                        onChange={(event) =>
+                          field("foodGrade", event.target.value)
+                        }
+                      >
+                        <option value="">Not provided</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
                     ) : (
                       <input
                         aria-label={item.label}
+                        type={
+                          item.key === "supplierEmail"
+                            ? "email"
+                            : item.key === "supplierContactNumber"
+                              ? "tel"
+                              : "text"
+                        }
                         disabled={busy}
                         maxLength={200}
                         inputMode={
