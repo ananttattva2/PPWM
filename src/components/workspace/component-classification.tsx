@@ -151,6 +151,15 @@ function MaterialArt({
   );
 }
 
+const materialImages: Record<string, string> = {
+  Plastic: "plastic",
+  "Paper/cardboard": "paper",
+  Glass: "glass",
+  Wood: "wood",
+  Metals: "metals",
+  "Multi-material": "multi-material",
+};
+
 const materialDescriptions: Record<string, string> = {
   Plastic: "PET, PE, PP, HDPE, LDPE, PVC, PS and other plastic materials.",
   "Paper/cardboard": "Paper, cardboard and composite paper packaging.",
@@ -234,7 +243,7 @@ export default function ComponentClassification({
           </p>
         </div>
         <div className="classification-banner-art" aria-hidden="true">
-          <MaterialArt family="Plastic" />
+          <img src="/images/materials/bottle-splash.webp" alt="" />
         </div>
         <Link className="gallery-analyse-link" href="/dashboard/clients">
           <ArrowLeft size={16} /> Packaging workspace
@@ -254,7 +263,7 @@ export default function ComponentClassification({
           </div>
         </button>
         <span
-          className={`classification-connector ${step === 2 ? "complete" : ""}`}
+          className="classification-connector complete"
           aria-hidden="true"
         />
         <button
@@ -338,7 +347,16 @@ export default function ComponentClassification({
                     setError("");
                   }}
                 >
-                  <MaterialArt family={material} />
+                  <span
+                    className={`material-photo material-photo-${materialImages[material]}`}
+                  >
+                    <img
+                      src={`/images/materials/${materialImages[material]}.webp`}
+                      alt=""
+                      width={112}
+                      height={112}
+                    />
+                  </span>
                   <span className="material-choice-copy">
                     <strong>{material}</strong>
                     <small>{materialDescriptions[material]}</small>
