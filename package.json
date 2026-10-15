@@ -13,7 +13,8 @@
     "test:email": "node --conditions=react-server --import tsx --test tests/email-template.test.ts tests/mail-transport.test.ts",
     "preview:email": "node --import tsx scripts/preview-otp-email.ts",
     "bootstrap-admin": "node --env-file=.env.local --import tsx scripts/bootstrap-admin.ts",
-    "test:imports": "node --import tsx --test tests/packaging-import.test.ts"
+    "test:imports": "node --import tsx --test tests/packaging-import.test.ts",
+    "test:groups": "node --import tsx --test tests/group-packaging.test.ts"
   },
   "keywords": [],
   "author": "",

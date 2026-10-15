@@ -2875,3 +2875,485 @@
     opacity: 0.25;
   }
 }
+/* Animated tabs and the group-packaging count workspace. */
+.packaging-scope-tabs button {
+  position: relative;
+  isolation: isolate;
+}
+.packaging-scope-tabs button[aria-selected="true"] {
+  background: transparent;
+  border-color: transparent;
+}
+.packaging-tab-highlight {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border: 1px solid #ff710833;
+  border-radius: inherit;
+  background: #ff710810;
+  pointer-events: none;
+}
+.packaging-panels {
+  position: relative;
+  isolation: isolate;
+}
+.group-packaging-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 4px 0 20px;
+}
+.group-packaging-heading h2 {
+  margin: 6px 0;
+  font-size: clamp(22px, 2vw, 28px);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.025em;
+}
+.group-packaging-heading p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--composition-muted);
+}
+.group-save-state {
+  padding: 7px 12px;
+  border: 1px solid #29a47722;
+  border-radius: 20px;
+  color: #239066;
+  background: #29a4770a;
+  font-size: 12px;
+}
+.group-save-state.unsaved {
+  color: #da7419;
+  border-color: #ef9f372c;
+  background: #ff71080a;
+}
+.group-packaging-grid {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.7fr) minmax(0, 1.7fr);
+  align-items: start;
+  gap: 20px;
+}
+.group-product-card {
+  padding: 18px;
+}
+.group-product-card label.group-sku-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 16px;
+  color: var(--composition-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.group-product-card .group-sku-picker select {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--composition-border);
+  border-radius: 9px;
+  background: var(--composition-soft);
+  color: var(--composition-text);
+  font-size: 13px;
+}
+.group-product-photo {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 260px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--composition-soft);
+}
+.group-product-photo > img {
+  display: block;
+  max-width: 100%;
+  max-height: 232px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 4px;
+}
+.group-photo-placeholder {
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  color: var(--composition-muted);
+  font-size: 12px;
+}
+.group-photo-expand {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  background: var(--composition-bg);
+  color: var(--composition-text);
+  border: 1px solid var(--composition-border);
+  border-radius: 7px;
+}
+.group-product-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 16px 0;
+}
+.group-product-identity b {
+  font-size: 16px;
+  line-height: 1.4;
+}
+.group-product-identity > span {
+  font-size: 12px;
+  color: var(--composition-muted);
+}
+.group-components-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--composition-border);
+  border-radius: 9px;
+  background: var(--composition-soft);
+  color: var(--composition-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.group-components-toggle > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.group-components-toggle b {
+  display: grid;
+  place-items: center;
+  min-width: 23px;
+  height: 23px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: #ff710810;
+  color: var(--orange);
+  font-size: 11px;
+}
+.group-components-toggle > svg {
+  transition: transform 0.28s ease;
+}
+.group-components-toggle[aria-expanded="true"] > svg {
+  transform: rotate(180deg);
+}
+.group-component-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+}
+.group-component-list > button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+  padding: 9px;
+  border: 1px solid var(--composition-border);
+  border-radius: 9px;
+  background: var(--composition-bg);
+  text-align: left;
+  color: var(--composition-text);
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.group-component-list > button:hover:not(:disabled) {
+  border-color: #ff9b50;
+  background: #ff710806;
+}
+.group-component-list b {
+  display: block;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+.group-component-list small {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--composition-muted);
+}
+.group-component-index {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-left: auto;
+  border-radius: 50%;
+  background: #25a77812;
+  color: #25a778;
+  font-size: 10px;
+}
+.group-component-thumb {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 7px;
+  background: var(--composition-soft);
+  color: var(--composition-muted);
+}
+.group-component-thumb img {
+  display: block;
+  max-width: 36px;
+  max-height: 40px;
+  object-fit: contain;
+}
+.group-matrix-card {
+  min-width: 0;
+  padding: 20px;
+}
+.group-matrix-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.group-matrix-heading h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+}
+.group-matrix-heading p {
+  margin: 6px 0 0;
+  color: var(--composition-muted);
+  font-size: 12px;
+}
+.group-matrix-heading > .composition-count {
+  font-size: 11px;
+  min-width: max-content;
+  padding: 4px 8px;
+  height: auto;
+}
+.group-matrix-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--composition-border);
+  border-radius: 10px;
+}
+.group-matrix-card table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 520px;
+  table-layout: auto;
+}
+.group-matrix-card th,
+.group-matrix-card td {
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--composition-border);
+  text-align: left;
+  font-size: 13px;
+  color: var(--composition-text);
+}
+.group-matrix-card thead th {
+  background: var(--composition-soft);
+  color: var(--composition-muted);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.group-matrix-card tbody th {
+  font-weight: 500;
+}
+.group-matrix-component {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 150px;
+}
+.group-matrix-component b {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.group-matrix-component small {
+  display: block;
+  margin-top: 3px;
+  color: var(--composition-muted);
+  font-size: 11px;
+}
+.group-matrix-card input[type="number"] {
+  display: block;
+  width: 108px;
+  min-width: 85px;
+  min-height: 40px;
+  margin: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--composition-border);
+  border-radius: 8px;
+  background: var(--composition-bg);
+  color: var(--composition-text);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.group-matrix-card input[aria-invalid="true"] {
+  border-color: #ed5d58;
+  background: #ed5d5808;
+}
+.group-matrix-card tfoot th,
+.group-matrix-card tfoot td {
+  border-bottom: 0;
+  background: #29a47709;
+  font-weight: 650;
+  font-size: 12px;
+}
+.group-matrix-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 20px;
+}
+.group-matrix-footer > span {
+  max-width: 350px;
+  color: var(--composition-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.group-save-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid var(--orange);
+  border-radius: 9px;
+  background: var(--orange);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+.group-save-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px #ff710824;
+}
+.group-packaging-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 14px;
+  margin: 12px 0;
+  border: 1px solid #ed5d5830;
+  border-radius: 9px;
+  background: #ed5d5808;
+  color: #db625a;
+  font-size: 12px;
+}
+.group-packaging-error > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+.group-matrix-hint {
+  margin: 12px 0 0;
+  color: var(--composition-muted);
+  font-size: 12px;
+}
+.group-matrix-no-components,
+.group-packaging-empty {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 14px;
+  min-height: 280px;
+  padding: 28px;
+  color: var(--composition-muted);
+  text-align: center;
+}
+.group-matrix-no-components p,
+.group-packaging-empty p {
+  margin: 0;
+  font-size: 13px;
+}
+.group-packaging-empty > svg {
+  color: var(--orange);
+}
+.group-packaging-empty h2 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: normal;
+}
+.group-zoom-image {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+}
+@media (max-width: 900px) {
+  .group-packaging-grid {
+    grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.4fr);
+    gap: 14px;
+  }
+  .group-product-card,
+  .group-matrix-card {
+    padding: 14px;
+  }
+  .group-product-photo {
+    height: 220px;
+  }
+  .group-product-photo > img {
+    max-height: 192px;
+  }
+}
+@media (max-width: 700px) {
+  .group-packaging-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .group-product-photo {
+    height: 240px;
+  }
+  .group-product-photo > img {
+    max-height: 212px;
+  }
+  .group-packaging-heading h2 {
+    font-size: 23px;
+  }
+  .group-matrix-heading {
+    align-items: flex-start;
+  }
+  .group-matrix-heading h3 {
+    font-size: 16px;
+  }
+  .group-matrix-footer {
+    align-items: stretch;
+  }
+  .group-save-button {
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .group-components-toggle > svg,
+  .group-component-list > button,
+  .group-save-button {
+    transition: none;
+  }
+}
+.packaging-scopes {
+  width: 100%;
+  min-width: 0;
+}

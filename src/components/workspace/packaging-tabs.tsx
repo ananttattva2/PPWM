@@ -1,5 +1,7 @@
 "use client";
 import { useId, useRef, type ReactNode } from "react";
+import { motion, useReducedMotion } from "motion/react";
+import PackagingTabPanel from "./packaging-tab-panel";
 import { Layers3, Package } from "lucide-react";
 type Scope = "sales" | "group";
 export default function PackagingTabs({
@@ -7,13 +9,16 @@ export default function PackagingTabs({
   onChange,
   disabled = false,
   children,
+  groupContent,
 }: {
   value: Scope;
   onChange: (value: Scope) => void;
   disabled?: boolean;
   children: ReactNode;
+  groupContent: ReactNode;
 }) {
   const id = useId();
+  const reduce = useReducedMotion();
   const sales = useRef<HTMLButtonElement>(null);
   const group = useRef<HTMLButtonElement>(null);
   return (
@@ -52,6 +57,16 @@ export default function PackagingTabs({
           disabled={disabled}
           onClick={() => onChange("sales")}
         >
+          {value === "sales" && (
+            <motion.span
+              className="packaging-tab-highlight"
+              layoutId={`${id}-highlight`}
+              transition={{
+                duration: reduce ? 0 : 0.3,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+            />
+          )}
           <Package size={17} /> Sales Packaging
         </button>
         <button
@@ -65,29 +80,34 @@ export default function PackagingTabs({
           disabled={disabled}
           onClick={() => onChange("group")}
         >
+          {value === "group" && (
+            <motion.span
+              className="packaging-tab-highlight"
+              layoutId={`${id}-highlight`}
+              transition={{
+                duration: reduce ? 0 : 0.3,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+            />
+          )}
           <Layers3 size={17} /> Group Packaging
         </button>
       </div>
-      <div
-        role="tabpanel"
-        id={`${id}-sales`}
-        aria-labelledby={`${id}-sales-tab`}
-        hidden={value !== "sales"}
-      >
-        {children}
-      </div>
-      <div
-        role="tabpanel"
-        id={`${id}-group`}
-        aria-labelledby={`${id}-group-tab`}
-        hidden={value !== "group"}
-      >
-        <div className="group-packaging-placeholder">
-          <Layers3 size={36} />
-          <h2>Group Packaging</h2>
-          <span>Coming soon</span>
-          <p>Manage packaging that groups multiple sales units together.</p>
-        </div>
+      <div className="packaging-panels">
+        <PackagingTabPanel
+          active={value === "sales"}
+          id={`${id}-sales`}
+          labelledBy={`${id}-sales-tab`}
+        >
+          {children}
+        </PackagingTabPanel>
+        <PackagingTabPanel
+          active={value === "group"}
+          id={`${id}-group`}
+          labelledBy={`${id}-group-tab`}
+        >
+          {groupContent}
+        </PackagingTabPanel>
       </div>
     </div>
   );

@@ -322,7 +322,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       .click();
     await expect(
       page.getByRole("tabpanel", { name: "Group Packaging", exact: true }),
-    ).toContainText("Coming soon");
+    ).toContainText("Build your group packaging");
     await page
       .getByRole("tab", { name: "Sales Packaging", exact: true })
       .click();
@@ -779,6 +779,55 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     expect((await galleryUpload).status()).toBe(200);
     await expect(
       page.getByRole("button", { name: "Show product photo 3", exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("tab", { name: "Group Packaging", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", {
+        name: "Component count matrix",
+        exact: true,
+      }),
+    ).toBeVisible();
+    const bottleCount = page.getByRole("spinbutton", {
+      name: "Count per group for Bottle",
+      exact: true,
+    });
+    await expect(bottleCount).toBeEnabled();
+    await bottleCount.fill("6");
+    await page
+      .getByRole("spinbutton", { name: "Count per group for Cap", exact: true })
+      .fill("6");
+    const groupSaved = page.waitForResponse(
+      (response) =>
+        response
+          .url()
+          .endsWith(
+            `/api/packaging-imports/${importRecord.id}/group-packaging`,
+          ) && response.request().method() === "PUT",
+    );
+    await page
+      .getByRole("button", { name: "Save group counts", exact: true })
+      .click();
+    expect((await groupSaved).status()).toBe(200);
+    const savedGroup = await db
+      .collection("groupPackaging")
+      .findOne({ _id: new ObjectId(importRecord.id) });
+    expect(
+      savedGroup?.groups[0].components.map(
+        (component: { count: number }) => component.count,
+      ),
+    ).toEqual([6, 6]);
+    const anonymousGroup = await request.put(
+      `/api/packaging-imports/${importRecord.id}/group-packaging`,
+      { headers: { Origin: "http://localhost:3000" }, data: { groups: [] } },
+    );
+    expect(anonymousGroup.status()).toBe(401);
+    await page
+      .getByRole("tab", { name: "Sales Packaging", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Packaging details", exact: true }),
     ).toBeVisible();
     const analysisLink = page.getByRole("link", {
       name: "Analyse packaging",
@@ -1547,6 +1596,9 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     expect((await page.request.get("/api/clients")).status()).toBe(401);
     expect(browserErrors).toEqual([]);
   } finally {
+    await db
+      .collection("groupPackaging")
+      .deleteMany({ importId: { $in: importIds } });
     await db
       .collection("packagingClassifications")
       .deleteMany({ importId: { $in: importIds } });

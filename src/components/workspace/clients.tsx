@@ -5,6 +5,7 @@ import { clearPackagingWorkspaceLocation } from "@/lib/packaging-navigation";
 import { Modal, MultiSelect } from "@mantine/core";
 import PackagingImport from "./packaging-import";
 import PackagingTabs from "./packaging-tabs";
+import GroupPackaging from "./group-packaging";
 import OnboardingProgress from "./onboarding-progress";
 import type { ImportResult } from "@/lib/packaging-import-schema";
 import { TextInput, Select, Textarea } from "../ui/floating-fields";
@@ -614,6 +615,13 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
           className="panel packaging-step-layout"
         >
           <PackagingTabs
+            groupContent={
+              <GroupPackaging
+                imported={managedImport}
+                canEdit={canEdit}
+                onBusy={setImportBusy}
+              />
+            }
             value={packagingScope}
             onChange={setPackagingScope}
             disabled={busy || importBusy}
@@ -1019,6 +1027,13 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                 </>
               ) : (
                 <PackagingTabs
+                  groupContent={
+                    <GroupPackaging
+                      imported={packagingImport}
+                      canEdit={canEdit}
+                      onBusy={setImportBusy}
+                    />
+                  }
                   value={packagingScope}
                   onChange={setPackagingScope}
                   disabled={busy || importBusy}
