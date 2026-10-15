@@ -1,18 +1,52 @@
 "use client";
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { ArrowLeft, Check, ExternalLink } from "lucide-react";
 import { sustainabilityRequirements } from "@/lib/sustainability-checklist";
 import { Button } from "../ui/button";
+import SustainabilityProofUpload from "./sustainability-proof-upload";
+import type { SustainabilityProof } from "@/lib/sustainability-proof";
 export default function SustainabilityChecklist({
   componentName,
   onBack,
+  importId,
+  rowNumber,
+  componentId,
+  canEdit,
 }: {
   componentName: string;
   onBack: () => void;
+  importId: string;
+  rowNumber: number;
+  componentId: string;
+  canEdit: boolean;
 }) {
   const reduce = useReducedMotion();
   const heading = useRef<HTMLHeadingElement>(null);
+  const [proofs, setProofs] = useState<SustainabilityProof[]>([]);
+  const [proofError, setProofError] = useState("");
+  const [loadingProofs, setLoadingProofs] = useState(true);
+  const proofUrl = `/api/packaging-imports/${importId}/proofs?${new URLSearchParams({ rowNumber: String(rowNumber), componentId })}`;
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoadingProofs(true);
+    setProofError("");
+    fetch(proofUrl, { signal: controller.signal })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok)
+          throw new Error(data.error || "Could not load proofs.");
+        setProofs(data.proofs);
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted)
+          setProofError(error.message || "Could not load proofs.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoadingProofs(false);
+      });
+    return () => controller.abort();
+  }, [proofUrl]);
   useEffect(() => {
     heading.current?.focus({ preventScroll: true });
     heading.current?.scrollIntoView({
@@ -40,6 +74,9 @@ export default function SustainabilityChecklist({
           Packaging category
         </Button>
       </header>
+      {proofError && (
+        <p role="alert">{proofError} Reload the page to try again.</p>
+      )}
       <div className="sustainability-checklist-grid">
         {sustainabilityRequirements.map((item, index) => (
           <motion.article
@@ -86,6 +123,17 @@ export default function SustainabilityChecklist({
               ))}
             </ul>
             <span className="sustainability-card-article">{item.article}</span>
+            <SustainabilityProofUpload
+              requirementId={item.id}
+              title={item.title}
+              url={proofUrl}
+              canEdit={canEdit}
+              loading={loadingProofs}
+              proofs={proofs.filter((proof) => proof.requirementId === item.id)}
+              onUploaded={(uploaded) =>
+                setProofs((current) => [...current, ...uploaded])
+              }
+            />
           </motion.article>
         ))}
       </div>

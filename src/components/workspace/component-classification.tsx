@@ -275,6 +275,10 @@ export default function ComponentClassification({
         >
           {step === 3 ? (
             <SustainabilityChecklist
+              importId={importId}
+              rowNumber={rowNumber}
+              componentId={componentId}
+              canEdit={canEdit}
               componentName={componentName}
               onBack={() => setStep(2)}
             />
