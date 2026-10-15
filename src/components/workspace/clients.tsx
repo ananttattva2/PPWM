@@ -6,6 +6,7 @@ import { Modal, MultiSelect } from "@mantine/core";
 import PackagingImport from "./packaging-import";
 import PackagingTabs from "./packaging-tabs";
 import GroupPackaging from "./group-packaging";
+import PpwrTimeline from "./ppwr-timeline";
 import OnboardingProgress from "./onboarding-progress";
 import type { ImportResult } from "@/lib/packaging-import-schema";
 import { TextInput, Select, Textarea } from "../ui/floating-fields";
@@ -681,23 +682,26 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
             <h1>Client onboarding</h1>
             <p>Start with the right details. Build a stronger partnership.</p>
           </div>
-          {canEdit && !show && (
-            <Button
-              disabled={busy || importBusy || editorOpen}
-              onClick={() => {
-                setShow(true);
-                setEditingClient(null);
-                setForm(initial);
-                setFiles([]);
-                setPackagingImport(null);
-                setPackagingFile(null);
-                setStep(0);
-                setError("");
-              }}
-            >
-              <Plus size={18} /> New client
-            </Button>
-          )}
+          <div className="client-heading-actions">
+            <PpwrTimeline />
+            {canEdit && !show && (
+              <Button
+                disabled={busy || importBusy || editorOpen}
+                onClick={() => {
+                  setShow(true);
+                  setEditingClient(null);
+                  setForm(initial);
+                  setFiles([]);
+                  setPackagingImport(null);
+                  setPackagingFile(null);
+                  setStep(0);
+                  setError("");
+                }}
+              >
+                <Plus size={18} /> New client
+              </Button>
+            )}
+          </div>
         </div>
       )}
       {!show && pendingImports.length > 0 && (
