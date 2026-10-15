@@ -30,7 +30,7 @@
 }
 .composition-heading h2 {
   font-size: clamp(20px, 2vw, 28px);
-  letter-spacing: -0.7px;
+  letter-spacing: -0.015em;
   margin: 8px 0;
   line-height: 1.3;
 }
@@ -446,7 +446,7 @@
 }
 .composition-weight > b {
   font-size: 29px;
-  letter-spacing: -0.6px;
+  letter-spacing: -0.015em;
 }
 .composition-weight b small {
   font-size: 17px;
@@ -1045,7 +1045,7 @@
 .packaging-analysis h1 {
   font-size: clamp(23px, 3vw, 30px);
   margin: 8px 0;
-  letter-spacing: -0.7px;
+  letter-spacing: -0.015em;
 }
 .analysis-stats {
   display: grid;
@@ -1256,7 +1256,7 @@
 .classification-heading h1 {
   margin: 10px 0;
   font-size: 32px;
-  letter-spacing: -1px;
+  letter-spacing: -0.015em;
 }
 .classification-heading p {
   color: var(--composition-muted);
@@ -1511,7 +1511,7 @@
   margin: 6px 0;
   font-size: 28px;
   line-height: 1.25;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.015em;
 }
 .classification-heading p {
   margin-bottom: 0;
@@ -1525,7 +1525,7 @@
   margin-bottom: 16px;
 }
 .classification-intro h2 {
-  letter-spacing: -0.35px;
+  letter-spacing: -0.015em;
   line-height: 1.35;
   font-size: clamp(20px, 1.7vw, 25px);
 }

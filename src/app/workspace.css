@@ -330,7 +330,7 @@
 .workspace .page-heading h1 {
   font-size: 24px;
   font-weight: 600;
-  letter-spacing: -0.7px;
+  letter-spacing: -0.015em;
   margin: 0 0 7px;
 }
 .workspace .page-heading p {

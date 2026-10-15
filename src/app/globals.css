@@ -82,8 +82,8 @@ p {
 }
 h1,
 h2 {
-  letter-spacing: -2px;
-  line-height: 1.1;
+  letter-spacing: normal;
+  line-height: 1.3;
 }
 p {
   line-height: 1.7;
@@ -205,7 +205,7 @@ p {
   font-size: clamp(44px, 4.4vw, 65px);
   font-weight: 700;
   margin: 24px 0;
-  letter-spacing: -3px;
+  letter-spacing: -0.015em;
   line-height: 1.12;
 }
 .hero h1 > span,
@@ -310,7 +310,7 @@ p {
 }
 .preview-title {
   font-size: 22px;
-  letter-spacing: -0.7px;
+  letter-spacing: -0.015em;
   line-height: 1.25;
   margin: 14px 0;
 }
@@ -657,7 +657,7 @@ p {
 }
 .flow-core strong {
   font-size: 33px;
-  letter-spacing: -1px;
+  letter-spacing: -0.015em;
 }
 .flow-core small {
   display: block;
@@ -692,7 +692,7 @@ p {
 }
 .steps h3 {
   font-size: 20px;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.015em;
   margin-bottom: 10px;
 }
 .steps p {
@@ -793,7 +793,7 @@ p {
 .solution-card h3 {
   font-size: 20px;
   line-height: 1.3;
-  letter-spacing: -0.6px;
+  letter-spacing: -0.015em;
   min-height: 51px;
   margin: 12px 0;
 }
@@ -939,7 +939,7 @@ p {
 }
 .login-story h1 {
   font-size: 43px;
-  letter-spacing: -1.8px;
+  letter-spacing: -0.015em;
   margin-top: 23px;
 }
 .login-story p {
@@ -1019,7 +1019,7 @@ p {
 }
 .login-form-card h2 {
   font-size: 36px;
-  letter-spacing: -1.4px;
+  letter-spacing: -0.015em;
   margin-bottom: 13px;
 }
 .login-form-card > p {
@@ -1302,7 +1302,7 @@ p {
 }
 .page-heading h1 {
   font-size: 29px;
-  letter-spacing: -1px;
+  letter-spacing: -0.015em;
   margin: 12px 0;
 }
 .page-heading p {
@@ -1338,7 +1338,7 @@ p {
 }
 .welcome-banner h2 {
   font-size: 30px;
-  letter-spacing: -0.7px;
+  letter-spacing: -0.015em;
   margin: 16px 0 12px;
 }
 .welcome-banner p {
@@ -1670,7 +1670,7 @@ td .mantine-Select-root {
 }
 .review-card h2 {
   font-size: 25px;
-  letter-spacing: -0.6px;
+  letter-spacing: -0.015em;
 }
 .review-card dl > div {
   display: grid;
@@ -1706,7 +1706,7 @@ td .mantine-Select-root {
 }
 .profile-summary h2 {
   font-size: 20px;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.015em;
   margin: 20px 0 8px;
 }
 .profile-summary p {
@@ -1774,7 +1774,7 @@ td .mantine-Select-root {
 }
 .error-page h1 {
   font-size: 32px;
-  letter-spacing: -1px;
+  letter-spacing: -0.015em;
 }
 .error-page p {
   font-size: 14px;
@@ -2082,7 +2082,7 @@ td .mantine-Select-root {
   }
   .hero h1 {
     font-size: 43px;
-    letter-spacing: -2px;
+    letter-spacing: -0.015em;
   }
   .hero-copy > p {
     font-size: 12px;
@@ -2208,7 +2208,7 @@ td .mantine-Select-root {
   }
   .section h2 {
     font-size: 32px;
-    letter-spacing: -1.2px;
+    letter-spacing: -0.015em;
   }
   .section-heading p {
     font-size: 11px;
@@ -2257,7 +2257,7 @@ td .mantine-Select-root {
   }
   .solution-card h3 {
     font-size: 17px;
-    letter-spacing: -0.3px;
+    letter-spacing: -0.015em;
     min-height: 44px;
   }
   .solution-card p {
@@ -2714,4 +2714,14 @@ td .mantine-Select-root {
   .onboarding-panel .panel-heading .text-button {
     font-size: 9px;
   }
+}
+
+/* Portal titles share the app typography without display-heading compression. */
+.mantine-Modal-title,
+.mantine-Drawer-title {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: normal;
+  overflow-wrap: anywhere;
 }
