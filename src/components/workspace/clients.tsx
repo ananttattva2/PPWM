@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { clearPackagingWorkspaceLocation } from "@/lib/packaging-navigation";
 import { Modal, MultiSelect } from "@mantine/core";
 import PackagingImport from "./packaging-import";
 import PackagingTabs from "./packaging-tabs";
@@ -112,6 +113,48 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [viewingClient, setViewingClient] = useState<Client | null>(null);
   const searchParams = useSearchParams();
+  const requestedImportId = searchParams.get("packaging");
+  const [restoringPackaging, setRestoringPackaging] = useState(
+    Boolean(requestedImportId),
+  );
+  useEffect(() => {
+    if (
+      !requestedImportId ||
+      !/^[a-f0-9]{24}$/i.test(requestedImportId) ||
+      packagingImport?.id === requestedImportId ||
+      managedImport?.id === requestedImportId
+    ) {
+      setRestoringPackaging(false);
+      return;
+    }
+    let active = true;
+    setRestoringPackaging(true);
+    async function restore() {
+      try {
+        const response = await fetch(
+          `/api/packaging-imports/${requestedImportId}`,
+        );
+        const imported = await response.json();
+        if (!response.ok)
+          throw new Error(
+            imported.error || "Could not reopen this packaging workspace.",
+          );
+        if (active) {
+          setManagedImport(imported);
+          setPackagingScope("sales");
+          setShow(false);
+        }
+      } catch (failure) {
+        if (active) toast.error((failure as Error).message);
+      } finally {
+        if (active) setRestoringPackaging(false);
+      }
+    }
+    void restore();
+    return () => {
+      active = false;
+    };
+  }, [requestedImportId, packagingImport?.id, managedImport?.id]);
   const [list, setList] = useState<Client[]>([]),
     [form, setForm] = useState(initial),
     [files, setFiles] = useState<File[]>([]),
@@ -539,6 +582,12 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       setBusy(false);
     }
   }
+  if (restoringPackaging)
+    return (
+      <section className="panel" role="status" style={{ padding: 32 }}>
+        <LoaderCircle size={20} className="spin" /> Opening packaging workspace…
+      </section>
+    );
   if (managedImport)
     return (
       <>
@@ -552,6 +601,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
             variant="outline"
             disabled={importBusy || editorOpen}
             onClick={() => {
+              clearPackagingWorkspaceLocation();
               setManagedImport(null);
               void load();
             }}

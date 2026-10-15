@@ -828,6 +828,27 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       await expect(
         componentPage.getByRole("heading", { name, exact: true }),
       ).toBeVisible();
+      const sourcePhoto = page
+        .locator(".composition-saved-component")
+        .filter({ has: page.getByRole("heading", { name, exact: true }) })
+        .locator("img");
+      if (await sourcePhoto.count()) {
+        await expect(
+          componentPage.getByRole("img", {
+            name: `${name} component`,
+            exact: true,
+          }),
+        ).toHaveAttribute(
+          "src",
+          (await sourcePhoto.first().getAttribute("src"))!,
+        );
+      } else {
+        await expect(
+          componentPage.getByText("No component photo available", {
+            exact: true,
+          }),
+        ).toHaveCount(1);
+      }
       await expect(
         componentPage.locator(".material-choice-grid > button"),
       ).toHaveCount(6);
@@ -963,6 +984,18 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
           caret: "initial",
         });
       }
+      await componentPage
+        .getByRole("link", { name: "Packaging workspace", exact: true })
+        .click();
+      await expect(
+        componentPage.getByRole("heading", {
+          name: "Packaging details",
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(
+        componentPage.locator(".composition-saved-component"),
+      ).toHaveCount(2);
       await componentPage.close();
     }
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));

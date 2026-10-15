@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { rememberPackagingWorkspace } from "@/lib/packaging-navigation";
 import PackagingGallery from "./packaging-gallery";
 import type { PackagingComposition } from "@/lib/packaging-composition";
 import { motion, useReducedMotion } from "motion/react";
@@ -78,6 +79,9 @@ export default function PackagingView({
             className="gallery-analyse-link"
             href={`/dashboard/packaging/${importId}/${row.rowNumber}/analyse`}
             target="_self"
+            onNavigate={() =>
+              rememberPackagingWorkspace(importId, row.rowNumber)
+            }
             aria-label="Analyse packaging"
           >
             <ChartNoAxesCombined size={16} /> Analyse
@@ -161,6 +165,9 @@ export default function PackagingView({
                           className="gallery-analyse-link component-analyse-link"
                           href={`/dashboard/packaging/${importId}/${row.rowNumber}/analyse?component=${encodeURIComponent(component.id)}`}
                           target="_self"
+                          onNavigate={() =>
+                            rememberPackagingWorkspace(importId, row.rowNumber)
+                          }
                           aria-label={`Analyse ${component.name || `component ${index + 1}`}`}
                         >
                           <ChartNoAxesCombined size={15} /> Analyse

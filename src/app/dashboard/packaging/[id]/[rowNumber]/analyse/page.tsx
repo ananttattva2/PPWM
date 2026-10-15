@@ -1,10 +1,9 @@
+import PackagingBackLink from "@/components/workspace/packaging-back-link";
 import ComponentClassification from "@/components/workspace/component-classification";
 import { classificationSchema } from "@/lib/packaging-classification";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ObjectId } from "mongodb";
 import {
-  ArrowLeft,
   ChartNoAxesCombined,
   CheckCircle2,
   AlertCircle,
@@ -73,6 +72,7 @@ export default async function Page({
         rowNumber={number}
         componentId={selectedComponent.id}
         componentName={selectedComponent.name || "Unnamed component"}
+        componentImage={selectedComponent.image}
         productName={row.productName || "Product name pending"}
         polymer={selectedComponent.material}
         initial={classification.success ? classification.data : undefined}
@@ -94,9 +94,7 @@ export default async function Page({
             {row.productName || "this product"}. Based on saved details.
           </p>
         </div>
-        <Link className="gallery-analyse-link" href="/dashboard/clients">
-          <ArrowLeft size={16} /> Back to clients
-        </Link>
+        <PackagingBackLink importId={id} rowNumber={number} />
       </header>
       <div className="composition-view-notice">
         <ChartNoAxesCombined size={18} />

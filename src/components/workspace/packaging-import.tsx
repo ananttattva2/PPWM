@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { rememberPackagingWorkspace } from "@/lib/packaging-navigation";
 import { Checkbox, RingProgress } from "@mantine/core";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
@@ -84,7 +86,18 @@ export default function PackagingImport({
   const [details, setDetails] = useState(false);
   const [editingRow, setEditingRow] = useState<number | null>(null);
   const [addingRow, setAddingRow] = useState(false);
-  const [viewingRow, setViewingRow] = useState<number | null>(null);
+  const returnParams = useSearchParams();
+  const [viewingRow, setViewingRow] = useState<number | null>(() => {
+    const row = Number(returnParams.get("row"));
+    return returnParams.get("packaging") === parentResult?.id &&
+      Number.isInteger(row) &&
+      row > 0
+      ? row
+      : null;
+  });
+  useEffect(() => {
+    onEditorChange?.(viewingRow !== null || editingRow !== null || addingRow);
+  }, [viewingRow, editingRow, addingRow, onEditorChange]);
   const input = useRef<HTMLInputElement>(null),
     id = useRef(result?.id || ""),
     savedFile = useRef<File | null>(null);
@@ -261,10 +274,12 @@ export default function PackagingImport({
           onChange(updated);
         }}
         onBack={() => {
+          rememberPackagingWorkspace(result.id);
           setViewingRow(null);
           onEditorChange?.(false);
         }}
         onEdit={() => {
+          rememberPackagingWorkspace(result.id);
           setEditingRow(viewedRow.rowNumber);
           setViewingRow(null);
         }}

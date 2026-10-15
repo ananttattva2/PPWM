@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
-  ArrowLeft,
   Check,
   ChevronRight,
   LoaderCircle,
@@ -12,8 +11,10 @@ import {
   ArrowRight,
   RotateCcw,
   SlidersHorizontal,
+  Package,
 } from "lucide-react";
 import { toast } from "sonner";
+import PackagingBackLink from "./packaging-back-link";
 import {
   materialFamilies,
   packagingCategories,
@@ -59,6 +60,7 @@ export default function ComponentClassification({
   rowNumber,
   componentId,
   componentName,
+  componentImage,
   productName,
   polymer,
   initial,
@@ -68,6 +70,7 @@ export default function ComponentClassification({
   rowNumber: number;
   componentId: string;
   componentName: string;
+  componentImage?: string;
   productName: string;
   polymer: string;
   initial?: Pick<Classification, "family" | "categoryId">;
@@ -156,19 +159,20 @@ export default function ComponentClassification({
             {productName} <span>· Polymer: {polymer || "Not provided"}</span>
           </p>
         </div>
-        <div className="classification-banner-art" aria-hidden="true">
-          <img
-            src={
-              step === 2
-                ? "/images/categories/category-splash.webp"
-                : "/images/materials/bottle-splash.webp"
-            }
-            alt=""
-          />
+        <div className="classification-banner-art component-banner-photo">
+          {componentImage ? (
+            <img
+              src={`/api/packaging-imports/${importId}/assets/${componentImage}`}
+              alt={`${componentName} component`}
+            />
+          ) : (
+            <span className="component-banner-placeholder">
+              <Package size={72} strokeWidth={1.25} aria-hidden="true" />
+              <span className="sr-only">No component photo available</span>
+            </span>
+          )}
         </div>
-        <Link className="gallery-analyse-link" href="/dashboard/clients">
-          <ArrowLeft size={16} /> Packaging workspace
-        </Link>
+        <PackagingBackLink importId={importId} rowNumber={rowNumber} />
       </header>
       <nav className="classification-progress" aria-label="Analysis progress">
         <button
