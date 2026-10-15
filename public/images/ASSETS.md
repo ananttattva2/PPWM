@@ -23,3 +23,7 @@ The `categories/` directory contains individually generated studio product photo
 ## Illustrated empty search state
 
 `categories/empty-search.webp` is a transparent 3D editorial illustration generated with the built-in image generator on 2026-10-15. It depicts a blue magnifying glass emerging from a packaging box, floating packaging cards and leaves. Search fields, explanatory copy, recovery actions and all animations are implemented in the website. Original generation output remains in the local image library.
+
+## Sustainability checklist illustrations
+
+The nine files in `sustainability/` (heavy metals, PFAS, recyclable design, recycled plastic, biobased feedstock, compostability, minimisation, reuse and labelling) were individually generated with the built-in imagegen tool on 2026-10-15 to match the supplied 3D infographic reference. They are original transparent product illustrations, optimized to at most 520px WebP with alpha preserved. All card headings, numbered badges, descriptions, bullets, source references and animations remain accessible HTML/CSS rather than embedded image text. Requirements reference Regulation (EU) 2025/40; the page presents an overview, not verified component compliance outcomes.

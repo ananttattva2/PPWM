@@ -1010,6 +1010,21 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
           exact: true,
         }),
       ).toBeVisible();
+      await expect(
+        componentPage.getByRole("heading", {
+          name: "Sustainability Checklist",
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(componentPage.locator(".sustainability-card")).toHaveCount(
+        9,
+      );
+      await componentPage
+        .getByRole("button", { name: "Packaging category", exact: true })
+        .click();
+      await expect(
+        componentPage.getByRole("button", { name: categoryName, exact: true }),
+      ).toHaveAttribute("aria-pressed", "true");
       const classifiedRecord = await db
         .collection("packagingClassifications")
         .findOne({

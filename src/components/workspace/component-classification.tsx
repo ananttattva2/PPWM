@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import type { CompositionComponent } from "@/lib/packaging-composition";
+import SustainabilityChecklist from "./sustainability-checklist";
 import PackagingBackLink from "./packaging-back-link";
 import {
   materialFamilies,
@@ -93,7 +94,7 @@ export default function ComponentClassification({
     initial?.family || null,
   );
   const [categoryId, setCategoryId] = useState(initial?.categoryId || "");
-  const [step, setStep] = useState<0 | 1 | 2>(0);
+  const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
   const [busy, setBusy] = useState(false);
   const [categoryQuery, setCategoryQuery] = useState("");
   const [savedThisSession, setSavedThisSession] = useState(false);
@@ -144,6 +145,7 @@ export default function ComponentClassification({
         );
       setCategoryId(id);
       setSavedThisSession(true);
+      setStep(3);
       toast.success("Material and packaging category saved.", {
         description: "Your material and packaging category have been saved.",
       });
@@ -215,11 +217,11 @@ export default function ComponentClassification({
             setCategoryQuery("");
             setStep(1);
           }}
-          className={step === 2 ? "classification-step-complete" : undefined}
-          aria-label={step === 2 ? "Change material" : undefined}
+          className={step >= 2 ? "classification-step-complete" : undefined}
+          aria-label={step >= 2 ? "Change material" : undefined}
           aria-current={step === 1 ? "step" : undefined}
         >
-          <span>{step === 2 ? <Check size={16} /> : "2"}</span>
+          <span>{step >= 2 ? <Check size={16} /> : "2"}</span>
           <div className="classification-step-copy">
             <b>Material</b>
             <small>Select material type</small>
@@ -234,25 +236,30 @@ export default function ComponentClassification({
           disabled={!family || busy}
           onClick={() => setStep(2)}
           aria-current={step === 2 ? "step" : undefined}
+          className={step === 3 ? "classification-step-complete" : undefined}
         >
-          <span>3</span>
+          <span>{step === 3 ? <Check size={16} /> : "3"}</span>
           <div className="classification-step-copy">
             <b>Packaging category</b>
             <small>Choose packaging category</small>
           </div>
         </button>
         <span
-          className={`classification-connector ${step === 2 ? "category-current" : ""}`}
+          className={`classification-connector ${step === 3 ? "material-completed" : step === 2 ? "category-current" : ""}`}
           aria-hidden="true"
         />
-        <span className="classification-upcoming">
-          <span className="classification-upcoming-number">4</span>
-          <span className="classification-step-copy">
+        <button
+          type="button"
+          disabled={!categoryId || busy}
+          onClick={() => setStep(3)}
+          aria-current={step === 3 ? "step" : undefined}
+        >
+          <span>4</span>
+          <div className="classification-step-copy">
             <b>Sustainability Checklist</b>
             <small>Review sustainability requirements</small>
-          </span>
-          <small className="classification-soon">Coming soon</small>
-        </span>
+          </div>
+        </button>
       </nav>
       {!canEdit && (
         <p role="status">You have view-only access to this component.</p>
@@ -270,7 +277,12 @@ export default function ComponentClassification({
           exit={{ opacity: 0, y: reduce ? 0 : -8 }}
           transition={{ duration: reduce ? 0 : 0.2 }}
         >
-          {step === 0 ? (
+          {step === 3 ? (
+            <SustainabilityChecklist
+              componentName={componentName}
+              onBack={() => setStep(2)}
+            />
+          ) : step === 0 ? (
             <section
               className="classification-supplier"
               aria-label={`${componentName} supplier details`}
@@ -578,8 +590,11 @@ export default function ComponentClassification({
           )}
           {step === 2 && categoryId && savedThisSession && (
             <div className="classification-saved" role="status">
-              <Check size={18} /> Selection saved. Sustainability Checklist
-              coming soon.
+              <Check size={18} /> Selection saved. Continue to the
+              Sustainability Checklist.
+              <Button type="button" onClick={() => setStep(3)}>
+                Sustainability Checklist <ArrowRight size={16} />
+              </Button>
             </div>
           )}
         </motion.section>
