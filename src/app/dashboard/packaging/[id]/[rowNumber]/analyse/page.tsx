@@ -1,3 +1,4 @@
+import { hydrateImportSuppliers } from "@/lib/hydrate-import-suppliers";
 import PackagingBackLink from "@/components/workspace/packaging-back-link";
 import ComponentClassification from "@/components/workspace/component-classification";
 import { classificationSchema } from "@/lib/packaging-classification";
@@ -40,13 +41,24 @@ export default async function Page({
         projection: {
           status: 1,
           createdBy: 1,
-          "analysis.rows": 1,
+          analysis: 1,
+          headers: 1,
+          mapping: 1,
+          rawRows: 1,
+          settings: 1,
         },
       },
     );
   if (!record || (record.status === "draft" && record.createdBy !== user.id))
     notFound();
-  const row = (record.analysis?.rows as PackagingRow[] | undefined)?.find(
+  const hydrated = hydrateImportSuppliers({
+    headers: record.headers,
+    mapping: record.mapping || {},
+    rawRows: record.rawRows,
+    settings: record.settings,
+    analysis: record.analysis,
+  });
+  const row = (hydrated.analysis?.rows as PackagingRow[] | undefined)?.find(
     (item) => item.rowNumber === number,
   );
   if (!row) notFound();
@@ -68,6 +80,7 @@ export default async function Page({
     const classification = classificationSchema.safeParse(saved);
     return (
       <ComponentClassification
+        key={`${id}-${number}-${selectedComponent.id}`}
         importId={id}
         rowNumber={number}
         componentId={selectedComponent.id}
@@ -75,6 +88,7 @@ export default async function Page({
         componentImage={selectedComponent.image}
         productName={row.productName || "Product name pending"}
         polymer={selectedComponent.material}
+        supplierDetails={selectedComponent}
         initial={classification.success ? classification.data : undefined}
         canEdit={["super_admin", "admin", "manager"].includes(user.role)}
       />

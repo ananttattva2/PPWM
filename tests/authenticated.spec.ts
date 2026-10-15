@@ -917,6 +917,21 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
         ).toHaveCount(1);
       }
       await expect(
+        componentPage.getByRole("heading", {
+          name: "Supplier details",
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(
+        componentPage.getByRole("region", {
+          name: `${name} supplier details`,
+          exact: true,
+        }),
+      ).toBeVisible();
+      await componentPage
+        .getByRole("button", { name: "Continue to material", exact: true })
+        .click();
+      await expect(
         componentPage.locator(".material-choice-grid > button"),
       ).toHaveCount(6);
       await componentPage.screenshot({
@@ -991,7 +1006,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
         await classificationResponse.text(),
       ).toBe(200);
       await expect(
-        componentPage.getByText("Supplier details coming soon.", {
+        componentPage.getByText("Material and packaging category saved.", {
           exact: true,
         }),
       ).toBeVisible();
@@ -1016,6 +1031,9 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       );
       expect(anonymousClassification.status()).toBe(401);
       await componentPage.reload();
+      await componentPage
+        .getByRole("button", { name: "Continue to material", exact: true })
+        .click();
       await componentPage
         .getByRole("button", { name: "Plastic", exact: true })
         .click();
