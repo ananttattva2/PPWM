@@ -1564,8 +1564,9 @@
 }
 /* Reference material selector: photo cutouts, compact cards and a soft splash banner. */
 .classification-workspace {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   padding: 0 0 24px;
 }
 .classification-heading {
