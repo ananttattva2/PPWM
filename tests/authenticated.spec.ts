@@ -839,6 +839,32 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       await componentPage
         .getByRole("button", { name: "Plastic", exact: true })
         .click();
+      if (name === "Bottle") {
+        const categorySearch = componentPage.getByRole("searchbox", {
+          name: "Search packaging category",
+          exact: true,
+        });
+        await expect(
+          componentPage.locator(".category-choice-grid > button"),
+        ).toHaveCount(13);
+        await categorySearch.fill("HDPE");
+        await expect(
+          componentPage.locator(".category-choice-grid > button"),
+        ).toHaveCount(1);
+        await categorySearch.fill("no-matching-category");
+        await expect(
+          componentPage.getByRole("heading", {
+            name: "No matching packaging categories",
+            exact: true,
+          }),
+        ).toBeVisible();
+        await componentPage
+          .getByRole("button", { name: "Clear search", exact: true })
+          .click();
+        await expect(
+          componentPage.locator(".category-choice-grid > button"),
+        ).toHaveCount(13);
+      }
       const classified = componentPage.waitForResponse(
         (response) =>
           response

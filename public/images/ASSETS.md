@@ -15,3 +15,7 @@ Final generation prompt:
 - Photorealistic packaging cutouts with transparent backgrounds, no labels, brands, text or watermarks. Each material group and the splash bottle were generated as separate assets.
 - Card photographs are optimized to 400px WebP images; the splash banner uses a larger WebP. Original generation outputs remain in the local image generation library.
 - The website renders all labels, progress states and controls as accessible HTML; the photographs are decorative.
+
+## Packaging category photographs
+
+The `categories/` directory contains individually generated studio product photographs for the category-selection screen: storage tub, rigid jug, foil pouch, spouted pouch, foam tray, EPS block, rigid plastic assortment, film roll, biodegradable cups, and a bottle splash with leaves. Generated with the built-in image generator on 2026-10-15, with transparent backgrounds and no branding. Assets are optimized as WebP while preserving alpha. PET/PP storage tubs, flexible pouches, and PE/HDPE jugs intentionally share representative product images. Labels and selection controls remain HTML.

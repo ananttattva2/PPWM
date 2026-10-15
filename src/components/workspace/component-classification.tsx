@@ -1,5 +1,5 @@
 "use client";
-import { useId, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
@@ -8,6 +8,8 @@ import {
   ChevronRight,
   LoaderCircle,
   Boxes,
+  Search,
+  ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -16,141 +18,6 @@ import {
 } from "@/lib/packaging-classification";
 import type { Classification } from "@/lib/packaging-classification";
 
-function MaterialArt({
-  family,
-  variant = "",
-}: {
-  family: string;
-  variant?: string;
-}) {
-  const id = useId();
-  const blue = family === "Plastic";
-  const colour = blue
-    ? "#248bc1"
-    : family === "Metals"
-      ? "#637e8e"
-      : family === "Wood" || family === "Paper/cardboard"
-        ? "#ac8046"
-        : "#347b51";
-  const flexible = variant.includes("flexible");
-  return (
-    <svg
-      viewBox="0 0 180 130"
-      aria-hidden="true"
-      className="classification-art"
-    >
-      <defs>
-        <linearGradient id={id}>
-          <stop stopColor="white" stopOpacity=".85" />
-          <stop offset=".5" stopColor={colour} stopOpacity=".2" />
-          <stop offset="1" stopColor={colour} stopOpacity=".6" />
-        </linearGradient>
-      </defs>
-      <ellipse cx="90" cy="67" rx="62" ry="56" fill={colour} opacity=".08" />
-      <g
-        stroke={colour}
-        strokeWidth="2.8"
-        strokeLinejoin="round"
-        fill={`url(#${id})`}
-      >
-        {variant === "textile" ? (
-          <>
-            <path
-              d="M43 45h82c28 0 28 65 0 65H43c-21 0-21-65 0-65Z"
-              fill="#d9cbb1"
-            />
-            <ellipse cx="125" cy="78" rx="19" ry="32" />
-            <ellipse cx="125" cy="78" rx="9" ry="18" />
-            <path d="M40 56h70M40 69h66M40 83h66M40 97h70" />
-          </>
-        ) : variant === "ceramics" ? (
-          <>
-            <path
-              d="M65 30h47l-10 23c8 13 26 25 21 45-6 22-63 22-69 0-5-20 13-32 21-45Z"
-              fill="#d2a789"
-            />
-            <ellipse cx="89" cy="30" rx="24" ry="7" />
-            <path d="M63 83c16 9 37 9 52 0" />
-          </>
-        ) : variant === "eps" ? (
-          <>
-            <path d="m30 60 36-19 39 17-36 20Z" fill="#f3f5f5" />
-            <path d="M30 60v35l39 20V78m36-20v35l-36 22" />
-            <path d="m85 40 33-18 33 17-33 18Z" fill="#fff" />
-            <path d="M85 40v38l33 17V57m33-18v39l-33 17" />
-          </>
-        ) : ["pp-rigid", "pet-rigid", "ps-xps", "other-rigid"].includes(
-            variant,
-          ) ? (
-          <>
-            <rect x="31" y="44" width="117" height="62" rx="10" />
-            <rect
-              x="27"
-              y="37"
-              width="125"
-              height="15"
-              rx="5"
-              fill={colour}
-              opacity=".6"
-            />
-            <path d="M48 60v29M61 97h69M32 70h115" />
-          </>
-        ) : ["pe-rigid", "hdpe-pp"].includes(variant) ? (
-          <>
-            <path d="M67 32h43v17l20 19v40H48V68l19-19Z" />
-            <rect x="67" y="24" width="43" height="11" rx="3" fill={colour} />
-            <path d="M69 52v23h18V48Z" fill="white" />
-            <path d="M59 86h59v15H59Z" fill="white" opacity=".7" />
-          </>
-        ) : family === "Paper/cardboard" ? (
-          <>
-            <path d="M45 54 90 35 139 54 90 76Z" fill="#d6b77b" />
-            <path d="M45 54v46l45 19V76m49-22v46l-49 19" />
-            <path
-              d="m45 54-16 23 48 17 13-18 15 18 48-17-14-23"
-              fill="#e7cf9e"
-            />
-            <path d="M106 18h39v39l-18 8-21-13z" fill="#fffdf2" />
-            <path d="m114 28 23 4m-23 6 23 4" />
-          </>
-        ) : family === "Wood" ? (
-          <>
-            <path d="m30 65 62-29 58 24-62 30Z" fill="#e4bf81" />
-            <path d="M30 65v28l58 27V90m62-30v29l-62 31" />
-            <path d="m43 66 52-22m-38 28 53-22m-39 29 53-22M40 84l37 17m24-3 37-18" />
-          </>
-        ) : family === "Metals" ? (
-          <>
-            <path d="M48 34v71c0 16 70 16 70 0V34" />
-            <ellipse cx="83" cy="34" rx="35" ry="11" />
-            <path d="M48 57c0 14 70 14 70 0m-70 29c0 14 70 14 70 0M60 40v63" />
-            <path d="M107 78v33c0 13 44 13 44 0V78" fill="#c6bd90" />
-            <ellipse cx="129" cy="78" rx="22" ry="8" />
-          </>
-        ) : flexible ? (
-          <>
-            <path d="m49 25 19 5 17-5 20 5 20-5 12 82-22 7-18-5-19 6-25-8Z" />
-            <path d="m61 40 15 24-13 24m47-45-18 30 22 21M54 103l69 1" />
-          </>
-        ) : (
-          <>
-            <path d="M74 24v17c0 9-18 18-18 33v35c0 12 61 12 61 0V74c0-15-19-24-19-33V24" />
-            <rect x="72" y="17" width="28" height="13" rx="3" fill={colour} />
-            <path d="M58 74h57M58 86h57M58 99h57M69 50c-5 6-6 12-6 20" />
-            <path d="M65 75h44v25H65z" fill="white" opacity=".65" />
-            {family === "Multi-material" && (
-              <>
-                <path d="m108 75 37 9v33l-37-8z" fill="#d4b17a" />
-                <path d="m108 75 15-8 35 8-13 9" />
-              </>
-            )}
-          </>
-        )}
-      </g>
-    </svg>
-  );
-}
-
 const materialImages: Record<string, string> = {
   Plastic: "plastic",
   "Paper/cardboard": "paper",
@@ -158,6 +25,22 @@ const materialImages: Record<string, string> = {
   Wood: "wood",
   Metals: "metals",
   "Multi-material": "multi-material",
+};
+
+const categoryImages: Record<string, string> = {
+  "pet-bottles": "/images/materials/plastic.webp",
+  "pet-rigid": "/images/categories/storage-tub.webp",
+  "pet-flexible": "/images/categories/foil-pouch.webp",
+  "pe-rigid": "/images/categories/rigid-jug.webp",
+  "pe-flexible": "/images/categories/spouted-pouch.webp",
+  "pp-rigid": "/images/categories/storage-tub.webp",
+  "pp-flexible": "/images/categories/foil-pouch.webp",
+  "hdpe-pp": "/images/categories/rigid-jug.webp",
+  "ps-xps": "/images/categories/foam-tray.webp",
+  eps: "/images/categories/eps-block.webp",
+  "other-rigid": "/images/categories/rigid-assortment.webp",
+  "other-flexible": "/images/categories/film-roll.webp",
+  biodegradable: "/images/categories/bio-cups.webp",
 };
 
 const materialDescriptions: Record<string, string> = {
@@ -194,10 +77,16 @@ export default function ComponentClassification({
   const [categoryId, setCategoryId] = useState(initial?.categoryId || "");
   const [step, setStep] = useState<1 | 2>(1);
   const [busy, setBusy] = useState(false);
+  const [categoryQuery, setCategoryQuery] = useState("");
+  const [savedThisSession, setSavedThisSession] = useState(false);
   const [error, setError] = useState("");
   const reduce = useReducedMotion();
   const categories = packagingCategories.filter(
-    (category) => family === "Multi-material" || category.family === family,
+    (category) =>
+      (family === "Multi-material" || category.family === family) &&
+      `${category.title} ${category.detail}`
+        .toLowerCase()
+        .includes(categoryQuery.trim().toLowerCase()),
   );
   async function chooseCategory(id: string) {
     if (!canEdit || !family || busy) return;
@@ -223,6 +112,7 @@ export default function ComponentClassification({
           data.error || "Could not save your selection. Please try again.",
         );
       setCategoryId(id);
+      setSavedThisSession(true);
       toast.info("Supplier details coming soon.", {
         description: "Your material and packaging category have been saved.",
       });
@@ -233,7 +123,16 @@ export default function ComponentClassification({
     }
   }
   return (
-    <div className="composition-builder classification-workspace">
+    <div
+      className={`composition-builder classification-workspace ${step === 2 ? "classification-category-step" : ""}`}
+    >
+      <nav className="classification-breadcrumb" aria-label="Breadcrumb">
+        <Link href="/dashboard">Workspace</Link>
+        <span aria-hidden="true">/</span>
+        <span>Component Analysis</span>
+        <span aria-hidden="true">/</span>
+        <b aria-current="page">{componentName}</b>
+      </nav>
       <header className="classification-heading">
         <div>
           <span className="composition-eyebrow">COMPONENT ANALYSIS</span>
@@ -243,7 +142,14 @@ export default function ComponentClassification({
           </p>
         </div>
         <div className="classification-banner-art" aria-hidden="true">
-          <img src="/images/materials/bottle-splash.webp" alt="" />
+          <img
+            src={
+              step === 2
+                ? "/images/categories/category-splash.webp"
+                : "/images/materials/bottle-splash.webp"
+            }
+            alt=""
+          />
         </div>
         <Link className="gallery-analyse-link" href="/dashboard/clients">
           <ArrowLeft size={16} /> Packaging workspace
@@ -253,17 +159,22 @@ export default function ComponentClassification({
         <button
           type="button"
           disabled={busy}
-          onClick={() => setStep(1)}
+          onClick={() => {
+            setCategoryQuery("");
+            setStep(1);
+          }}
+          className={step === 2 ? "classification-step-complete" : undefined}
+          aria-label={step === 2 ? "Change material" : undefined}
           aria-current={step === 1 ? "step" : undefined}
         >
           <span>{step === 2 ? <Check size={16} /> : "1"}</span>
           <div className="classification-step-copy">
-            <b>Material</b>
+            <b>{step === 2 ? "1 Material" : "Material"}</b>
             <small>Select material type</small>
           </div>
         </button>
         <span
-          className="classification-connector complete"
+          className={`classification-connector complete ${step === 2 ? "material-completed" : ""}`}
           aria-hidden="true"
         />
         <button
@@ -278,7 +189,10 @@ export default function ComponentClassification({
             <small>Choose packaging category</small>
           </div>
         </button>
-        <span className="classification-connector" aria-hidden="true" />
+        <span
+          className={`classification-connector ${step === 2 ? "category-current" : ""}`}
+          aria-hidden="true"
+        />
         <span className="classification-upcoming">
           <span className="classification-upcoming-number">3</span>
           <span className="classification-step-copy">
@@ -317,17 +231,20 @@ export default function ComponentClassification({
               <p>
                 {step === 1
                   ? "Select one material to continue. This helps us identify the right packaging category and compliance requirements."
-                  : `${family} · Select the category that best describes this component.`}
+                  : "Select a packaging category that best describes this component."}
               </p>
             </div>
             {step === 2 && (
-              <button
-                className="text-button"
-                disabled={busy}
-                onClick={() => setStep(1)}
-              >
-                <ArrowLeft size={15} /> Change material
-              </button>
+              <label className="category-search">
+                <Search size={20} aria-hidden="true" />
+                <input
+                  type="search"
+                  aria-label="Search packaging category"
+                  placeholder="Search packaging category..."
+                  value={categoryQuery}
+                  onChange={(event) => setCategoryQuery(event.target.value)}
+                />
+              </label>
             )}
           </div>
           {step === 1 ? (
@@ -341,8 +258,12 @@ export default function ComponentClassification({
                   aria-pressed={family === material}
                   disabled={busy}
                   onClick={() => {
-                    if (material !== family) setCategoryId("");
+                    if (material !== family) {
+                      setCategoryId("");
+                      setSavedThisSession(false);
+                    }
                     setFamily(material);
+                    setCategoryQuery("");
                     setStep(2);
                     setError("");
                   }}
@@ -373,7 +294,12 @@ export default function ComponentClassification({
               ))}
             </div>
           ) : (
-            <div className="category-choice-grid">
+            <div
+              className="category-choice-grid"
+              data-plastic-layout={
+                family === "Plastic" && !categoryQuery.trim()
+              }
+            >
               {categories.map((category) => (
                 <button
                   type="button"
@@ -384,9 +310,24 @@ export default function ComponentClassification({
                   disabled={busy || !canEdit}
                   onClick={() => void chooseCategory(category.id)}
                 >
-                  <MaterialArt family={category.family} variant={category.id} />
-                  <strong>{category.title}</strong>
-                  <small>{category.detail}</small>
+                  <span className="category-photo material-photo">
+                    <img
+                      src={
+                        categoryImages[category.id] ||
+                        `/images/materials/${materialImages[category.family]}.webp`
+                      }
+                      alt=""
+                      width={200}
+                      height={170}
+                    />
+                  </span>
+                  <span className="category-choice-content">
+                    <strong>{category.title}</strong>
+                    <small>{category.detail}</small>
+                    <span className="category-choice-arrow" aria-hidden="true">
+                      <ArrowRight size={18} />
+                    </span>
+                  </span>
                   {categoryId === category.id && (
                     <span className="choice-check">
                       <Check size={16} />
@@ -394,6 +335,20 @@ export default function ComponentClassification({
                   )}
                 </button>
               ))}
+              {categories.length === 0 && (
+                <div className="category-empty" role="status">
+                  <Search size={28} />
+                  <h3>No matching packaging categories</h3>
+                  <p>Try another material, polymer or packaging type.</p>
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => setCategoryQuery("")}
+                  >
+                    Clear search
+                  </button>
+                </div>
+              )}
             </div>
           )}
           {busy && (
@@ -401,7 +356,7 @@ export default function ComponentClassification({
               <LoaderCircle size={16} className="spin" /> Saving your selection…
             </p>
           )}
-          {step === 2 && categoryId && (
+          {step === 2 && categoryId && savedThisSession && (
             <div className="classification-saved" role="status">
               <Check size={18} /> Selection saved. Supplier details coming soon.
             </div>
