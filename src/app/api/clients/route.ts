@@ -2,6 +2,8 @@ import { Binary, ObjectId } from "mongodb";
 import { ZodError } from "zod";
 import { db, getClient } from "@/lib/db";
 import { apiError, checkOrigin, requireUser } from "@/lib/access";
+import { clientOwnerFilter, clientEditorRoles } from "@/lib/client-permissions";
+import { assertClientAccess } from "@/lib/client-access";
 import {
   clientSchema,
   MAX_DOCUMENT_SIZE,
@@ -11,11 +13,11 @@ import {
 export const runtime = "nodejs";
 export async function GET() {
   try {
-    await requireUser();
+    const user = await requireUser();
     return Response.json(
       await db()
         .collection("clients")
-        .find({})
+        .find(clientOwnerFilter(user))
         .project({ "documents.data": 0 })
         .sort({ createdAt: -1 })
         .limit(200)
@@ -37,7 +39,7 @@ function validSignature(bytes: Buffer, type: string) {
 export async function POST(req: Request) {
   try {
     checkOrigin(req);
-    const user = await requireUser(["super_admin", "admin", "manager"]);
+    const user = await requireUser(clientEditorRoles);
     if (Number(req.headers.get("content-length")) > 12 * 1024 * 1024)
       return Response.json(
         {
@@ -62,6 +64,7 @@ export async function POST(req: Request) {
       : null;
     if (targetId && !existing)
       return Response.json({ error: "Client not found" }, { status: 404 });
+    if (existing) assertClientAccess(user, existing);
     if (existing?.exemptionAnswer === "yes")
       return Response.json(
         {

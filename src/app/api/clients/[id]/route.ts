@@ -2,6 +2,8 @@ import { Binary, ObjectId } from "mongodb";
 import { ZodError } from "zod";
 import { db } from "@/lib/db";
 import { apiError, checkOrigin, requireUser } from "@/lib/access";
+import { clientEditorRoles } from "@/lib/client-permissions";
+import { assertClientAccess } from "@/lib/client-access";
 import {
   companySchema,
   MAX_DOCUMENT_SIZE,
@@ -21,7 +23,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const { id } = await params;
     if (!/^[a-f0-9]{24}$/i.test(id))
       return Response.json({ error: "Client not found" }, { status: 404 });
@@ -33,6 +35,7 @@ export async function GET(
       );
     if (!client)
       return Response.json({ error: "Client not found" }, { status: 404 });
+    assertClientAccess(user, client);
     return Response.json(client);
   } catch (error) {
     return apiError(error);
@@ -44,7 +47,7 @@ export async function PATCH(
 ) {
   try {
     checkOrigin(req);
-    const user = await requireUser(["super_admin", "admin", "manager"]);
+    const user = await requireUser(clientEditorRoles);
     const { id } = await params;
     if (!/^[a-f0-9]{24}$/i.test(id))
       return Response.json({ error: "Client not found" }, { status: 404 });
@@ -93,6 +96,7 @@ export async function PATCH(
         company: string;
         contact: string;
         updatedBy?: string;
+        createdBy?: string;
       }
     >("clients");
     const profile = await collection.findOne(
@@ -101,6 +105,7 @@ export async function PATCH(
     );
     if (!profile)
       return Response.json({ error: "Client not found" }, { status: 404 });
+    assertClientAccess(user, profile);
     if ((profile.documents?.length || 0) + documents.length > MAX_DOCUMENTS)
       throw new Error("Keep a maximum of 5 supporting documents.");
     const update = await collection.updateOne(

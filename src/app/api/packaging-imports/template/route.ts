@@ -3,7 +3,7 @@ import { packagingTemplateWorkbook } from "@/lib/packaging-import-workbook";
 export const runtime = "nodejs";
 export async function GET() {
   try {
-    await requireUser(["super_admin", "admin", "manager"]);
+    await requireUser(["super_admin", "admin", "manager", "user"]);
     const bytes = await packagingTemplateWorkbook().xlsx.writeBuffer();
     return new Response(new Uint8Array(bytes), {
       headers: {

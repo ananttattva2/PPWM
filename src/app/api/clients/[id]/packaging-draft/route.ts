@@ -2,6 +2,8 @@ import { ObjectId } from "mongodb";
 import { z } from "zod";
 import { db, getClient } from "@/lib/db";
 import { apiError, checkOrigin, requireUser } from "@/lib/access";
+import { clientEditorRoles } from "@/lib/client-permissions";
+import { assertClientAccess } from "@/lib/client-access";
 
 export const runtime = "nodejs";
 export async function PUT(
@@ -10,7 +12,7 @@ export async function PUT(
 ) {
   try {
     checkOrigin(req);
-    const user = await requireUser(["super_admin", "admin", "manager"]);
+    const user = await requireUser(clientEditorRoles);
     const { id } = await params;
     const clientId = z
       .string()
@@ -25,16 +27,15 @@ export async function PUT(
         const profile = await database
           .collection("clients")
           .findOne({ _id: new ObjectId(clientId) }, { session });
-        const draft = await database
-          .collection("packagingImports")
-          .findOne(
-            {
-              _id: new ObjectId(importId),
-              createdBy: user.id,
-              status: "draft",
-            },
-            { session },
-          );
+        const draft = await database.collection("packagingImports").findOne(
+          {
+            _id: new ObjectId(importId),
+            createdBy: user.id,
+            status: "draft",
+          },
+          { session },
+        );
+        if (profile) assertClientAccess(user, profile);
         if (
           !profile ||
           profile.packagingImport ||

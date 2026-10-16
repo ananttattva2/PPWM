@@ -1,3 +1,4 @@
+import { assertImportAccess } from "@/lib/client-access";
 import { Binary, ObjectId } from "mongodb";
 import { db, getClient } from "@/lib/db";
 import { apiError, checkOrigin, requireUser } from "@/lib/access";
@@ -17,6 +18,7 @@ export async function POST(
       "super_admin",
       "admin",
       "manager",
+      "user",
       "supplier",
     ]);
     const { id } = await params;
@@ -76,11 +78,8 @@ export async function POST(
         const record = await database
           .collection("packagingImports")
           .findOne({ _id: new ObjectId(id) }, { session });
-        if (
-          !record ||
-          (record.status === "draft" && record.createdBy !== user.id)
-        )
-          throw new Error("FORBIDDEN");
+        if (!record) throw new Error("FORBIDDEN");
+        await assertImportAccess(user, record);
         const index = (record.analysis.rows as PackagingRow[]).findIndex(
           (row) => row.rowNumber === rowNumber,
         );

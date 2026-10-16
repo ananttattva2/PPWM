@@ -15,7 +15,7 @@ import {
 export const runtime = "nodejs";
 export async function GET() {
   try {
-    const user = await requireUser(["admin", "super_admin", "manager"]);
+    const user = await requireUser(["admin", "super_admin", "manager", "user"]);
     const drafts = await db()
       .collection("packagingImports")
       .find({
@@ -50,7 +50,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     checkOrigin(req);
-    const user = await requireUser(["admin", "super_admin", "manager"]);
+    const user = await requireUser(["admin", "super_admin", "manager", "user"]);
     if (Number(req.headers.get("content-length")) > 3 * 1024 * 1024)
       return Response.json(
         { error: "Upload a file up to 2 MB." },

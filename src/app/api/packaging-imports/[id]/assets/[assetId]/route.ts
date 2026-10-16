@@ -1,3 +1,4 @@
+import { assertImportAccess } from "@/lib/client-access";
 import { ObjectId, Binary } from "mongodb";
 import { db } from "@/lib/db";
 import { requireUser, apiError } from "@/lib/access";
@@ -22,8 +23,8 @@ export async function GET(
     const record = await db()
       .collection("packagingImports")
       .findOne({ _id: new ObjectId(id) });
-    if (!record || (record.status === "draft" && record.createdBy !== user.id))
-      throw new Error("FORBIDDEN");
+    if (!record) throw new Error("FORBIDDEN");
+    await assertImportAccess(user, record);
     if (user.role === "supplier") {
       const hydrated = hydrateImportSuppliers({
         headers: record.headers,

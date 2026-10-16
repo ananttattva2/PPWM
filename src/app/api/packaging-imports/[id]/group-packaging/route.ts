@@ -6,17 +6,26 @@ import {
   groupReferencesExist,
 } from "@/lib/group-packaging";
 import type { PackagingRow } from "@/lib/packaging-import-schema";
+import { assertImportAccess } from "@/lib/client-access";
+import type { ClientActor } from "@/lib/client-permissions";
 export const runtime = "nodejs";
-async function readableImport(id: string, userId: string) {
+async function readableImport(id: string, user: ClientActor) {
   if (!/^[a-f0-9]{24}$/i.test(id)) return null;
   const record = await db()
     .collection("packagingImports")
     .findOne(
       { _id: new ObjectId(id) },
-      { projection: { status: 1, createdBy: 1, "analysis.rows": 1 } },
+      {
+        projection: {
+          status: 1,
+          createdBy: 1,
+          clientId: 1,
+          draftClientId: 1,
+          "analysis.rows": 1,
+        },
+      },
     );
-  if (record?.status === "draft" && record.createdBy !== userId)
-    throw new Error("FORBIDDEN");
+  if (record) await assertImportAccess(user, record);
   return record;
 }
 export async function GET(
@@ -26,7 +35,7 @@ export async function GET(
   try {
     const user = await requireUser();
     const { id } = await params;
-    if (!(await readableImport(id, user.id)))
+    if (!(await readableImport(id, user)))
       return Response.json({ error: "Import not found" }, { status: 404 });
     const saved = await db()
       .collection("groupPackaging")
@@ -45,9 +54,9 @@ export async function PUT(
 ) {
   try {
     checkOrigin(req);
-    const user = await requireUser(["super_admin", "admin", "manager"]);
+    const user = await requireUser(["super_admin", "admin", "manager", "user"]);
     const { id } = await params;
-    const record = await readableImport(id, user.id);
+    const record = await readableImport(id, user);
     if (!record)
       return Response.json({ error: "Import not found" }, { status: 404 });
     const raw = await req.text();

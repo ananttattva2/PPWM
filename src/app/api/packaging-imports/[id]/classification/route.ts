@@ -1,3 +1,4 @@
+import { assertImportAccess } from "@/lib/client-access";
 import { ObjectId } from "mongodb";
 import { db } from "@/lib/db";
 import { apiError, checkOrigin, requireUser } from "@/lib/access";
@@ -15,6 +16,7 @@ export async function PUT(
       "super_admin",
       "admin",
       "manager",
+      "user",
       "supplier",
     ]);
     const { id } = await params;
@@ -24,8 +26,8 @@ export async function PUT(
     const record = await db()
       .collection("packagingImports")
       .findOne({ _id: new ObjectId(id) });
-    if (!record || (record.status === "draft" && record.createdBy !== user.id))
-      throw new Error("FORBIDDEN");
+    if (!record) throw new Error("FORBIDDEN");
+    await assertImportAccess(user, record);
     const hydrated = hydrateImportSuppliers({
       headers: record.headers,
       mapping: record.mapping || {},

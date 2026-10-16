@@ -1,3 +1,4 @@
+import { assertImportAccess } from "@/lib/client-access";
 import { ObjectId, Binary } from "mongodb";
 import { db, getClient } from "@/lib/db";
 import { requireUser, apiError, checkOrigin } from "@/lib/access";
@@ -28,8 +29,7 @@ export async function GET(
       .findOne({ _id: new ObjectId(id) });
     if (!record)
       return Response.json({ error: "Import not found" }, { status: 404 });
-    if (record.status === "draft" && record.createdBy !== user.id)
-      throw new Error("FORBIDDEN");
+    await assertImportAccess(user, record);
     if (new URL(req.url).searchParams.get("download") === "true") {
       const bytes =
         record.file.data instanceof Binary
@@ -89,7 +89,7 @@ async function saveRow(
 ) {
   try {
     checkOrigin(req);
-    const user = await requireUser(["super_admin", "admin", "manager"]);
+    const user = await requireUser(["super_admin", "admin", "manager", "user"]);
     const { id } = await params;
     if (!/^[a-f0-9]{24}$/i.test(id))
       return Response.json({ error: "Import not found" }, { status: 404 });
@@ -110,8 +110,7 @@ async function saveRow(
           .collection("packagingImports")
           .findOne({ _id: new ObjectId(id) }, { session });
         if (!record) throw new Error("FORBIDDEN");
-        if (record.status === "draft" && record.createdBy !== user.id)
-          throw new Error("FORBIDDEN");
+        await assertImportAccess(user, record);
         const existingRows = record.analysis.rows as PackagingRow[];
         if (creating && existingRows.length >= 1000)
           throw new Error("Use a maximum of 1,000 data rows.");

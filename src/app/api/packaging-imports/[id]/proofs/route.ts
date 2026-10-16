@@ -1,3 +1,4 @@
+import { assertImportAccess } from "@/lib/client-access";
 import { Binary, ObjectId } from "mongodb";
 import { db, getClient } from "@/lib/db";
 import { apiError, checkOrigin, requireUser } from "@/lib/access";
@@ -19,7 +20,7 @@ async function scope(req: Request, context: Context, write = false) {
   if (write) checkOrigin(req);
   const user = await requireUser(
     write
-      ? ["super_admin", "admin", "manager", "supplier"]
+      ? ["super_admin", "admin", "manager", "user", "supplier"]
       : ["super_admin", "admin", "manager", "compliance", "user", "supplier"],
   );
   const { id } = await context.params;
@@ -30,8 +31,8 @@ async function scope(req: Request, context: Context, write = false) {
   const record = await db()
     .collection("packagingImports")
     .findOne({ _id: new ObjectId(id) });
-  if (!record || (record.status === "draft" && record.createdBy !== user.id))
-    throw new Error("FORBIDDEN");
+  if (!record) throw new Error("FORBIDDEN");
+  await assertImportAccess(user, record);
   const hydrated = hydrateImportSuppliers({
     headers: record.headers,
     mapping: record.mapping || {},

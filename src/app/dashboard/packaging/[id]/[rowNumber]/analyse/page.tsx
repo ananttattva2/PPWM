@@ -1,3 +1,4 @@
+import { assertImportAccess } from "@/lib/client-access";
 import { hydrateImportSuppliers } from "@/lib/hydrate-import-suppliers";
 import PackagingBackLink from "@/components/workspace/packaging-back-link";
 import ComponentClassification from "@/components/workspace/component-classification";
@@ -41,6 +42,8 @@ export default async function Page({
       {
         projection: {
           status: 1,
+          clientId: 1,
+          draftClientId: 1,
           createdBy: 1,
           analysis: 1,
           headers: 1,
@@ -50,8 +53,12 @@ export default async function Page({
         },
       },
     );
-  if (!record || (record.status === "draft" && record.createdBy !== user.id))
+  if (!record) notFound();
+  try {
+    await assertImportAccess(user, record);
+  } catch {
     notFound();
+  }
   const hydrated = hydrateImportSuppliers({
     headers: record.headers,
     mapping: record.mapping || {},
@@ -96,9 +103,13 @@ export default async function Page({
         polymer={selectedComponent.material}
         supplierDetails={selectedComponent}
         initial={classification.success ? classification.data : undefined}
-        canEdit={["super_admin", "admin", "manager", "supplier"].includes(
-          user.role,
-        )}
+        canEdit={[
+          "super_admin",
+          "admin",
+          "manager",
+          "user",
+          "supplier",
+        ].includes(user.role)}
         supplierView={user.role === "supplier"}
       />
     );

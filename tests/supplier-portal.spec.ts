@@ -93,10 +93,18 @@ test("supplier OTP session sees only assigned components and cannot bypass acces
       const context = await browser.newContext();
       contexts.push(context);
       const page = await context.newPage();
-      const login = await page.request.post("/api/auth/sign-in/email-otp", {
+      let login = await page.request.post("/api/auth/sign-in/email-otp", {
         headers: origin,
         data: { email, otp },
       });
+      if (login.status() === 429) {
+        const retrySeconds = Number(login.headers()["x-retry-after"] || 60);
+        await page.waitForTimeout((Math.min(retrySeconds, 60) + 1) * 1000);
+        login = await page.request.post("/api/auth/sign-in/email-otp", {
+          headers: origin,
+          data: { email: email, otp },
+        });
+      }
       expect(login.status(), await login.text()).toBe(200);
       await page.goto("/dashboard");
       await expect(page).toHaveURL(/\/dashboard\/supplier$/);
