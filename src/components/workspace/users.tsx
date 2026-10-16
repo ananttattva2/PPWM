@@ -39,6 +39,7 @@ export default function UserManagement({
   const [loading, setLoading] = useState(true);
   const options = [
     { value: "user", label: "User" },
+    { value: "supplier", label: "Supplier" },
     { value: "manager", label: "Manager" },
     { value: "compliance", label: "Compliance" },
     ...(role === "super_admin"
@@ -120,7 +121,7 @@ export default function UserManagement({
         <ShieldCheck size={18} />{" "}
         {role === "super_admin"
           ? "You can manage every workspace role."
-          : "You can manage user, manager and compliance roles."}
+          : "You can manage user, supplier, manager and compliance roles."}
       </div>
       {error && (
         <p className="error-message" role="alert">
