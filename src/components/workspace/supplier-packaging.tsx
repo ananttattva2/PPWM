@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { Package } from "lucide-react";
 import type { PackagingRow } from "@/lib/packaging-import-schema";
-import PackagingGallery from "./packaging-gallery";
 import { useState } from "react";
 import { toast } from "sonner";
 import styles from "./supplier-packaging.module.css";
@@ -84,9 +83,6 @@ export default function SupplierPackaging({
                 <h2>Packaging components</h2>
                 <span>{row.composition!.components.length}</span>
               </div>
-              <p>
-                {row.productName} · {row.sku}
-              </p>
               {row.composition!.components.map((component) => (
                 <article className={styles.component} key={component.id}>
                   <div className={styles.photo}>
@@ -134,14 +130,6 @@ export default function SupplierPackaging({
                 </article>
               ))}
             </div>
-            <PackagingGallery
-              row={row}
-              importId={importId}
-              disabled
-              readOnly
-              onSaved={() => {}}
-              onBusy={() => {}}
-            />
           </section>
         )),
       )}
