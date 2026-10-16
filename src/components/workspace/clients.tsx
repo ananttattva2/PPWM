@@ -654,45 +654,22 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
         classNames={{ content: "restricted-packaging-modal" }}
       >
         <p className="restricted-packaging-intro">
-          Please select whether you are obligated to Restricted Packaging
-          Formats.
+          Review the Restricted Packaging Formats questions before continuing.
         </p>
-        <fieldset className="restricted-choice-group">
-          <legend>Are you obligated to Restricted Packaging Formats?</legend>
-          <label
-            className={restrictedObligation === "yes" ? "is-selected" : ""}
-          >
-            <input
-              type="radio"
-              name="restricted-packaging-obligation"
-              value="yes"
-              checked={restrictedObligation === "yes"}
+        {restrictedObligation !== "yes" && (
+          <div className="restricted-next-action">
+            <Button
+              type="button"
               disabled={exemptionBusy}
-              onChange={() => {
+              onClick={() => {
                 setRestrictedObligation("yes");
                 setRestrictedError("");
               }}
-            />
-            <span>Yes</span>
-          </label>
-          <label
-            className={restrictedObligation === "no" ? "is-selected" : ""}
-          >
-            <input
-              type="radio"
-              name="restricted-packaging-obligation"
-              value="no"
-              checked={restrictedObligation === "no"}
-              disabled={exemptionBusy}
-              onChange={() => {
-                setRestrictedObligation("no");
-                setRestrictedAnswers({});
-                setRestrictedError("");
-              }}
-            />
-            <span>No</span>
-          </label>
-        </fieldset>
+            >
+              Next
+            </Button>
+          </div>
+        )}
         {restrictedObligation === "yes" && (
           <section className="restricted-format-questions">
             <div className="restricted-format-heading">

@@ -18,6 +18,8 @@ export default function GroupPackaging({ imported, canEdit, onBusy, initialRowNu
   const [skuUnits, setSkuUnits] = useState<GroupCounts>({});
   const [groupNames, setGroupNames] = useState<GroupCounts>({});
   const [groupEnabled, setGroupEnabled] = useState<Record<string, boolean>>({});
+  const [classificationMaterials, setClassificationMaterials] =
+    useState<Record<string, string>>({});
   const [localPhoto, setLocalPhoto] = useState("");
   const [referenceOpen, setReferenceOpen] = useState(false);
   const [zoom, setZoom] = useState(false);
@@ -37,7 +39,7 @@ export default function GroupPackaging({ imported, canEdit, onBusy, initialRowNu
   const photo = localPhoto || (savedPhoto ? image(savedPhoto) : "");
 
   useEffect(() => {
-    setCounts({}); setSkuCounts({}); setSkuUnits({}); setGroupNames({}); setGroupEnabled({});
+    setCounts({}); setSkuCounts({}); setSkuUnits({}); setGroupNames({}); setGroupEnabled({}); setClassificationMaterials({});
     setDirty(false); setLoadError(""); setSaveError("");
     if (!importId) return;
     const controller = new AbortController();
@@ -49,6 +51,14 @@ export default function GroupPackaging({ imported, canEdit, onBusy, initialRowNu
         if (!response.ok) throw new Error(data.error || "Could not load grouped packaging.");
         const parsed = groupPackagingSchema.safeParse(data);
         if (!parsed.success) throw new Error("Saved grouped packaging could not be read.");
+        const restoredMaterials: Record<string, string> = {};
+        if (data.materials && typeof data.materials === "object")
+          for (const [key, value] of Object.entries(data.materials))
+            if (
+              /^\d+:[a-zA-Z0-9-]{1,60}$/.test(key) &&
+              typeof value === "string"
+            )
+              restoredMaterials[key] = value;
         const restoredCounts: GroupCounts = {}, restoredSkuCounts: GroupCounts = {}, restoredSkuUnits: GroupCounts = {}, restoredNames: GroupCounts = {};
         const restoredEnabled: Record<string, boolean> = {};
         for (const group of parsed.data.groups) {
@@ -60,7 +70,7 @@ export default function GroupPackaging({ imported, canEdit, onBusy, initialRowNu
           for (const component of group.components) restoredCounts[groupCountKey(group.rowNumber, component.componentId)] = String(component.count);
         }
         if (!controller.signal.aborted) {
-          setCounts(restoredCounts); setSkuCounts(restoredSkuCounts); setSkuUnits(restoredSkuUnits); setGroupNames(restoredNames); setGroupEnabled(restoredEnabled);
+          setCounts(restoredCounts); setSkuCounts(restoredSkuCounts); setSkuUnits(restoredSkuUnits); setGroupNames(restoredNames); setGroupEnabled(restoredEnabled); setClassificationMaterials(restoredMaterials);
         }
       } catch (failure) {
         if (!controller.signal.aborted) setLoadError((failure as Error).message || "Could not load grouped packaging.");
@@ -132,7 +142,7 @@ export default function GroupPackaging({ imported, canEdit, onBusy, initialRowNu
           </div><div className="grouped-equation"><Calculator size={17} /><b>{numberOfGroups || 0} groups × {unitsPerGroup || 0} units = {totalUnits ?? 0} sales units</b></div></div></section>
 
           <section className="grouped-step composition-card"><div className="grouped-step-number">3</div><div className="grouped-step-content"><h3>Grouped packaging components</h3><div className="group-matrix-scroll grouped-components-table"><table><thead><tr><th>Component</th><th>Material</th><th>Qty / group</th><th>Weight each (g)</th><th>Weight / group (g)</th></tr></thead><tbody>
-            {components.map((component, index) => { const key = groupCountKey(row.rowNumber, component.id); const quantity = Number(counts[key]) || 0; const weight = Number(component.weight) || 0; return <tr key={component.id}><td><b>{component.name || `Component ${index + 1}`}</b></td><td>{component.material || "—"}</td><td><input aria-label={`Quantity per group for ${component.name}`} type="number" min={0} max={MAX_GROUP_COUNT} value={counts[key] || ""} disabled={locked || !used} placeholder="0" onChange={(event) => updateMap(setCounts, key, event.target.value)} /></td><td>{component.weight.trim() ? weight.toFixed(2) : "—"}</td><td>{component.weight.trim() ? (quantity * weight).toFixed(2) : "—"}</td></tr>; })}
+            {components.map((component, index) => { const key = groupCountKey(row.rowNumber, component.id); const quantity = Number(counts[key]) || 0; const weight = Number(component.weight) || 0; const material = classificationMaterials[key] || component.material; return <tr key={component.id}><td><b>{component.name || `Component ${index + 1}`}</b></td><td>{material || "—"}</td><td><input aria-label={`Quantity per group for ${component.name}`} type="number" min={0} max={MAX_GROUP_COUNT} value={counts[key] || ""} disabled={locked || !used} placeholder="0" onChange={(event) => updateMap(setCounts, key, event.target.value)} /></td><td>{component.weight.trim() ? weight.toFixed(2) : "—"}</td><td>{component.weight.trim() ? (quantity * weight).toFixed(2) : "—"}</td></tr>; })}
             {!components.length && <tr><td colSpan={5}>Add components in Sales Packaging first.</td></tr>}
           </tbody></table></div><div className="grouped-add-note"><button type="button" disabled><Plus size={15} /> Add component</button><span>Components are managed in Sales Packaging.</span></div></div></section>
 

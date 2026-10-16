@@ -40,8 +40,33 @@ export async function GET(
     const saved = await db()
       .collection("groupPackaging")
       .findOne({ _id: new ObjectId(id) });
+    const classifications = await db()
+      .collection("packagingClassifications")
+      .find(
+        { importId: id },
+        { projection: { _id: 0, rowNumber: 1, componentId: 1, family: 1 } },
+      )
+      .toArray();
+    const materials = Object.fromEntries(
+      classifications.flatMap((classification) =>
+        Number.isInteger(classification.rowNumber) &&
+        typeof classification.componentId === "string" &&
+        typeof classification.family === "string"
+          ? [
+              [
+                `${classification.rowNumber}:${classification.componentId}`,
+                classification.family,
+              ],
+            ]
+          : [],
+      ),
+    );
     return Response.json(
-      { groups: saved?.groups || [], updatedAt: saved?.updatedAt || null },
+      {
+        groups: saved?.groups || [],
+        materials,
+        updatedAt: saved?.updatedAt || null,
+      },
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
