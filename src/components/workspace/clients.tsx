@@ -33,6 +33,7 @@ import {
   organisationRoles,
   operatorStatuses,
   obligationsByRole,
+  restrictedPackagingFormats,
   MAX_DOCUMENT_SIZE,
   MAX_DOCUMENTS,
   documentTypes,
@@ -95,10 +96,16 @@ type PendingImport = {
   updatedAt: string;
   expiresAt: string;
 };
+type YesNoAnswer = "yes" | "no";
 export default function Clients({ canEdit }: { canEdit: boolean }) {
   const [exemptionOpen, setExemptionOpen] = useState(false);
-  const [exemptionBlocked, setExemptionBlocked] = useState(false);
   const [exemptionBusy, setExemptionBusy] = useState(false);
+  const [restrictedObligation, setRestrictedObligation] =
+    useState<YesNoAnswer | null>(null);
+  const [restrictedAnswers, setRestrictedAnswers] = useState<
+    Record<string, YesNoAnswer>
+  >({});
+  const [restrictedError, setRestrictedError] = useState("");
   const [pendingImports, setPendingImports] = useState<PendingImport[]>([]);
   const [packagingImport, setPackagingImport] = useState<ImportResult | null>(
     null,
@@ -259,7 +266,9 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       }
       if (!(await saveOrganisation())) return;
       setFieldErrors({});
-      setExemptionBlocked(false);
+      setRestrictedObligation(null);
+      setRestrictedAnswers({});
+      setRestrictedError("");
       setExemptionOpen(true);
       return;
     }
@@ -376,34 +385,41 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       setBusy(false);
     }
   }
-  async function answerExemption(answer: "yes" | "no") {
+  async function saveRestrictedPackaging(answer: YesNoAnswer) {
     if (!editingClient) return;
+    if (
+      answer === "yes" &&
+      restrictedPackagingFormats.some(({ id }) => !restrictedAnswers[id])
+    ) {
+      setRestrictedError("Please answer all six questions to continue.");
+      return;
+    }
     setExemptionBusy(true);
+    setRestrictedError("");
     try {
       const response = await fetch(
         `/api/clients/${editingClient._id}/exemption`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ answer }),
+          body: JSON.stringify({
+            answer,
+            responses: answer === "yes" ? restrictedAnswers : {},
+          }),
         },
       );
       const result = await response.json();
       if (!response.ok)
         throw new Error(
-          result.error || "Could not save your exemption answer.",
+          result.error || "Could not save the restricted packaging answers.",
         );
-      if (answer === "yes") setExemptionBlocked(true);
-      else {
-        setExemptionOpen(false);
-
-        setStep(1);
-        requestAnimationFrame(() =>
-          document
-            .querySelector(".onboarding-progress")
-            ?.scrollIntoView({ block: "start", behavior: "smooth" }),
-        );
-      }
+      setExemptionOpen(false);
+      setStep(1);
+      requestAnimationFrame(() =>
+        document
+          .querySelector(".onboarding-progress")
+          ?.scrollIntoView({ block: "start", behavior: "smooth" }),
+      );
     } catch (failure) {
       toast.error((failure as Error).message);
     } finally {
@@ -631,32 +647,112 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
       <Modal
         opened={exemptionOpen}
         onClose={() => !exemptionBusy && setExemptionOpen(false)}
-        title="Exemption check"
+        title="Restricted Packaging Formats"
         centered
         closeOnClickOutside={!exemptionBusy}
+        size="lg"
       >
-        <p>Do you fall under an exemption?</p>
-        {exemptionBlocked && (
+        <p className="restricted-packaging-intro">
+          Please select whether you are obligated to Restricted Packaging
+          Formats.
+        </p>
+        <fieldset className="restricted-choice-group">
+          <legend>Are you obligated to Restricted Packaging Formats?</legend>
+          <label
+            className={restrictedObligation === "yes" ? "is-selected" : ""}
+          >
+            <input
+              type="radio"
+              name="restricted-packaging-obligation"
+              value="yes"
+              checked={restrictedObligation === "yes"}
+              disabled={exemptionBusy}
+              onChange={() => {
+                setRestrictedObligation("yes");
+                setRestrictedError("");
+              }}
+            />
+            <span>Yes</span>
+          </label>
+          <label
+            className={restrictedObligation === "no" ? "is-selected" : ""}
+          >
+            <input
+              type="radio"
+              name="restricted-packaging-obligation"
+              value="no"
+              checked={restrictedObligation === "no"}
+              disabled={exemptionBusy}
+              onChange={() => {
+                setRestrictedObligation("no");
+                setRestrictedAnswers({});
+                setRestrictedError("");
+              }}
+            />
+            <span>No</span>
+          </label>
+        </fieldset>
+        {restrictedObligation === "yes" && (
+          <section className="restricted-format-questions">
+            <div className="restricted-format-heading">
+              <h3>Annex V: Restricted Packaging Formats</h3>
+              <p>Answer each question. Your answers will not block packaging.</p>
+            </div>
+            {restrictedPackagingFormats.map((format, index) => (
+              <fieldset className="restricted-format-row" key={format.id}>
+                <legend>
+                  <span>{index + 1}</span>
+                  Do you use {format.title.toLowerCase()}?
+                </legend>
+                <p>{format.description}</p>
+                <small>{format.example}</small>
+                <div className="restricted-format-options">
+                  {(["yes", "no"] as const).map((answer) => (
+                    <label
+                      key={answer}
+                      className={
+                        restrictedAnswers[format.id] === answer
+                          ? "is-selected"
+                          : ""
+                      }
+                    >
+                      <input
+                        type="radio"
+                        name={`restricted-format-${format.id}`}
+                        value={answer}
+                        checked={restrictedAnswers[format.id] === answer}
+                        disabled={exemptionBusy}
+                        onChange={() => {
+                          setRestrictedAnswers((current) => ({
+                            ...current,
+                            [format.id]: answer,
+                          }));
+                          setRestrictedError("");
+                        }}
+                      />
+                      <span>{answer === "yes" ? "Yes" : "No"}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            ))}
+          </section>
+        )}
+        {restrictedError && (
           <div className="exemption-alert" role="alert">
-            You cannot proceed because you have indicated that you fall under an
-            exemption.
+            {restrictedError}
           </div>
         )}
-        <div className="exemption-actions">
-          <Button
-            variant="outline"
-            disabled={exemptionBusy}
-            onClick={() => void answerExemption("yes")}
-          >
-            Yes
-          </Button>
-          <Button
-            disabled={exemptionBusy}
-            onClick={() => void answerExemption("no")}
-          >
-            {exemptionBusy ? "Saving…" : "No"}
-          </Button>
-        </div>
+        {restrictedObligation && (
+          <div className="exemption-actions">
+            <Button
+              disabled={exemptionBusy}
+              onClick={() => void saveRestrictedPackaging(restrictedObligation)}
+            >
+              {exemptionBusy ? "Saving…" : "Continue to packaging"}
+            </Button>
+          </div>
+        )}
       </Modal>
       {!show && (
         <div className="page-heading">

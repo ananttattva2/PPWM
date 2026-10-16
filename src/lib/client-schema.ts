@@ -39,6 +39,50 @@ export const packagingMaterials = [
   "Glass",
   "Other",
 ] as const;
+export const restrictedPackagingFormats = [
+  {
+    id: "bundle-products",
+    title: "Plastic packaging used to bundle products",
+    description:
+      "Plastic wrapping used to bundle several products together to encourage customers to buy them as a group.",
+    example: "Example: plastic wrapping around a pack of 6 water bottles.",
+  },
+  {
+    id: "fresh-produce",
+    title: "Plastic packaging for fresh fruits and vegetables",
+    description:
+      "Plastic bags, nets or trays used to pack fresh fruit and vegetables in packs weighing less than 1.5 kg.",
+    example: "Example: a small plastic pack of apples or tomatoes.",
+  },
+  {
+    id: "food-service",
+    title: "Single-use plastic packaging for food and drinks in restaurants",
+    description:
+      "Disposable plastic packaging used for food or drinks consumed at a restaurant or café.",
+    example: "Example: disposable plastic plates, cups and food trays.",
+  },
+  {
+    id: "condiment-sachets",
+    title: "Small plastic packs of sauces, sugar and condiments",
+    description:
+      "Individual plastic sachets or containers provided with meals in restaurants and cafés.",
+    example: "Example: ketchup sachets, sugar packets and small creamer tubs.",
+  },
+  {
+    id: "hotel-toiletries",
+    title: "Single-use toiletry packaging in hotels",
+    description:
+      "Small toiletries provided for one guest's stay and discarded before the next guest arrives.",
+    example: "Example: mini shampoo bottles and small body-lotion bottles.",
+  },
+  {
+    id: "thin-shopping-bags",
+    title: "Very thin plastic shopping bags",
+    description:
+      "Extremely thin plastic bags, except when needed for hygiene or to prevent food waste.",
+    example: "Example: very thin bags used for loose fruits and vegetables.",
+  },
+] as const;
 export const companySchema = z.object({
   operatorStatus: z
     .array(z.enum(operatorStatuses))

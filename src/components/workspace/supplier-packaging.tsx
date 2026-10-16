@@ -86,6 +86,7 @@ export default function SupplierPackaging({
                 className={styles.component}
                 key={`${importId}-${row.rowNumber}-${component.id}`}
               >
+                <h3>{component.name}</h3>
                 <div className={styles.photo}>
                   {component.image && (
                     <img
@@ -121,9 +122,8 @@ export default function SupplierPackaging({
                     />
                   </label>
                 </div>
-                <h3>{component.name}</h3>
                 <Link
-                  className="gallery-analyse-link"
+                  className={`${styles.analyse} gallery-analyse-link`}
                   href={`/dashboard/packaging/${importId}/${row.rowNumber}/analyse?component=${encodeURIComponent(component.id)}`}
                 >
                   Analyse
