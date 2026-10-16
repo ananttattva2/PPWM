@@ -810,7 +810,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       .click();
     await expect(
       page.getByRole("heading", {
-        name: "Component count matrix",
+        name: "SKU group counts",
         exact: true,
       }),
     ).toBeVisible();
@@ -820,6 +820,15 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
     });
     await expect(bottleCount).toBeEnabled();
     await bottleCount.fill("6");
+    await page
+      .getByRole("spinbutton", { name: "SKUs per group", exact: true })
+      .fill("3");
+    await expect(
+      page.getByLabel("Total SKU units", { exact: true }),
+    ).toContainText("6 : 3 = 18");
+    await expect(
+      page.getByRole("navigation", { name: "Group packaging products" }),
+    ).toHaveCount(0);
     const groupSaved = page.waitForResponse(
       (response) =>
         response
@@ -836,6 +845,7 @@ test("OTP verification, client onboarding, roles and profile persist", async ({
       .collection("groupPackaging")
       .findOne({ _id: new ObjectId(importRecord.id) });
     expect(savedGroup?.groups[0].count).toBe(6);
+    expect(savedGroup?.groups[0].unitsPerGroup).toBe(3);
     const anonymousGroup = await request.put(
       `/api/packaging-imports/${importRecord.id}/group-packaging`,
       { headers: { Origin: "http://localhost:3000" }, data: { groups: [] } },

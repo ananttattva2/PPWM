@@ -6,6 +6,7 @@ import {
   groupPackagingSchema,
   groupReferencesExist,
   groupTotals,
+  skuGroupTotal,
 } from "../src/lib/group-packaging";
 import type { PackagingRow } from "../src/lib/packaging-import-schema";
 const rows = [
@@ -21,6 +22,32 @@ const rows = [
   },
   { rowNumber: 3, composition: { components: [{ id: "main", weight: "" }] } },
 ] as PackagingRow[];
+
+test("SKU ratio multiplies groups by whole SKU units and saves separately for each SKU", () => {
+  assert.equal(skuGroupTotal("3", "3"), 9);
+  assert.equal(skuGroupTotal("4", "6"), 24);
+  assert.equal(skuGroupTotal("0", "3"), 0);
+  for (const value of ["", "-1", "1.5", "100001", "bad"])
+    assert.equal(skuGroupTotal("3", value), null);
+  const payload = groupCountsPayload(
+    rows,
+    {},
+    { "2": "3", "3": "2" },
+    { "2": "3", "3": "6" },
+  );
+  assert.deepEqual(payload.groups, [
+    { rowNumber: 2, count: 3, unitsPerGroup: 3, components: [] },
+    { rowNumber: 3, count: 2, unitsPerGroup: 6, components: [] },
+  ]);
+  assert.deepEqual(groupPackagingSchema.parse(payload), payload);
+  for (const unitsPerGroup of [-1, 1.5, 100001])
+    assert.equal(
+      groupPackagingSchema.safeParse({
+        groups: [{ rowNumber: 2, count: 3, unitsPerGroup, components: [] }],
+      }).success,
+      false,
+    );
+});
 test("group quantities belong to each SKU and blanks clear prior quantities", () => {
   const payload = groupCountsPayload(rows, {
     "2:main": "6",

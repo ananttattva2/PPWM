@@ -11,6 +11,7 @@ export const groupPackagingSchema = z.object({
       z.object({
         rowNumber: z.number().int().min(1).max(1001),
         count: z.number().int().min(0).max(MAX_GROUP_COUNT).optional(),
+        unitsPerGroup: z.number().int().min(0).max(MAX_GROUP_COUNT).optional(),
         components: z
           .array(componentCountSchema)
           .max(30)
@@ -38,6 +39,7 @@ export function groupCountsPayload(
   rows: PackagingRow[],
   counts: GroupCounts,
   skuCounts: GroupCounts = {},
+  skuUnits: GroupCounts = {},
 ): GroupPackagingData {
   return {
     groups: rows
@@ -45,6 +47,9 @@ export function groupCountsPayload(
         rowNumber: row.rowNumber,
         ...(skuCounts[String(row.rowNumber)]?.trim()
           ? { count: Number(skuCounts[String(row.rowNumber)]) }
+          : {}),
+        ...(skuUnits[String(row.rowNumber)]?.trim()
+          ? { unitsPerGroup: Number(skuUnits[String(row.rowNumber)]) }
           : {}),
         components: (row.composition?.components || []).flatMap((component) => {
           const value = counts[groupCountKey(row.rowNumber, component.id)];
@@ -54,9 +59,24 @@ export function groupCountsPayload(
         }),
       }))
       .filter(
-        (group) => group.components.length > 0 || group.count !== undefined,
+        (group) =>
+          group.components.length > 0 ||
+          group.count !== undefined ||
+          group.unitsPerGroup !== undefined,
       ),
   };
+}
+export function skuGroupTotal(count: string, unitsPerGroup: string) {
+  if (!count.trim() || !unitsPerGroup.trim()) return null;
+  const values = [Number(count), Number(unitsPerGroup)];
+  if (
+    values.some(
+      (value) =>
+        !Number.isInteger(value) || value < 0 || value > MAX_GROUP_COUNT,
+    )
+  )
+    return null;
+  return values[0] * values[1];
 }
 export function groupReferencesExist(
   data: GroupPackagingData,

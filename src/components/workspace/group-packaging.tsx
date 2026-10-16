@@ -12,9 +12,11 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
+import styles from "./group-packaging.module.css";
 import type { ImportResult } from "@/lib/packaging-import-schema";
 import {
   groupCountKey,
+  skuGroupTotal,
   groupCountsPayload,
   groupPackagingSchema,
   MAX_GROUP_COUNT,
@@ -34,13 +36,11 @@ export default function GroupPackaging({
 }) {
   const id = useId();
   const reduce = useReducedMotion();
-  const [selectedRow, setSelectedRow] = useState<number | null>(
-    initialRowNumber ?? null,
-  );
   const [componentsOpen, setComponentsOpen] = useState(false);
   const [zoom, setZoom] = useState(false);
   const [counts, setCounts] = useState<GroupCounts>({});
   const [skuCounts, setSkuCounts] = useState<GroupCounts>({});
+  const [skuUnits, setSkuUnits] = useState<GroupCounts>({});
   const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(Boolean(imported?.id));
   const [saving, setSaving] = useState(false);
@@ -51,6 +51,7 @@ export default function GroupPackaging({
   useEffect(() => {
     setCounts({});
     setSkuCounts({});
+    setSkuUnits({});
     setDirty(false);
     setLoadError("");
     setSaveError("");
@@ -74,7 +75,12 @@ export default function GroupPackaging({
         const saved = parsed.data;
         const restored: GroupCounts = {};
         const restoredSkuCounts: GroupCounts = {};
+        const restoredSkuUnits: GroupCounts = {};
         for (const group of saved.groups) {
+          if (group.unitsPerGroup !== undefined)
+            restoredSkuUnits[String(group.rowNumber)] = String(
+              group.unitsPerGroup,
+            );
           if (group.count !== undefined)
             restoredSkuCounts[String(group.rowNumber)] = String(group.count);
         }
@@ -85,6 +91,7 @@ export default function GroupPackaging({
         if (!controller.signal.aborted) {
           setCounts(restored);
           setSkuCounts(restoredSkuCounts);
+          setSkuUnits(restoredSkuUnits);
         }
       } catch (failure) {
         if (!controller.signal.aborted)
@@ -99,13 +106,16 @@ export default function GroupPackaging({
     return () => controller.abort();
   }, [importId, retry]);
   const rows = imported?.analysis.rows || [];
-  const row = rows.find((row) => row.rowNumber === selectedRow) || rows[0];
+  const row = rows.find((row) => row.rowNumber === initialRowNumber) || rows[0];
   const components = row?.composition?.components || [];
   const photo =
     row?.composition?.productImage || row?.composition?.productImages?.[0];
   const image = (assetId: string) =>
     `/api/packaging-imports/${importId}/assets/${assetId}`;
-  const invalid = Object.values(skuCounts).some(
+  const invalid = [
+    ...Object.values(skuCounts),
+    ...Object.values(skuUnits),
+  ].some(
     (value) =>
       value.trim() !== "" &&
       (!Number.isInteger(Number(value)) ||
@@ -116,7 +126,7 @@ export default function GroupPackaging({
   async function save() {
     if (!imported || locked || !dirty) return;
     const parsed = groupPackagingSchema.safeParse(
-      groupCountsPayload(rows, counts, skuCounts),
+      groupCountsPayload(rows, counts, skuCounts, skuUnits),
     );
     if (!parsed.success) {
       setSaveError("Enter whole-number counts between 0 and 100,000.");
@@ -162,7 +172,7 @@ export default function GroupPackaging({
       <header className="group-packaging-heading">
         <div>
           <span className="composition-eyebrow">GROUP PACKAGING</span>
-          <h2>Component count matrix</h2>
+          <h2>SKU group counts</h2>
           <p>Enter the group count for each SKU and save your changes.</p>
         </div>
         <span
@@ -190,29 +200,6 @@ export default function GroupPackaging({
       )}
       <div className="group-packaging-grid">
         <section className="group-product-card composition-card">
-          {rows.length > 1 && (
-            <nav
-              className="group-sku-navigation"
-              aria-label="Group packaging products"
-            >
-              {rows.map((item) => (
-                <button
-                  key={item.rowNumber}
-                  type="button"
-                  aria-current={
-                    row.rowNumber === item.rowNumber ? "true" : undefined
-                  }
-                  disabled={saving}
-                  onClick={() => {
-                    setSelectedRow(item.rowNumber);
-                    setComponentsOpen(false);
-                  }}
-                >
-                  {item.sku || `Row ${item.rowNumber}`}
-                </button>
-              ))}
-            </nav>
-          )}
           <div className="group-product-photo">
             {photo ? (
               <img
@@ -316,32 +303,81 @@ export default function GroupPackaging({
               {components.length} components
             </span>
           </div>
-          <label className="group-count-field" htmlFor={`${id}-group-count`}>
-            Group count
-            <input
-              id={`${id}-group-count`}
-              aria-label="Group count"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              max={MAX_GROUP_COUNT}
-              step={1}
-              placeholder="0"
-              value={skuCounts[String(row.rowNumber)] ?? ""}
-              disabled={locked}
-              aria-invalid={invalid || undefined}
-              onChange={(event) => {
-                const value = event.target.value;
-                setSkuCounts((current) => ({
-                  ...current,
-                  [String(row.rowNumber)]: value,
-                }));
-                setDirty(true);
-                setSaveError("");
-              }}
-            />
-            <small>Number of groups for this SKU.</small>
-          </label>
+          <div className={styles.calculator}>
+            <label className="group-count-field" htmlFor={`${id}-group-count`}>
+              Group count
+              <input
+                id={`${id}-group-count`}
+                aria-label="Group count"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={MAX_GROUP_COUNT}
+                step={1}
+                placeholder="0"
+                value={skuCounts[String(row.rowNumber)] ?? ""}
+                disabled={locked}
+                aria-invalid={invalid || undefined}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setSkuCounts((current) => ({
+                    ...current,
+                    [String(row.rowNumber)]: value,
+                  }));
+                  setDirty(true);
+                  setSaveError("");
+                }}
+              />
+              <small>Number of groups for this SKU.</small>
+            </label>
+            <span className={styles.symbol} aria-hidden="true">
+              :
+            </span>
+            <label
+              className="group-count-field"
+              htmlFor={`${id}-units-per-group`}
+            >
+              SKUs per group
+              <input
+                id={`${id}-units-per-group`}
+                aria-label="SKUs per group"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={MAX_GROUP_COUNT}
+                step={1}
+                placeholder="0"
+                value={skuUnits[String(row.rowNumber)] ?? ""}
+                disabled={locked}
+                aria-invalid={invalid || undefined}
+                onChange={(event) => {
+                  setSkuUnits((current) => ({
+                    ...current,
+                    [String(row.rowNumber)]: event.target.value,
+                  }));
+                  setDirty(true);
+                  setSaveError("");
+                }}
+              />
+              <small>Whole SKU units in each group.</small>
+            </label>
+            <output
+              className={styles.result}
+              aria-live="polite"
+              aria-label="Total SKU units"
+            >
+              <span>SKU ratio</span>
+              <strong>
+                {skuCounts[String(row.rowNumber)] || "—"} :{" "}
+                {skuUnits[String(row.rowNumber)] || "—"} ={" "}
+                {skuGroupTotal(
+                  skuCounts[String(row.rowNumber)] || "",
+                  skuUnits[String(row.rowNumber)] || "",
+                )?.toLocaleString() ?? "—"}
+              </strong>
+              <small>Total SKU units · applies to the whole SKU</small>
+            </output>
+          </div>
           {components.length ? (
             <div className="group-matrix-scroll">
               <table>
