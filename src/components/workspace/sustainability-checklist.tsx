@@ -2,7 +2,10 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { ArrowLeft, Check, ExternalLink } from "lucide-react";
-import { sustainabilityRequirements } from "@/lib/sustainability-checklist";
+import {
+  sustainabilityRequirements,
+  proofNotApplicableReason,
+} from "@/lib/sustainability-checklist";
 import { Button } from "../ui/button";
 import SustainabilityProofUpload from "./sustainability-proof-upload";
 import type { SustainabilityProof } from "@/lib/sustainability-proof";
@@ -13,6 +16,8 @@ export default function SustainabilityChecklist({
   rowNumber,
   componentId,
   canEdit,
+  family,
+  foodGrade,
 }: {
   componentName: string;
   onBack: () => void;
@@ -20,6 +25,8 @@ export default function SustainabilityChecklist({
   rowNumber: number;
   componentId: string;
   canEdit: boolean;
+  family: string | null;
+  foodGrade?: string;
 }) {
   const reduce = useReducedMotion();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -123,17 +130,29 @@ export default function SustainabilityChecklist({
               ))}
             </ul>
             <span className="sustainability-card-article">{item.article}</span>
-            <SustainabilityProofUpload
-              requirementId={item.id}
-              title={item.title}
-              url={proofUrl}
-              canEdit={canEdit}
-              loading={loadingProofs}
-              proofs={proofs.filter((proof) => proof.requirementId === item.id)}
-              onUploaded={(uploaded) =>
-                setProofs((current) => [...current, ...uploaded])
-              }
-            />
+            {proofNotApplicableReason(item.id, family, foodGrade) ? (
+              <p role="status">
+                <strong>Not applicable</strong> ·{" "}
+                {proofNotApplicableReason(item.id, family, foodGrade)}
+              </p>
+            ) : (
+              <>
+                <p>Proof required</p>
+                <SustainabilityProofUpload
+                  requirementId={item.id}
+                  title={item.title}
+                  url={proofUrl}
+                  canEdit={canEdit}
+                  loading={loadingProofs}
+                  proofs={proofs.filter(
+                    (proof) => proof.requirementId === item.id,
+                  )}
+                  onUploaded={(uploaded) =>
+                    setProofs((current) => [...current, ...uploaded])
+                  }
+                />
+              </>
+            )}
           </motion.article>
         ))}
       </div>

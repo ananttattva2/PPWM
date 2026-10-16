@@ -280,6 +280,8 @@ export default function ComponentClassification({
               componentId={componentId}
               canEdit={canEdit}
               componentName={componentName}
+              family={family}
+              foodGrade={supplierDetails.foodGrade}
               onBack={() => setStep(2)}
             />
           ) : step === 0 ? (

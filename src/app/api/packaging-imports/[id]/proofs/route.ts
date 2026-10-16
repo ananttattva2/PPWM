@@ -1,13 +1,17 @@
 import { Binary, ObjectId } from "mongodb";
 import { db, getClient } from "@/lib/db";
 import { apiError, checkOrigin, requireUser } from "@/lib/access";
-import { sustainabilityRequirements } from "@/lib/sustainability-checklist";
+import {
+  sustainabilityRequirements,
+  proofNotApplicableReason,
+} from "@/lib/sustainability-checklist";
 import {
   PROOF_MAX_SIZE,
   PROOF_BATCH_LIMIT,
   validProofSignature,
 } from "@/lib/sustainability-proof";
 import type { PackagingRow } from "@/lib/packaging-import-schema";
+import { hydrateImportSuppliers } from "@/lib/hydrate-import-suppliers";
 export const runtime = "nodejs";
 type Context = { params: Promise<{ id: string }> };
 async function scope(req: Request, context: Context, write = false) {
@@ -25,16 +29,26 @@ async function scope(req: Request, context: Context, write = false) {
     .findOne({ _id: new ObjectId(id) });
   if (!record || (record.status === "draft" && record.createdBy !== user.id))
     throw new Error("FORBIDDEN");
-  const row = (record.analysis.rows as PackagingRow[]).find(
+  const hydrated = hydrateImportSuppliers({
+    headers: record.headers,
+    mapping: record.mapping || {},
+    rawRows: record.rawRows,
+    settings: record.settings,
+    analysis: record.analysis,
+  });
+  const row = (hydrated.analysis.rows as PackagingRow[]).find(
     (row) => row.rowNumber === rowNumber,
   );
-  if (
-    !row?.composition?.components.some(
-      (component) => component.id === componentId,
-    )
-  )
-    throw new Error("FORBIDDEN");
-  return { key: { importId: id, rowNumber, componentId }, record, user };
+  const component = row?.composition?.components.find(
+    (component) => component.id === componentId,
+  );
+  if (!component) throw new Error("FORBIDDEN");
+  return {
+    key: { importId: id, rowNumber, componentId },
+    record,
+    user,
+    component,
+  };
 }
 export async function GET(req: Request, context: Context) {
   try {
@@ -80,7 +94,7 @@ export async function GET(req: Request, context: Context) {
 }
 export async function POST(req: Request, context: Context) {
   try {
-    const { key, record, user } = await scope(req, context, true);
+    const { key, record, user, component } = await scope(req, context, true);
     if (
       Number(req.headers.get("content-length")) >
       PROOF_MAX_SIZE * PROOF_BATCH_LIMIT + 1024 * 1024
@@ -101,6 +115,16 @@ export async function POST(req: Request, context: Context) {
         { error: "Choose a checklist item and 1–6 files." },
         { status: 400 },
       );
+    const classification = await db()
+      .collection("packagingClassifications")
+      .findOne(key);
+    const notApplicable = proofNotApplicableReason(
+      requirementId,
+      classification?.family,
+      component.foodGrade,
+    );
+    if (notApplicable)
+      return Response.json({ error: notApplicable }, { status: 400 });
     const uploads: {
       _id: ObjectId;
       importId: string;

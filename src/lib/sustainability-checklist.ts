@@ -1,3 +1,19 @@
+export function proofNotApplicableReason(
+  requirementId: string,
+  family: string | null | undefined,
+  foodGrade: string | undefined,
+): string | null {
+  if (!family) return "Select and save a material before uploading proof.";
+  if (
+    ["recycled", "biobased", "compostable"].includes(requirementId) &&
+    family !== "Plastic"
+  )
+    return "Not applicable to the selected material. Proof is not required.";
+  if (requirementId === "pfas" && foodGrade?.trim().toLowerCase() === "no")
+    return "Not applicable to non-food-grade packaging. Proof is not required.";
+  return null;
+}
+
 export const sustainabilityRequirements = [
   {
     id: "heavy",
