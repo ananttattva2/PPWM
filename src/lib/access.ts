@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "./auth";
 import { db } from "./db";
 import { ObjectId } from "mongodb";
+import { sameRequestOrigin } from "./request-origin";
 export const roles = [
   "super_admin",
   "admin",
@@ -35,8 +36,7 @@ export async function requireUser(allowed?: readonly string[]) {
   return user;
 }
 export function checkOrigin(req: Request) {
-  if (req.headers.get("origin") !== new URL(req.url).origin)
-    throw new Error("FORBIDDEN");
+  if (!sameRequestOrigin(req)) throw new Error("FORBIDDEN");
 }
 export function apiError(error: unknown) {
   const message = error instanceof Error ? error.message : "";

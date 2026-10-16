@@ -7,9 +7,10 @@ import { sendOTP } from "./mail";
 import { createAuthMiddleware } from "better-auth/api";
 import { supplierAssignments } from "./supplier-assignments";
 import { provisionSupplierLogin } from "./supplier-login";
+import { authBaseURL } from "./auth-base-url";
 export const auth = betterAuth({
   database: mongodbAdapter(db(), { client: getClient() }),
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  baseURL: authBaseURL(process.env.BETTER_AUTH_URL),
   secret: process.env.BETTER_AUTH_SECRET,
   hooks: {
     before: createAuthMiddleware(async (ctx) => {

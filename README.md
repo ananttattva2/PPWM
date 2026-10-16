@@ -20,6 +20,10 @@ Open http://localhost:3000. `/login`, `/admin/login` and `/super-admin/login` sh
 
 On Windows, run `npm run local` to start the local server in the background. It checks port 3000 and waits for the homepage to respond before reporting success. The server stays running after the command finishes; logs are saved in the ignored `.local/` folder. Run this command again after restarting your computer.
 
+`npm run local` also opens port **7000** as a local alias of the same app on port **3000**. Use `http://localhost:3000` or `http://localhost:7000`; supplier login is supported on both. Both URLs use the same running server and database. If port 3000 is already running with `npm run dev`, run `npm run local:7000` in another terminal to open the alias. To run a standalone copy on a different laptop, use `npm run dev:7000` (or `npm run dev:3000`) and configure that laptop's `.env.local` with the same MongoDB database and authentication secret. Git pull alone does not copy environment settings or restart running servers.
+
+The local authentication allowlist accepts ports 3000 and 7000 on localhost and loopback addresses. Hosted deployments continue to use their configured `BETTER_AUTH_URL`; keep that set to the public HTTPS origin. A `localhost` URL always refers to the laptop where the browser is running.
+
 If Chrome shows `ERR_CONNECTION_REFUSED`, the local server is not running. Start it with `npm run local`, then refresh http://localhost:3000. With `npm run dev`, keep its terminal open; closing the terminal stops the server. GitHub stores the source code and does not run a localhost server.
 
 ## Roles

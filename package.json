@@ -5,6 +5,9 @@
   "main": "index.js",
   "scripts": {
     "local": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local.ps1",
+    "local:7000": "node scripts/port-alias.mjs",
+    "dev:3000": "next dev --port 3000",
+    "dev:7000": "next dev --port 7000",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

@@ -45,7 +45,6 @@ test("supplier OTP session sees only assigned components and cannot bypass acces
   components.forEach(
     (component, index) => (component.image = imageIds[index].toString()),
   );
-  const origin = { Origin: "http://localhost:3000" };
   const contexts = [];
   try {
     await database.collection("packagingImports").insertOne({
@@ -90,9 +89,14 @@ test("supplier OTP session sees only assigned components and cannot bypass acces
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      const context = await browser.newContext();
+      const appOrigin =
+        index === 0 ? "http://localhost:3000" : "http://localhost:7000";
+      const origin = { Origin: appOrigin };
+      const context = await browser.newContext({ baseURL: appOrigin });
       contexts.push(context);
       const page = await context.newPage();
+      const pageErrors: string[] = [];
+      page.on("pageerror", (error) => pageErrors.push(error.message));
       let login = await page.request.post("/api/auth/sign-in/email-otp", {
         headers: origin,
         data: { email, otp },
@@ -108,6 +112,7 @@ test("supplier OTP session sees only assigned components and cannot bypass acces
       expect(login.status(), await login.text()).toBe(200);
       await page.goto("/dashboard");
       await expect(page).toHaveURL(/\/dashboard\/supplier$/);
+      expect(new URL(page.url()).origin).toBe(appOrigin);
       await expect(
         page.getByRole("heading", { name: "Your packaging components" }),
       ).toBeVisible();
@@ -203,6 +208,7 @@ test("supplier OTP session sees only assigned components and cannot bypass acces
           exact: true,
         }),
       ).toBeVisible();
+      expect(pageErrors).toEqual([]);
       await page.goto(
         `/dashboard/packaging/${importId}/${rowNumber}/analyse?component=${other.id}`,
       );

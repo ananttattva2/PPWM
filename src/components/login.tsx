@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft,
@@ -24,7 +23,6 @@ export default function Login({ portal = "Workspace" }: { portal?: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(0);
-  const router = useRouter();
   useEffect(() => {
     if (!cooldown) return;
     const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
@@ -54,8 +52,7 @@ export default function Login({ portal = "Workspace" }: { portal?: string }) {
     try {
       const result = await authClient.signIn.emailOtp({ email, otp });
       if (result.error) throw new Error(result.error.message || "Invalid code");
-      router.push("/dashboard");
-      router.refresh();
+      window.location.assign("/dashboard");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Please try again");
     } finally {
