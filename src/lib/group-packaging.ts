@@ -10,6 +10,8 @@ export const groupPackagingSchema = z.object({
     .array(
       z.object({
         rowNumber: z.number().int().min(1).max(1001),
+        enabled: z.boolean().optional(),
+        name: z.string().trim().max(120).optional(),
         count: z.number().int().min(0).max(MAX_GROUP_COUNT).optional(),
         unitsPerGroup: z.number().int().min(0).max(MAX_GROUP_COUNT).optional(),
         components: z
@@ -40,11 +42,19 @@ export function groupCountsPayload(
   counts: GroupCounts,
   skuCounts: GroupCounts = {},
   skuUnits: GroupCounts = {},
+  groupNames: GroupCounts = {},
+  groupEnabled: Record<string, boolean> = {},
 ): GroupPackagingData {
   return {
     groups: rows
       .map((row) => ({
         rowNumber: row.rowNumber,
+        ...(groupEnabled[String(row.rowNumber)] !== undefined
+          ? { enabled: groupEnabled[String(row.rowNumber)] }
+          : {}),
+        ...(groupNames[String(row.rowNumber)]?.trim()
+          ? { name: groupNames[String(row.rowNumber)].trim() }
+          : {}),
         ...(skuCounts[String(row.rowNumber)]?.trim()
           ? { count: Number(skuCounts[String(row.rowNumber)]) }
           : {}),
@@ -61,6 +71,8 @@ export function groupCountsPayload(
       .filter(
         (group) =>
           group.components.length > 0 ||
+          group.enabled !== undefined ||
+          group.name !== undefined ||
           group.count !== undefined ||
           group.unitsPerGroup !== undefined,
       ),

@@ -1,46 +1,26 @@
 "use client";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { Modal } from "@mantine/core";
-import { motion, useReducedMotion } from "motion/react";
-import {
-  ChevronDown,
-  Layers3,
-  LoaderCircle,
-  Maximize2,
-  Package,
-  Save,
-  RefreshCw,
-} from "lucide-react";
+import { Calculator, ChevronDown, Info, Layers3, LoaderCircle, Maximize2, Package, Plus, RefreshCw, Save, Upload } from "lucide-react";
 import { toast } from "sonner";
-import styles from "./group-packaging.module.css";
 import type { ImportResult } from "@/lib/packaging-import-schema";
-import {
-  groupCountKey,
-  skuGroupTotal,
-  groupCountsPayload,
-  groupPackagingSchema,
-  MAX_GROUP_COUNT,
-  type GroupCounts,
-} from "@/lib/group-packaging";
+import { groupCountKey, groupCountsPayload, groupPackagingSchema, groupTotals, MAX_GROUP_COUNT, skuGroupTotal, type GroupCounts } from "@/lib/group-packaging";
 
-export default function GroupPackaging({
-  imported,
-  canEdit,
-  onBusy,
-  initialRowNumber,
-}: {
+export default function GroupPackaging({ imported, canEdit, onBusy, initialRowNumber }: {
   initialRowNumber?: number;
   imported: ImportResult | null;
   canEdit: boolean;
   onBusy?: (busy: boolean) => void;
 }) {
   const id = useId();
-  const reduce = useReducedMotion();
-  const [componentsOpen, setComponentsOpen] = useState(false);
-  const [zoom, setZoom] = useState(false);
   const [counts, setCounts] = useState<GroupCounts>({});
   const [skuCounts, setSkuCounts] = useState<GroupCounts>({});
   const [skuUnits, setSkuUnits] = useState<GroupCounts>({});
+  const [groupNames, setGroupNames] = useState<GroupCounts>({});
+  const [groupEnabled, setGroupEnabled] = useState<Record<string, boolean>>({});
+  const [localPhoto, setLocalPhoto] = useState("");
+  const [referenceOpen, setReferenceOpen] = useState(false);
+  const [zoom, setZoom] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(Boolean(imported?.id));
   const [saving, setSaving] = useState(false);
@@ -48,438 +28,120 @@ export default function GroupPackaging({
   const [saveError, setSaveError] = useState("");
   const [retry, setRetry] = useState(0);
   const importId = imported?.id;
+  const rows = imported?.analysis.rows || [];
+  const row = rows.find((item) => item.rowNumber === initialRowNumber) || rows[0];
+  const rowKey = String(row?.rowNumber || "");
+  const components = row?.composition?.components || [];
+  const savedPhoto = row?.composition?.productImage || row?.composition?.productImages?.[0];
+  const image = (assetId: string) => `/api/packaging-imports/${importId}/assets/${assetId}`;
+  const photo = localPhoto || (savedPhoto ? image(savedPhoto) : "");
+
   useEffect(() => {
-    setCounts({});
-    setSkuCounts({});
-    setSkuUnits({});
-    setDirty(false);
-    setLoadError("");
-    setSaveError("");
+    setCounts({}); setSkuCounts({}); setSkuUnits({}); setGroupNames({}); setGroupEnabled({});
+    setDirty(false); setLoadError(""); setSaveError("");
     if (!importId) return;
     const controller = new AbortController();
     setLoading(true);
     async function load() {
       try {
-        const response = await fetch(
-          `/api/packaging-imports/${importId}/group-packaging`,
-          { signal: controller.signal, cache: "no-store" },
-        );
+        const response = await fetch(`/api/packaging-imports/${importId}/group-packaging`, { signal: controller.signal, cache: "no-store" });
         const data = await response.json();
-        if (!response.ok)
-          throw new Error(data.error || "Could not load group counts.");
+        if (!response.ok) throw new Error(data.error || "Could not load grouped packaging.");
         const parsed = groupPackagingSchema.safeParse(data);
-        if (!parsed.success)
-          throw new Error(
-            "Saved group counts could not be read. Please retry.",
-          );
-        const saved = parsed.data;
-        const restored: GroupCounts = {};
-        const restoredSkuCounts: GroupCounts = {};
-        const restoredSkuUnits: GroupCounts = {};
-        for (const group of saved.groups) {
-          if (group.unitsPerGroup !== undefined)
-            restoredSkuUnits[String(group.rowNumber)] = String(
-              group.unitsPerGroup,
-            );
-          if (group.count !== undefined)
-            restoredSkuCounts[String(group.rowNumber)] = String(group.count);
+        if (!parsed.success) throw new Error("Saved grouped packaging could not be read.");
+        const restoredCounts: GroupCounts = {}, restoredSkuCounts: GroupCounts = {}, restoredSkuUnits: GroupCounts = {}, restoredNames: GroupCounts = {};
+        const restoredEnabled: Record<string, boolean> = {};
+        for (const group of parsed.data.groups) {
+          const key = String(group.rowNumber);
+          if (group.count !== undefined) restoredSkuCounts[key] = String(group.count);
+          if (group.unitsPerGroup !== undefined) restoredSkuUnits[key] = String(group.unitsPerGroup);
+          if (group.name) restoredNames[key] = group.name;
+          restoredEnabled[key] = group.enabled ?? true;
+          for (const component of group.components) restoredCounts[groupCountKey(group.rowNumber, component.componentId)] = String(component.count);
         }
-        for (const group of saved.groups)
-          for (const component of group.components)
-            restored[groupCountKey(group.rowNumber, component.componentId)] =
-              String(component.count);
         if (!controller.signal.aborted) {
-          setCounts(restored);
-          setSkuCounts(restoredSkuCounts);
-          setSkuUnits(restoredSkuUnits);
+          setCounts(restoredCounts); setSkuCounts(restoredSkuCounts); setSkuUnits(restoredSkuUnits); setGroupNames(restoredNames); setGroupEnabled(restoredEnabled);
         }
       } catch (failure) {
-        if (!controller.signal.aborted)
-          setLoadError(
-            (failure as Error).message || "Could not load group counts.",
-          );
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
-      }
+        if (!controller.signal.aborted) setLoadError((failure as Error).message || "Could not load grouped packaging.");
+      } finally { if (!controller.signal.aborted) setLoading(false); }
     }
     void load();
     return () => controller.abort();
   }, [importId, retry]);
-  const rows = imported?.analysis.rows || [];
-  const row = rows.find((row) => row.rowNumber === initialRowNumber) || rows[0];
-  const components = row?.composition?.components || [];
-  const photo =
-    row?.composition?.productImage || row?.composition?.productImages?.[0];
-  const image = (assetId: string) =>
-    `/api/packaging-imports/${importId}/assets/${assetId}`;
-  const invalid = [
-    ...Object.values(skuCounts),
-    ...Object.values(skuUnits),
-  ].some(
-    (value) =>
-      value.trim() !== "" &&
-      (!Number.isInteger(Number(value)) ||
-        Number(value) < 0 ||
-        Number(value) > MAX_GROUP_COUNT),
-  );
+
+  useEffect(() => () => { if (localPhoto) URL.revokeObjectURL(localPhoto); }, [localPhoto]);
+
+  const used = groupEnabled[rowKey] ?? true;
+  const numberOfGroups = skuCounts[rowKey] || "";
+  const unitsPerGroup = skuUnits[rowKey] || "";
+  const totalUnits = skuGroupTotal(numberOfGroups, unitsPerGroup);
+  const perGroup = row ? groupTotals(row, counts) : { count: 0, weight: 0, weightComplete: true };
+  const salesWeight = (row?.weight || 0) * (totalUnits || 0);
+  const groupedWeight = perGroup.weight * (Number(numberOfGroups) || 0);
+  const combinedWeight = salesWeight + groupedWeight;
+  const invalid = [...Object.values(skuCounts), ...Object.values(skuUnits), ...Object.values(counts)].some((value) => value.trim() !== "" && (!Number.isInteger(Number(value)) || Number(value) < 0 || Number(value) > MAX_GROUP_COUNT));
   const locked = !canEdit || loading || saving || Boolean(loadError);
+  const salesReference = useMemo(() => components.map((component) => component.weight.trim() ? `${component.name || "Component"} ${Number(component.weight).toFixed(1)} g` : component.name || "Component").join(" + "), [components]);
+
+  function updateMap(setter: Dispatch<SetStateAction<GroupCounts>>, key: string, value: string) {
+    setter((current) => ({ ...current, [key]: value })); setDirty(true); setSaveError("");
+  }
+
   async function save() {
     if (!imported || locked || !dirty) return;
-    const parsed = groupPackagingSchema.safeParse(
-      groupCountsPayload(rows, counts, skuCounts, skuUnits),
-    );
-    if (!parsed.success) {
-      setSaveError("Enter whole-number counts between 0 and 100,000.");
-      return;
-    }
-    setSaving(true);
-    setSaveError("");
-    onBusy?.(true);
+    const parsed = groupPackagingSchema.safeParse(groupCountsPayload(rows, counts, skuCounts, skuUnits, groupNames, groupEnabled));
+    if (!parsed.success) { setSaveError("Enter valid whole-number quantities between 0 and 100,000."); return; }
+    setSaving(true); setSaveError(""); onBusy?.(true);
     try {
-      const response = await fetch(
-        `/api/packaging-imports/${imported.id}/group-packaging`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(parsed.data),
-        },
-      );
+      const response = await fetch(`/api/packaging-imports/${imported.id}/group-packaging`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(parsed.data) });
       const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.error || "Could not save group counts.");
-      setDirty(false);
-      toast.success("Group packaging counts saved");
-    } catch (failure) {
-      setSaveError((failure as Error).message);
-    } finally {
-      setSaving(false);
-      onBusy?.(false);
-    }
+      if (!response.ok) throw new Error(data.error || "Could not save grouped packaging.");
+      setDirty(false); toast.success("Grouped packaging saved");
+    } catch (failure) { setSaveError((failure as Error).message); }
+    finally { setSaving(false); onBusy?.(false); }
   }
-  if (!row)
-    return (
-      <section className="group-packaging-empty">
-        <Layers3 size={40} />
-        <h2>Build your group packaging</h2>
-        <p>
-          Add SKUs and their components in Sales Packaging to enter group counts
-          here.
-        </p>
-      </section>
-    );
+
+  if (!row) return <section className="group-packaging-empty"><Layers3 size={40} /><h2>Build your grouped packaging</h2><p>Add SKUs and their components in Sales Packaging first.</p></section>;
+
   return (
-    <div className="composition-builder group-packaging-workspace">
-      <header className="group-packaging-heading">
-        <div>
-          <span className="composition-eyebrow">GROUP PACKAGING</span>
-          <h2>SKU group counts</h2>
-          <p>Enter the group count for each SKU and save your changes.</p>
-        </div>
-        <span
-          className={`group-save-state ${dirty ? "unsaved" : ""}`}
-          role="status"
-        >
-          {loading
-            ? "Loading saved counts…"
-            : loadError
-              ? "Counts unavailable"
-              : !canEdit
-                ? "View only"
-                : dirty
-                  ? "Unsaved changes"
-                  : "Saved counts up to date"}
-        </span>
+    <div className="composition-builder group-packaging-workspace grouped-detail-workspace">
+      <header className="group-packaging-heading grouped-detail-heading">
+        <div><div className="grouped-title-line"><h2>Grouped packaging details</h2><span>Packaging configuration</span></div><p>Record the packaging used to hold sales units together.</p></div>
+        <span className={`group-save-state ${dirty ? "unsaved" : ""}`} role="status">{loading ? "Loading…" : loadError ? "Unavailable" : dirty ? "Unsaved changes" : "Saved"}</span>
       </header>
-      {loadError && (
-        <div className="group-packaging-error" role="alert">
-          <span>{loadError}</span>
-          <button type="button" onClick={() => setRetry((value) => value + 1)}>
-            <RefreshCw size={15} /> Retry
-          </button>
-        </div>
-      )}
-      <div className="group-packaging-grid">
-        <section className="group-product-card composition-card">
-          <div className="group-product-photo">
-            {photo ? (
-              <img
-                src={image(photo)}
-                alt={`${row.productName} product`}
-                loading="lazy"
-              />
-            ) : (
-              <div className="group-photo-placeholder">
-                <Package size={42} />
-                <span>No SKU photo yet</span>
-              </div>
-            )}
-            {photo && (
-              <button
-                type="button"
-                className="group-photo-expand"
-                aria-label="Expand group SKU photo"
-                onClick={() => setZoom(true)}
-              >
-                <Maximize2 size={17} />
-              </button>
-            )}
+      {loadError && <div className="group-packaging-error" role="alert"><span>{loadError}</span><button type="button" onClick={() => setRetry((value) => value + 1)}><RefreshCw size={15} /> Retry</button></div>}
+
+      <div className="grouped-detail-grid">
+        <aside className="grouped-product-panel composition-card">
+          <div className="group-product-photo grouped-product-photo">
+            {photo ? <img src={photo} alt={`${row.productName} grouped packaging`} /> : <div className="group-photo-placeholder"><Package size={46} /><span>No product photo yet</span></div>}
+            {photo && <button type="button" className="group-photo-expand" aria-label="Expand product photo" onClick={() => setZoom(true)}><Maximize2 size={17} /></button>}
           </div>
-          <div className="group-product-identity">
-            <b>{row.productName || "Unnamed product"}</b>
-            <span>{row.sku || `Row ${row.rowNumber}`}</span>
-          </div>
-          <button
-            type="button"
-            className="group-components-toggle"
-            aria-expanded={componentsOpen}
-            aria-controls={`${id}-components`}
-            onClick={() => setComponentsOpen((value) => !value)}
-          >
-            <span>
-              <Layers3 size={17} /> Components <b>{components.length}</b>
-            </span>
-            <ChevronDown size={18} />
-          </button>
-          <motion.div
-            id={`${id}-components`}
-            initial={false}
-            animate={{
-              height: componentsOpen ? "auto" : 0,
-              opacity: componentsOpen ? 1 : 0,
-            }}
-            transition={{
-              duration: reduce ? 0 : 0.28,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-            style={{ overflow: "hidden" }}
-            aria-hidden={!componentsOpen}
-            inert={!componentsOpen}
-          >
-            <div className="group-component-list">
-              {components.map((component, index) => (
-                <button
-                  type="button"
-                  key={component.id}
-                  disabled={locked}
-                  aria-label={`View ${component.name || `component ${index + 1}`}`}
-                  onClick={() =>
-                    document.getElementById(`${id}-group-count`)?.focus()
-                  }
-                >
-                  <span className="group-component-thumb">
-                    {component.image ? (
-                      <img src={image(component.image)} alt="" loading="lazy" />
-                    ) : (
-                      <Package size={22} />
-                    )}
-                  </span>
-                  <span>
-                    <b>{component.name || `Component ${index + 1}`}</b>
-                    <small>
-                      {component.material || "Material not provided"}
-                    </small>
-                  </span>
-                  <span className="group-component-index">{index + 1}</span>
-                </button>
-              ))}
-              {components.length === 0 && (
-                <p>No saved components. Add them in Sales Packaging.</p>
-              )}
-            </div>
-          </motion.div>
-        </section>
-        <section
-          className="group-matrix-card composition-card"
-          aria-label="Group component count matrix"
-        >
-          <div className="group-matrix-heading">
-            <div>
-              <h3>Counts per group</h3>
-              <p>
-                {row.productName} · {row.sku || `Row ${row.rowNumber}`}
-              </p>
-            </div>
-            <span className="composition-count">
-              {components.length} components
-            </span>
-          </div>
-          <div className={styles.calculator}>
-            <label className="group-count-field" htmlFor={`${id}-group-count`}>
-              Group count
-              <input
-                id={`${id}-group-count`}
-                aria-label="Group count"
-                type="number"
-                inputMode="numeric"
-                min={0}
-                max={MAX_GROUP_COUNT}
-                step={1}
-                placeholder="0"
-                value={skuCounts[String(row.rowNumber)] ?? ""}
-                disabled={locked}
-                aria-invalid={invalid || undefined}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setSkuCounts((current) => ({
-                    ...current,
-                    [String(row.rowNumber)]: value,
-                  }));
-                  setDirty(true);
-                  setSaveError("");
-                }}
-              />
-              <small>Number of groups for this SKU.</small>
-            </label>
-            <span className={styles.symbol} aria-hidden="true">
-              :
-            </span>
-            <label
-              className="group-count-field"
-              htmlFor={`${id}-units-per-group`}
-            >
-              SKUs per group
-              <input
-                id={`${id}-units-per-group`}
-                aria-label="SKUs per group"
-                type="number"
-                inputMode="numeric"
-                min={0}
-                max={MAX_GROUP_COUNT}
-                step={1}
-                placeholder="0"
-                value={skuUnits[String(row.rowNumber)] ?? ""}
-                disabled={locked}
-                aria-invalid={invalid || undefined}
-                onChange={(event) => {
-                  setSkuUnits((current) => ({
-                    ...current,
-                    [String(row.rowNumber)]: event.target.value,
-                  }));
-                  setDirty(true);
-                  setSaveError("");
-                }}
-              />
-              <small>Whole SKU units in each group.</small>
-            </label>
-            <output
-              className={styles.result}
-              aria-live="polite"
-              aria-label="Total SKU units"
-            >
-              <span>SKU ratio</span>
-              <strong>
-                {skuCounts[String(row.rowNumber)] || "—"} :{" "}
-                {skuUnits[String(row.rowNumber)] || "—"} ={" "}
-                {skuGroupTotal(
-                  skuCounts[String(row.rowNumber)] || "",
-                  skuUnits[String(row.rowNumber)] || "",
-                )?.toLocaleString() ?? "—"}
-              </strong>
-              <small>Total SKU units · applies to the whole SKU</small>
-            </output>
-          </div>
-          {components.length ? (
-            <div className="group-matrix-scroll">
-              <table>
-                <caption className="sr-only">
-                  Component quantities per group for {row.productName}
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Component</th>
-                    <th scope="col">Weight each (g)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {components.map((component, index) => {
-                    const hasWeight = component.weight.trim() !== "";
-                    return (
-                      <tr key={component.id}>
-                        <th scope="row">
-                          <span className="group-matrix-component">
-                            <span className="group-component-thumb">
-                              {component.image ? (
-                                <img
-                                  src={image(component.image)}
-                                  alt=""
-                                  loading="lazy"
-                                />
-                              ) : (
-                                <Package size={22} />
-                              )}
-                            </span>
-                            <span>
-                              <b>
-                                {component.name || `Component ${index + 1}`}
-                              </b>
-                              <small>
-                                {component.material || "Not provided"}
-                              </small>
-                            </span>
-                          </span>
-                        </th>
-                        <td>
-                          {hasWeight
-                            ? Number(component.weight).toFixed(2)
-                            : "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="group-matrix-no-components">
-              <Package size={32} />
-              <p>
-                Save component details for this SKU in Sales Packaging first.
-              </p>
-            </div>
-          )}
-          {(invalid || saveError) && (
-            <p className="group-packaging-error" role="alert">
-              {saveError ||
-                "Counts must be whole numbers between 0 and 100,000."}
-            </p>
-          )}
-          <footer className="group-matrix-footer">
-            <span>
-              Group counts for all SKUs save together. Enter 0 for unused SKUs.
-            </span>
-            {canEdit && (
-              <button
-                type="button"
-                className="group-save-button"
-                disabled={!dirty || locked || invalid}
-                onClick={() => void save()}
-              >
-                {saving ? (
-                  <LoaderCircle size={16} className="spin" />
-                ) : (
-                  <Save size={16} />
-                )}
-                {saving ? "Saving…" : "Save group counts"}
-              </button>
-            )}
-          </footer>
-        </section>
+          <div className="group-product-identity"><b>{row.productName || "Unnamed product"}</b><span>{row.sku || `Row ${row.rowNumber}`}</span></div>
+          <label className="group-photo-upload"><Upload size={16} /> {localPhoto ? "Replace multipack photo" : "Upload multipack photo"}<input type="file" accept="image/png,image/jpeg,image/webp" disabled={locked} onChange={(event) => { const file = event.target.files?.[0]; if (!file) return; if (localPhoto) URL.revokeObjectURL(localPhoto); setLocalPhoto(URL.createObjectURL(file)); }} /></label>
+        </aside>
+
+        <main className="grouped-form-column">
+          <section className="grouped-step composition-card"><div className="grouped-step-number">1</div><div className="grouped-step-content"><h3>Is grouped packaging used?</h3><div className="grouped-radio-row">{[true, false].map((value) => <label key={String(value)} className={used === value ? "selected" : ""}><input type="radio" name={`${id}-used`} checked={used === value} disabled={locked} onChange={() => { setGroupEnabled((current) => ({ ...current, [rowKey]: value })); setDirty(true); }} />{value ? "Yes" : "No"}</label>)}</div><small>Examples: shrink wrap, cardboard sleeve, tray or carrier.</small></div></section>
+
+          <section className="grouped-step composition-card"><div className="grouped-step-number">2</div><div className="grouped-step-content"><h3>Group configuration</h3><div className="grouped-config-grid">
+            <label>Group name<input type="text" maxLength={120} value={groupNames[rowKey] || ""} disabled={locked || !used} placeholder="e.g. 3-bottle multipack" onChange={(event) => updateMap(setGroupNames, rowKey, event.target.value)} /></label>
+            <label>Sales units per group<input type="number" min={0} max={MAX_GROUP_COUNT} value={unitsPerGroup} disabled={locked || !used} placeholder="0" onChange={(event) => updateMap(setSkuUnits, rowKey, event.target.value)} /></label>
+            <label>Number of groups<input type="number" min={0} max={MAX_GROUP_COUNT} value={numberOfGroups} disabled={locked || !used} placeholder="0" onChange={(event) => updateMap(setSkuCounts, rowKey, event.target.value)} /></label>
+          </div><div className="grouped-equation"><Calculator size={17} /><b>{numberOfGroups || 0} groups × {unitsPerGroup || 0} units = {totalUnits ?? 0} sales units</b></div></div></section>
+
+          <section className="grouped-step composition-card"><div className="grouped-step-number">3</div><div className="grouped-step-content"><h3>Grouped packaging components</h3><div className="group-matrix-scroll grouped-components-table"><table><thead><tr><th>Component</th><th>Material</th><th>Qty / group</th><th>Weight each (g)</th><th>Weight / group (g)</th></tr></thead><tbody>
+            {components.map((component, index) => { const key = groupCountKey(row.rowNumber, component.id); const quantity = Number(counts[key]) || 0; const weight = Number(component.weight) || 0; return <tr key={component.id}><td><b>{component.name || `Component ${index + 1}`}</b></td><td>{component.material || "—"}</td><td><input aria-label={`Quantity per group for ${component.name}`} type="number" min={0} max={MAX_GROUP_COUNT} value={counts[key] || ""} disabled={locked || !used} placeholder="0" onChange={(event) => updateMap(setCounts, key, event.target.value)} /></td><td>{component.weight.trim() ? weight.toFixed(2) : "—"}</td><td>{component.weight.trim() ? (quantity * weight).toFixed(2) : "—"}</td></tr>; })}
+            {!components.length && <tr><td colSpan={5}>Add components in Sales Packaging first.</td></tr>}
+          </tbody></table></div><div className="grouped-add-note"><button type="button" disabled><Plus size={15} /> Add component</button><span>Components are managed in Sales Packaging.</span></div></div></section>
+
+          <section className="grouped-reference composition-card"><button type="button" onClick={() => setReferenceOpen((value) => !value)} aria-expanded={referenceOpen}><span><i>4</i><b>Included sales packaging — reference only</b></span><ChevronDown size={17} /></button>{referenceOpen && <p>{salesReference || "No component weights have been recorded."}{row.weight ? ` = ${row.weight.toFixed(2)} g per sales unit` : ""}</p>}</section>
+        </main>
+
+        <aside className="grouped-summary composition-card"><h3>Weight summary</h3><dl><div><dt>Sales packaging ({totalUnits || 0} units)</dt><dd>{salesWeight.toFixed(1)} g</dd></div><div><dt>Grouped packaging ({numberOfGroups || 0} groups)</dt><dd>{groupedWeight.toFixed(1)} g</dd></div><div className="total"><dt>Combined packaging</dt><dd>{combinedWeight.toFixed(1)} g</dd></div></dl><div className="grouped-info"><Info size={17} /><span>Count each outer packaging component once per group.</span></div>{(invalid || saveError) && <p className="group-packaging-error" role="alert">{saveError || "Use whole numbers between 0 and 100,000."}</p>}{canEdit && <button type="button" className="group-save-button grouped-save-button" disabled={!dirty || locked || invalid} onClick={() => void save()}>{saving ? <LoaderCircle size={16} className="spin" /> : <Save size={16} />}{saving ? "Saving…" : "Save grouped packaging"}</button>}</aside>
       </div>
-      <Modal
-        opened={zoom}
-        onClose={() => setZoom(false)}
-        title={row.productName || "SKU photo"}
-        centered
-        size="lg"
-      >
-        {photo && (
-          <img
-            className="group-zoom-image"
-            src={image(photo)}
-            alt={`${row.productName} product`}
-          />
-        )}
-      </Modal>
+      <Modal opened={zoom} onClose={() => setZoom(false)} title={row.productName || "Product photo"} centered size="lg">{photo && <img className="group-zoom-image" src={photo} alt={`${row.productName} grouped packaging`} />}</Modal>
     </div>
   );
 }

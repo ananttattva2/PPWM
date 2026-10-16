@@ -1840,7 +1840,7 @@
 }
 /* Keep the data preview comfortably readable at normal browser zoom. */
 .workspace .packaging-import-workspace .import-preview-table th {
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.4;
   color: var(--import-text);
