@@ -12,12 +12,15 @@ import {
 } from "@/lib/sustainability-proof";
 import type { PackagingRow } from "@/lib/packaging-import-schema";
 import { hydrateImportSuppliers } from "@/lib/hydrate-import-suppliers";
+import { supplierOwnsComponent } from "@/lib/supplier-access";
 export const runtime = "nodejs";
 type Context = { params: Promise<{ id: string }> };
 async function scope(req: Request, context: Context, write = false) {
   if (write) checkOrigin(req);
   const user = await requireUser(
-    write ? ["super_admin", "admin", "manager"] : undefined,
+    write
+      ? ["super_admin", "admin", "manager", "supplier"]
+      : ["super_admin", "admin", "manager", "compliance", "user", "supplier"],
   );
   const { id } = await context.params;
   if (!/^[a-f0-9]{24}$/i.test(id)) throw new Error("FORBIDDEN");
@@ -43,6 +46,12 @@ async function scope(req: Request, context: Context, write = false) {
     (component) => component.id === componentId,
   );
   if (!component) throw new Error("FORBIDDEN");
+  if (
+    user.role === "supplier" &&
+    (record.status !== "confirmed" ||
+      !supplierOwnsComponent(user.email, component))
+  )
+    throw new Error("FORBIDDEN");
   return {
     key: { importId: id, rowNumber, componentId },
     record,

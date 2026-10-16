@@ -62,17 +62,20 @@ export default function Shell({
     });
   }
   const privileged = ["admin", "super_admin"].includes(user.role);
+  const supplier = user.role === "supplier";
   const groups = [
     {
       label: "Workspace",
-      items: [
-        { url: "/dashboard", label: "Home", icon: Home },
-        {
-          url: "/dashboard/clients",
-          label: "Client onboarding",
-          icon: UserPlus,
-        },
-      ],
+      items: supplier
+        ? [{ url: "/dashboard/supplier", label: "My components", icon: Leaf }]
+        : [
+            { url: "/dashboard", label: "Home", icon: Home },
+            {
+              url: "/dashboard/clients",
+              label: "Client onboarding",
+              icon: UserPlus,
+            },
+          ],
     },
     {
       label: "Team & account",
@@ -222,25 +225,27 @@ export default function Shell({
           >
             <Menu size={20} />
           </button>
-          <form
-            className="workspace-search"
-            role="search"
-            onSubmit={(e) => {
-              e.preventDefault();
-              router.push(
-                `/dashboard/clients?q=${encodeURIComponent(query.trim())}`,
-              );
-            }}
-          >
-            <Search size={15} />
-            <input
-              aria-label="Search workspace clients"
-              placeholder="Search clients, GST or email…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <kbd>↵</kbd>
-          </form>
+          {!supplier && (
+            <form
+              className="workspace-search"
+              role="search"
+              onSubmit={(e) => {
+                e.preventDefault();
+                router.push(
+                  `/dashboard/clients?q=${encodeURIComponent(query.trim())}`,
+                );
+              }}
+            >
+              <Search size={15} />
+              <input
+                aria-label="Search workspace clients"
+                placeholder="Search clients, GST or email…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              <kbd>↵</kbd>
+            </form>
+          )}
           <div className="header-workspace-badge">
             <span className="green-dot" /> Workspace
           </div>

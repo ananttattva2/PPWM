@@ -5,6 +5,7 @@ import { hydrateImportSuppliers } from "@/lib/hydrate-import-suppliers";
 import { initialComposition } from "@/lib/packaging-composition";
 import type { PackagingComposition } from "@/lib/packaging-composition";
 import type { PackagingRow } from "@/lib/packaging-import-schema";
+import { supplierOwnsComponent } from "@/lib/supplier-access";
 export const runtime = "nodejs";
 export async function POST(
   req: Request,
@@ -12,7 +13,12 @@ export async function POST(
 ) {
   try {
     checkOrigin(req);
-    const user = await requireUser(["super_admin", "admin", "manager"]);
+    const user = await requireUser([
+      "super_admin",
+      "admin",
+      "manager",
+      "supplier",
+    ]);
     const { id } = await params;
     if (!/^[a-f0-9]{24}$/i.test(id))
       return Response.json({ error: "Import not found" }, { status: 404 });
@@ -22,6 +28,7 @@ export async function POST(
     const rowNumber = Number(form.get("rowNumber"));
     const files = form.getAll("photos");
     const componentId = String(form.get("componentId") || "");
+    if (user.role === "supplier" && !componentId) throw new Error("FORBIDDEN");
     if (
       componentId &&
       (!/^[a-zA-Z0-9-]{1,60}$/.test(componentId) || files.length !== 1)
@@ -93,6 +100,13 @@ export async function POST(
               (component) => component.id === componentId,
             )
           : undefined;
+        if (
+          user.role === "supplier" &&
+          (record.status !== "confirmed" ||
+            !component ||
+            !supplierOwnsComponent(user.email, component))
+        )
+          throw new Error("FORBIDDEN");
         if (componentId && !component)
           throw new Error(
             "Component not found. Reload this SKU before uploading.",
@@ -148,6 +162,14 @@ export async function POST(
             );
       }),
     );
+    if (user.role === "supplier" && composition) {
+      composition = {
+        ...composition,
+        components: composition.components.filter((component) =>
+          supplierOwnsComponent(user.email, component),
+        ),
+      };
+    }
     return Response.json({ composition });
   } catch (error) {
     if (

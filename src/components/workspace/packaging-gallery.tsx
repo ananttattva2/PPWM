@@ -20,8 +20,10 @@ export default function PackagingGallery({
   onSaved,
   onBusy,
   disabled = false,
+  readOnly = false,
 }: {
   disabled?: boolean;
+  readOnly?: boolean;
   row: PackagingRow;
   importId: string;
   onSaved: (composition: PackagingComposition) => void;
@@ -240,19 +242,21 @@ export default function PackagingGallery({
             ? `${index + 1} of ${photos.length} · Swipe or use arrows`
             : "No photos yet"}
         </span>
-        <button
-          type="button"
-          className="gallery-upload"
-          disabled={busy || disabled}
-          onClick={() => input.current?.click()}
-        >
-          {busy ? (
-            <LoaderCircle size={14} className="spin" />
-          ) : (
-            <Plus size={15} />
-          )}
-          {busy ? "Uploading…" : "Add photos"}
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            className="gallery-upload"
+            disabled={busy || disabled}
+            onClick={() => input.current?.click()}
+          >
+            {busy ? (
+              <LoaderCircle size={14} className="spin" />
+            ) : (
+              <Plus size={15} />
+            )}
+            {busy ? "Uploading…" : "Add photos"}
+          </button>
+        )}
       </div>
       <input
         ref={input}
@@ -267,10 +271,12 @@ export default function PackagingGallery({
           event.target.value = "";
         }}
       />
-      <p className="composition-help">
-        PNG / JPEG · 2 MB each · Up to 12 product photos. Uploads save
-        automatically.
-      </p>
+      {!readOnly && (
+        <p className="composition-help">
+          PNG / JPEG · 2 MB each · Up to 12 product photos. Uploads save
+          automatically.
+        </p>
+      )}
       <Modal
         opened={zoom}
         onClose={() => setZoom(false)}

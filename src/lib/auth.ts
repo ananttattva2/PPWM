@@ -4,10 +4,31 @@ import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { emailOTP } from "better-auth/plugins";
 import { db, getClient } from "./db";
 import { sendOTP } from "./mail";
+import { createAuthMiddleware } from "better-auth/api";
+import { supplierAssignments } from "./supplier-assignments";
+import { provisionSupplierLogin } from "./supplier-login";
 export const auth = betterAuth({
   database: mongodbAdapter(db(), { client: getClient() }),
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
   secret: process.env.BETTER_AUTH_SECRET,
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (
+        ctx.path !== "/email-otp/send-verification-otp" ||
+        ctx.body?.type !== "sign-in"
+      )
+        return;
+      await provisionSupplierLogin(String(ctx.body.email || ""), {
+        findUser: (email) => ctx.context.internalAdapter.findUserByEmail(email),
+        hasAssignments: async (email) =>
+          Boolean((await supplierAssignments(email)).length),
+        createUser: (account) =>
+          ctx.context.internalAdapter.createUser(account, {
+            method: "email-otp",
+          }),
+      });
+    }),
+  },
   emailAndPassword: {
     enabled: true,
     disableSignUp: true,

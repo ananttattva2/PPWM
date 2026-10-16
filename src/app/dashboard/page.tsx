@@ -1,8 +1,10 @@
 import { currentUser } from "@/lib/access";
 import { db } from "@/lib/db";
 import Dashboard from "@/components/workspace/dashboard";
+import { redirect } from "next/navigation";
 export default async function Page() {
   const user = await currentUser();
+  if (user?.role === "supplier") redirect("/dashboard/supplier");
   const clients = await db()
     .collection("clients")
     .find({})

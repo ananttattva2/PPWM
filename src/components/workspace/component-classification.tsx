@@ -69,6 +69,7 @@ export default function ComponentClassification({
   initial,
   canEdit,
   supplierDetails = {},
+  supplierView = false,
 }: {
   supplierDetails?: Pick<
     CompositionComponent,
@@ -88,6 +89,7 @@ export default function ComponentClassification({
   polymer: string;
   initial?: Pick<Classification, "family" | "categoryId">;
   canEdit: boolean;
+  supplierView?: boolean;
 }) {
   const [family, setFamily] = useState<Classification["family"] | null>(
     initial?.family || null,
@@ -183,7 +185,13 @@ export default function ComponentClassification({
             </span>
           )}
         </div>
-        <PackagingBackLink importId={importId} rowNumber={rowNumber} />
+        {supplierView ? (
+          <Link className="gallery-analyse-link" href="/dashboard/supplier">
+            My components
+          </Link>
+        ) : (
+          <PackagingBackLink importId={importId} rowNumber={rowNumber} />
+        )}
       </header>
       <nav
         className="classification-progress classification-progress-four"

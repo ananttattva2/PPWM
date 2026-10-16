@@ -5,7 +5,14 @@ import { apiError, checkOrigin, requireUser } from "@/lib/access";
 export async function PATCH(req: Request) {
   try {
     checkOrigin(req);
-    const user = await requireUser();
+    const user = await requireUser([
+      "super_admin",
+      "admin",
+      "manager",
+      "compliance",
+      "user",
+      "supplier",
+    ]);
     const data = z
       .object({
         firstName: z.string().trim().min(1).max(80),

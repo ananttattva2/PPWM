@@ -1,0 +1,65 @@
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 24px;
+  margin-top: 24px;
+  align-items: start;
+}
+.component {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 20px;
+  margin-top: 16px;
+  border: 1px solid var(--border, #dce5ef);
+  border-radius: 16px;
+  min-height: 180px;
+}
+.photo {
+  width: 112px;
+  flex-shrink: 0;
+}
+.photo img,
+.placeholder {
+  width: 112px;
+  height: 120px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: var(--bg-soft, #f5f7fa);
+}
+.placeholder {
+  display: grid;
+  place-items: center;
+}
+.upload {
+  position: relative;
+  display: block;
+  padding: 8px 4px;
+  color: #ff7900;
+  text-align: center;
+  cursor: pointer;
+  font-size: 12px;
+  border-radius: 6px;
+}
+.upload:focus-within {
+  outline: 2px solid #ff7900;
+}
+.component h3 {
+  flex: 1;
+  margin-top: 8px;
+}
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .component {
+    gap: 12px;
+    padding: 12px;
+    flex-wrap: wrap;
+  }
+  .component > a {
+    margin-left: auto;
+  }
+}

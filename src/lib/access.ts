@@ -9,6 +9,7 @@ export const roles = [
   "manager",
   "compliance",
   "user",
+  "supplier",
 ] as const;
 export async function currentUser() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -29,6 +30,7 @@ export async function currentUser() {
 export async function requireUser(allowed?: readonly string[]) {
   const user = await currentUser();
   if (!user) throw new Error("UNAUTHORIZED");
+  if (!allowed && user.role === "supplier") throw new Error("FORBIDDEN");
   if (allowed && !allowed.includes(user.role)) throw new Error("FORBIDDEN");
   return user;
 }

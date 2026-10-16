@@ -14,6 +14,7 @@ import { db } from "@/lib/db";
 import { currentUser } from "@/lib/access";
 import { packagingAnalysis } from "@/lib/packaging-analysis";
 import type { PackagingRow } from "@/lib/packaging-import-schema";
+import { supplierOwnsComponent } from "@/lib/supplier-access";
 export const metadata = { title: "Packaging analysis" };
 export default async function Page({
   params,
@@ -71,6 +72,11 @@ export default async function Page({
         )
       : undefined;
   if (componentId !== undefined && !selectedComponent) notFound();
+  if (user.role === "supplier") {
+    if (record.status !== "confirmed") notFound();
+    if (!selectedComponent) redirect("/dashboard/supplier");
+    if (!supplierOwnsComponent(user.email, selectedComponent)) notFound();
+  }
   if (selectedComponent) {
     const saved = await db().collection("packagingClassifications").findOne({
       importId: id,
@@ -90,7 +96,10 @@ export default async function Page({
         polymer={selectedComponent.material}
         supplierDetails={selectedComponent}
         initial={classification.success ? classification.data : undefined}
-        canEdit={["super_admin", "admin", "manager"].includes(user.role)}
+        canEdit={["super_admin", "admin", "manager", "supplier"].includes(
+          user.role,
+        )}
+        supplierView={user.role === "supplier"}
       />
     );
   }
