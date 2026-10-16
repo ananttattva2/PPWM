@@ -882,9 +882,19 @@ p {
   font-size: 12px;
   margin-bottom: 6px;
 }
-.footer-main > div > a:not(.brand) {
+.footer-main > div > a:not(.brand),
+.footer-signin-button {
   font-size: 11px;
   color: #77808c;
+}
+.footer-signin-button {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 .footer-contact small {
   font-size: 9px;
@@ -1009,6 +1019,23 @@ p {
   padding: 30px 15px;
   overflow: hidden;
   border-radius: 16px;
+}
+.login-dialog-body {
+  padding: 0 26px 24px;
+}
+.login-form-card-modal {
+  max-width: 450px;
+  margin: 0 auto;
+  padding: 18px 6px 8px;
+}
+.login-form-card-modal > .icon-box {
+  margin-bottom: 16px;
+}
+.login-form-card-modal h2 {
+  font-size: 30px;
+}
+.login-form-card-modal > p {
+  margin-bottom: 22px;
 }
 .login-form-card > .icon-box {
   margin-bottom: 23px;

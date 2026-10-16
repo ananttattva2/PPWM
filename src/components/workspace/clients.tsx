@@ -650,7 +650,8 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
         title="Restricted Packaging Formats"
         centered
         closeOnClickOutside={!exemptionBusy}
-        size="lg"
+        size={1180}
+        classNames={{ content: "restricted-packaging-modal" }}
       >
         <p className="restricted-packaging-intro">
           Please select whether you are obligated to Restricted Packaging

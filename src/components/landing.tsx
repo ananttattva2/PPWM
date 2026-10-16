@@ -1,6 +1,6 @@
 "use client";
-import Link from "next/link";
 import { useState } from "react";
+import { Modal } from "@mantine/core";
 import { motion } from "motion/react";
 import {
   ArrowRight,
@@ -25,6 +25,7 @@ import { Button } from "./ui/button";
 import { BorderBeam } from "./magicui/border-beam";
 import { Spotlight } from "./ui/spotlight";
 import SplitText from "./reactbits/SplitText";
+import { LoginForm } from "./login";
 const fade = {
   initial: { opacity: 1, y: 25 },
   whileInView: { opacity: 1, y: 0 },
@@ -111,8 +112,19 @@ export function ProductPreview() {
 }
 export default function Landing() {
   const [menu, setMenu] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
   return (
     <main className="landing">
+      <Modal
+        opened={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        title="Workspace sign in"
+        centered
+        size="md"
+        classNames={{ content: "login-dialog", body: "login-dialog-body" }}
+      >
+        <LoginForm modal />
+      </Modal>
       <nav className="marketing-nav">
         <Brand />
         <button
@@ -138,8 +150,12 @@ export default function Landing() {
         </div>
         <div className="nav-actions">
           <ThemeToggle />
-          <Button asChild variant="outline">
-            <Link href="/login">Sign in</Link>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setLoginOpen(true)}
+          >
+            Sign in
           </Button>
           <Button asChild>
             <a href="mailto:crm@ananttattva.com?subject=PPWM%20Demo">
@@ -376,7 +392,13 @@ export default function Landing() {
             <b>Platform</b>
             <a href="#platform">How it works</a>
             <a href="#solutions">Solutions</a>
-            <Link href="/login">Workspace sign in</Link>
+            <button
+              type="button"
+              className="footer-signin-button"
+              onClick={() => setLoginOpen(true)}
+            >
+              Workspace sign in
+            </button>
           </div>
           <div>
             <b>Company</b>
