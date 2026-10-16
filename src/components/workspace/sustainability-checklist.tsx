@@ -9,6 +9,8 @@ import {
 import { Button } from "../ui/button";
 import SustainabilityProofUpload from "./sustainability-proof-upload";
 import type { SustainabilityProof } from "@/lib/sustainability-proof";
+import { Tooltip } from "@mantine/core";
+import styles from "./sustainability-checklist.module.css";
 export default function SustainabilityChecklist({
   componentName,
   onBack,
@@ -102,6 +104,21 @@ export default function SustainabilityChecklist({
             aria-labelledby={`sustainability-${item.id}`}
           >
             <span className="sustainability-card-orb" aria-hidden="true" />
+            {!proofNotApplicableReason(item.id, family, foodGrade) && (
+              <Tooltip
+                label="Proof required"
+                withArrow
+                events={{ hover: true, focus: true, touch: true }}
+              >
+                <button
+                  type="button"
+                  className={styles.required}
+                  aria-label="Proof required"
+                >
+                  <span aria-hidden="true">*</span>
+                </button>
+              </Tooltip>
+            )}
             <img
               className="sustainability-card-art"
               src={`/images/sustainability/${item.id}.webp`}
@@ -137,7 +154,6 @@ export default function SustainabilityChecklist({
               </p>
             ) : (
               <>
-                <p>Proof required</p>
                 <SustainabilityProofUpload
                   requirementId={item.id}
                   title={item.title}

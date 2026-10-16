@@ -75,64 +75,64 @@ export default function SupplierPackaging({
           </p>
         </section>
       )}
-      {items.flatMap(({ importId, rows }) =>
-        rows.map((row) => (
-          <section key={`${importId}-${row.rowNumber}`} className={styles.grid}>
-            <div className="composition-card">
-              <div className="composition-card-title">
-                <h2>Packaging components</h2>
-                <span>{row.composition!.components.length}</span>
-              </div>
-              {row.composition!.components.map((component) => (
-                <article className={styles.component} key={component.id}>
-                  <div className={styles.photo}>
-                    {component.image && (
-                      <img
-                        src={`/api/packaging-imports/${importId}/assets/${component.image}`}
-                        alt={component.name}
-                        width={100}
-                        height={120}
-                        style={{ objectFit: "contain" }}
-                      />
-                    )}
-                    {!component.image && (
-                      <div className={styles.placeholder}>
-                        <Package size={36} aria-hidden="true" />
-                      </div>
-                    )}
-                    <label className={styles.upload}>
-                      {component.image ? "Replace photo" : "Upload photo"}
-                      <input
-                        type="file"
-                        className="sr-only"
-                        accept="image/png,image/jpeg"
-                        disabled={busy}
-                        aria-label={`Upload ${component.name} photo`}
-                        onChange={(event) => {
-                          void upload(
-                            importId,
-                            row.rowNumber,
-                            component.id,
-                            event.target.files?.[0],
-                          );
-                          event.target.value = "";
-                        }}
-                      />
-                    </label>
-                  </div>
-                  <h3>{component.name}</h3>
-                  <Link
-                    className="gallery-analyse-link"
-                    href={`/dashboard/packaging/${importId}/${row.rowNumber}/analyse?component=${encodeURIComponent(component.id)}`}
-                  >
-                    Analyse
-                  </Link>
-                </article>
-              ))}
-            </div>
-          </section>
-        )),
-      )}
+      <section
+        className={styles.grid}
+        aria-label="Your assigned packaging components"
+      >
+        {items.flatMap(({ importId, rows }) =>
+          rows.flatMap((row) =>
+            row.composition!.components.map((component) => (
+              <article
+                className={styles.component}
+                key={`${importId}-${row.rowNumber}-${component.id}`}
+              >
+                <div className={styles.photo}>
+                  {component.image && (
+                    <img
+                      src={`/api/packaging-imports/${importId}/assets/${component.image}`}
+                      alt={component.name}
+                      width={100}
+                      height={120}
+                      style={{ objectFit: "contain" }}
+                    />
+                  )}
+                  {!component.image && (
+                    <div className={styles.placeholder}>
+                      <Package size={36} aria-hidden="true" />
+                    </div>
+                  )}
+                  <label className={styles.upload}>
+                    {component.image ? "Replace photo" : "Upload photo"}
+                    <input
+                      type="file"
+                      className="sr-only"
+                      accept="image/png,image/jpeg"
+                      disabled={busy}
+                      aria-label={`Upload ${component.name} photo`}
+                      onChange={(event) => {
+                        void upload(
+                          importId,
+                          row.rowNumber,
+                          component.id,
+                          event.target.files?.[0],
+                        );
+                        event.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+                <h3>{component.name}</h3>
+                <Link
+                  className="gallery-analyse-link"
+                  href={`/dashboard/packaging/${importId}/${row.rowNumber}/analyse?component=${encodeURIComponent(component.id)}`}
+                >
+                  Analyse
+                </Link>
+              </article>
+            )),
+          ),
+        )}
+      </section>
     </div>
   );
 }

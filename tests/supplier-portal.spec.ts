@@ -208,6 +208,25 @@ test("supplier OTP session sees only assigned components and cannot bypass acces
           exact: true,
         }),
       ).toBeVisible();
+      const requiredMarkers = page.getByRole("button", {
+        name: "Proof required",
+        exact: true,
+      });
+      await expect(requiredMarkers).toHaveCount(index === 0 ? 9 : 8);
+      await requiredMarkers.first().hover();
+      await expect(
+        page.getByRole("tooltip", { name: "Proof required", exact: true }),
+      ).toBeVisible();
+      await page.mouse.move(0, 0);
+      await requiredMarkers.first().focus();
+      await expect(
+        page.getByRole("tooltip", { name: "Proof required", exact: true }),
+      ).toBeVisible();
+      if (index === 0)
+        await page.screenshot({
+          path: "artifacts/proof-required-star-desktop.png",
+          fullPage: true,
+        });
       expect(pageErrors).toEqual([]);
       await page.goto(
         `/dashboard/packaging/${importId}/${rowNumber}/analyse?component=${other.id}`,
