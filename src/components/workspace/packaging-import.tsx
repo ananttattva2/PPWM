@@ -38,6 +38,7 @@ import {
 } from "@/lib/packaging-import-template";
 import PackagingTabs from "./packaging-tabs";
 import GroupPackaging from "./group-packaging";
+import TransportPackaging from "./transport-packaging";
 import {
   importCategories,
   importFields,
@@ -78,7 +79,7 @@ export default function PackagingImport({
   organisationName: string;
   onEditorChange?: (open: boolean) => void;
 }) {
-  const [packagingScope, setPackagingScope] = useState<"sales" | "group">(
+  const [packagingScope, setPackagingScope] = useState<"sales" | "group" | "transport">(
     "sales",
   );
   const [templateBusy, setTemplateBusy] = useState(false);
@@ -289,6 +290,18 @@ export default function PackagingImport({
         disabled={busy || groupBusy}
         groupContent={
           <GroupPackaging
+            key={`${result.id}-${viewedRow.rowNumber}`}
+            initialRowNumber={viewedRow.rowNumber}
+            imported={result}
+            canEdit={canEdit}
+            onBusy={(saving) => {
+              setGroupBusy(saving);
+              onBusy(saving);
+            }}
+          />
+        }
+        transportContent={
+          <TransportPackaging
             key={`${result.id}-${viewedRow.rowNumber}`}
             initialRowNumber={viewedRow.rowNumber}
             imported={result}

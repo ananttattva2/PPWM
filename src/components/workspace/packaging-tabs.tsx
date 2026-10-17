@@ -2,8 +2,8 @@
 import { useId, useRef, type ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import PackagingTabPanel from "./packaging-tab-panel";
-import { Layers3, Package } from "lucide-react";
-type Scope = "sales" | "group";
+import { Layers3, Package, Truck } from "lucide-react";
+type Scope = "sales" | "group" | "transport";
 function TabBlobs({ filterId }: { filterId: string }) {
   return (
     <span className="packaging-tab-fill" aria-hidden="true">
@@ -24,18 +24,21 @@ export default function PackagingTabs({
   disabled = false,
   children,
   groupContent,
+  transportContent,
 }: {
   value: Scope;
   onChange: (value: Scope) => void;
   disabled?: boolean;
   children: ReactNode;
   groupContent: ReactNode;
+  transportContent: ReactNode;
 }) {
   const id = useId();
   const filterId = `packaging-goo-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const reduce = useReducedMotion();
   const sales = useRef<HTMLButtonElement>(null);
   const group = useRef<HTMLButtonElement>(null);
+  const transport = useRef<HTMLButtonElement>(null);
   return (
     <div className="packaging-scopes">
       <svg
@@ -78,12 +81,12 @@ export default function PackagingTabs({
             event.key === "Home"
               ? "sales"
               : event.key === "End"
-                ? "group"
-                : value === "sales"
-                  ? "group"
-                  : "sales";
+                ? "transport"
+                : event.key === "ArrowRight"
+                  ? value === "sales" ? "group" : value === "group" ? "transport" : "sales"
+                  : value === "transport" ? "group" : value === "group" ? "sales" : "transport";
           onChange(next);
-          (next === "sales" ? sales : group).current?.focus();
+          (next === "sales" ? sales : next === "group" ? group : transport).current?.focus();
         }}
       >
         <button
@@ -138,6 +141,21 @@ export default function PackagingTabs({
             <Layers3 size={17} /> Group Packaging
           </span>
         </button>
+        <button
+          ref={transport}
+          type="button"
+          role="tab"
+          id={`${id}-transport-tab`}
+          aria-controls={`${id}-transport`}
+          aria-selected={value === "transport"}
+          tabIndex={value === "transport" ? 0 : -1}
+          disabled={disabled}
+          onClick={() => onChange("transport")}
+        >
+          {value === "transport" && <motion.span className="packaging-tab-highlight" layoutId={`${id}-highlight`} transition={{ duration: reduce ? 0 : 0.3, ease: [0.22, 1, 0.36, 1] }} />}
+          <TabBlobs filterId={filterId} />
+          <span className="packaging-tab-label"><Truck size={17} /> Transport Packaging</span>
+        </button>
       </div>
       <div className="packaging-panels">
         <PackagingTabPanel
@@ -153,6 +171,9 @@ export default function PackagingTabs({
           labelledBy={`${id}-group-tab`}
         >
           {groupContent}
+        </PackagingTabPanel>
+        <PackagingTabPanel active={value === "transport"} id={`${id}-transport`} labelledBy={`${id}-transport-tab`}>
+          {transportContent}
         </PackagingTabPanel>
       </div>
     </div>
