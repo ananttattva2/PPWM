@@ -72,6 +72,7 @@ export default function ComponentClassification({
   canEdit,
   supplierDetails = {},
   supplierView = false,
+  initialStep = 0,
 }: {
   supplierDetails?: Pick<
     CompositionComponent,
@@ -92,12 +93,13 @@ export default function ComponentClassification({
   initial?: Pick<Classification, "family" | "categoryId">;
   canEdit: boolean;
   supplierView?: boolean;
+  initialStep?: 0 | 1 | 2 | 3 | 4;
 }) {
   const [family, setFamily] = useState<Classification["family"] | null>(
     initial?.family || null,
   );
   const [categoryId, setCategoryId] = useState(initial?.categoryId || "");
-  const [step, setStep] = useState<0 | 1 | 2 | 3 | 4>(0);
+  const [step, setStep] = useState<0 | 1 | 2 | 3 | 4>(initialStep);
   const [busy, setBusy] = useState(false);
   const [categoryQuery, setCategoryQuery] = useState("");
   const [savedThisSession, setSavedThisSession] = useState(false);
@@ -314,6 +316,9 @@ export default function ComponentClassification({
           ) : step === 3 ? (
             <PackagingArticles
               componentName={componentName}
+              importId={importId}
+              rowNumber={rowNumber}
+              componentId={componentId}
               onBack={() => setStep(2)}
               onContinue={() => setStep(4)}
             />

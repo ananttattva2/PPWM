@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type CSSProperties } from "react";
+import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import {
   ArrowLeft,
@@ -80,10 +81,16 @@ export default function PackagingArticles({
   componentName,
   onBack,
   onContinue,
+  importId,
+  rowNumber,
+  componentId,
 }: {
   componentName: string;
   onBack: () => void;
   onContinue: () => void;
+  importId: string;
+  rowNumber: number;
+  componentId: string;
 }) {
   const reduce = useReducedMotion();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -113,10 +120,28 @@ export default function PackagingArticles({
         </Button>
       </header>
       <div className={styles.grid}>
-        {articles.map(({ number, title, icon: Icon, color, topic }, index) => (
-          <motion.article
+        {articles.map(({ number, title, icon: Icon, color, topic }, index) => {
+          const content = (
+            <>
+              <span className={styles.orb} aria-hidden="true" />
+              <div className={styles.cardTop}>
+                <span className={styles.icon}>
+                  <Icon size={29} strokeWidth={1.6} aria-hidden="true" />
+                </span>
+                <span className={styles.badge}>Article {number}</span>
+              </div>
+              <span className={styles.topic}>{topic}</span>
+              <h3>{title}</h3>
+              <div className={styles.cardBottom}>
+                <span>ARTICLE <b>{String(number).padStart(2, "0")}</b></span>
+                <span className={styles.line} aria-hidden="true" />
+                {number === 5 && <ArrowRight className={styles.openIcon} size={18} aria-hidden="true" />}
+              </div>
+            </>
+          );
+          return (
+          <motion.div
             key={number}
-            className={styles.card}
             style={{ "--article-accent": color } as CSSProperties}
             initial={reduce ? false : { opacity: 0, y: 24, scale: 0.98 }}
             whileInView={{ opacity: 1, y: 0, scale: 1 }}
@@ -126,24 +151,21 @@ export default function PackagingArticles({
               duration: reduce ? 0 : 0.4,
               delay: reduce ? 0 : index * 0.045,
             }}
+            className={styles.cardMotion}
           >
-            <span className={styles.orb} aria-hidden="true" />
-            <div className={styles.cardTop}>
-              <span className={styles.icon}>
-                <Icon size={29} strokeWidth={1.6} aria-hidden="true" />
-              </span>
-              <span className={styles.badge}>Article {number}</span>
-            </div>
-            <span className={styles.topic}>{topic}</span>
-            <h3>{title}</h3>
-            <div className={styles.cardBottom}>
-              <span>
-                ARTICLE <b>{String(number).padStart(2, "0")}</b>
-              </span>
-              <span className={styles.line} aria-hidden="true" />
-            </div>
-          </motion.article>
-        ))}
+            {number === 5 ? (
+              <Link
+                className={`${styles.card} ${styles.clickable}`}
+                href={`/dashboard/packaging/${importId}/${rowNumber}/article-5?component=${encodeURIComponent(componentId)}`}
+                aria-label={`Open Article 5 assessment for ${componentName}`}
+              >
+                {content}
+              </Link>
+            ) : (
+              <article className={styles.card}>{content}</article>
+            )}
+          </motion.div>
+        );})}
       </div>
       <footer className={styles.footer}>
         <div>

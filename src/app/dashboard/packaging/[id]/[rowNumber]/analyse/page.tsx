@@ -22,7 +22,7 @@ export default async function Page({
   searchParams,
 }: {
   params: Promise<{ id: string; rowNumber: string }>;
-  searchParams: Promise<{ component?: string | string[] }>;
+  searchParams: Promise<{ component?: string | string[]; section?: string | string[] }>;
 }) {
   const { id, rowNumber } = await params;
   const user = await currentUser();
@@ -71,7 +71,7 @@ export default async function Page({
   );
   if (!row) notFound();
   const analysis = packagingAnalysis(row);
-  const { component: componentId } = await searchParams;
+  const { component: componentId, section } = await searchParams;
   const selectedComponent =
     typeof componentId === "string"
       ? row.composition?.components.find(
@@ -111,6 +111,7 @@ export default async function Page({
           "supplier",
         ].includes(user.role)}
         supplierView={user.role === "supplier"}
+        initialStep={section === "articles" ? 3 : 0}
       />
     );
   }
