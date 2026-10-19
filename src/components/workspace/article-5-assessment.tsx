@@ -250,6 +250,38 @@ const emissionQuestions: EmissionQuestion[] = [
   },
 ];
 
+const reuseRecyclingQuestions: ConcernQuestion[] = [
+  { id: 1, text: "Could any identified substance negatively affect re-use or recycling of materials in the packaging where it is present?", options: standardConcernOptions, evidenceAnswers: ["Yes", "No"] },
+  { id: 2, text: "Could the substance interfere with sorting, detection, separation, washing, reprocessing or the quality of recycled material?", options: standardConcernOptions, evidenceAnswers: ["Yes", "No"] },
+  { id: 3, text: "Could the substance accumulate or concentrate in recycled material and create a downstream concern?", options: standardConcernOptions, evidenceAnswers: ["Yes", "No"] },
+  { id: 4, text: "After screening, can you support the conclusion that presence and concentration of substances of concern are minimised?", options: standardConcernOptions, evidenceAnswers: ["Yes", "No"] },
+];
+
+const foodContactQuestions: ConcernQuestion[] = [
+  {
+    id: 1,
+    text: "Is the packaging intended for food contact?",
+    options: ["Yes – direct food contact", "Yes – indirect/contact-sensitive", "No", "Unknown"],
+    evidenceAnswers: ["Yes – direct food contact", "Yes – indirect/contact-sensitive", "No", "Unknown"],
+  },
+  {
+    id: 2,
+    text: "Is the relevant placing-on-market date on or after 12 August 2026?",
+    options: ["On / after 12-Aug-2026", "Before 12-Aug-2026", "Unknown"],
+    evidenceAnswers: [],
+    guidance: {
+      "On / after 12-Aug-2026": "Apply Article 5(5) PFAS limits.",
+      "Before 12-Aug-2026": "Retain the historical basis; this assessment does not back-date the requirement.",
+    },
+  },
+  {
+    id: 3,
+    text: "Is placing this packaging on the market already prohibited or restricted by another Union legal act in a way that affects the PFAS assessment?",
+    options: standardConcernOptions,
+    evidenceAnswers: ["Yes", "No", "Unknown", "N/A"],
+  },
+];
+
 function EvidenceProof({
   questionId,
   file,
@@ -368,6 +400,16 @@ export default function Article5Assessment({
     Record<number, File | undefined>
   >({});
   const [monitoringDate, setMonitoringDate] = useState("");
+  const [reuseAnswers, setReuseAnswers] = useState<Record<number, string>>({});
+  const [reuseProofs, setReuseProofs] = useState<
+    Record<number, File | undefined>
+  >({});
+  const [foodContactAnswers, setFoodContactAnswers] = useState<
+    Record<number, string>
+  >({});
+  const [foodContactProofs, setFoodContactProofs] = useState<
+    Record<number, File | undefined>
+  >({});
   const answeredCount =
     active === 0
       ? Object.values(answers).filter(Boolean).length
@@ -378,7 +420,11 @@ export default function Article5Assessment({
           ? Object.values(concernAnswers).filter(Boolean).length
           : active === 3
             ? Object.values(emissionAnswers).filter(Boolean).length
-            : 0;
+            : active === 4
+              ? Object.values(reuseAnswers).filter(Boolean).length
+              : active === 6
+                ? Object.values(foodContactAnswers).filter(Boolean).length
+                : 0;
 
   function choose(index: number) {
     setActive(index);
@@ -531,11 +577,11 @@ export default function Article5Assessment({
             <span>
               SECTION {String(active + 1).padStart(2, "0")} <i>/ 08</i>
             </span>
-            {(active < 4 || active === 5) && (
+            {active < 7 && (
               <span>
                 <Check size={14} aria-hidden="true" />{" "}
                 {active === 5 ? heavyAnsweredCount : answeredCount} of{" "}
-                {active === 5 ? 11 : active === 2 ? 8 : active === 3 ? 5 : 4}{" "}
+                {active === 5 ? 11 : active === 2 ? 8 : active === 3 ? 5 : active === 6 ? 3 : 4}{" "}
                 answered
               </span>
             )}
@@ -1167,10 +1213,89 @@ export default function Article5Assessment({
               })}
             </div>
           )}
+          {active === 4 && (
+            <div className={styles.scopeContent}>
+              <header>
+                <div><span>CIRCULARITY ASSESSMENT</span><h2>Reuse &amp; recycling interaction</h2></div>
+                <b className={styles.questionCount}>4 mandatory questions</b>
+              </header>
+              {reuseRecyclingQuestions.map((question) => {
+                const answer = reuseAnswers[question.id] || "";
+                const requiresEvidence = question.evidenceAnswers.includes(answer);
+                return (
+                  <article className={styles.questionCard} key={question.id}>
+                    <div className={styles.questionHeading}>
+                      <span>{question.id}</span>
+                      <div className={styles.questionCopy}>
+                        <div className={styles.questionMeta}><b>Mandatory</b><span>EU market</span></div>
+                        <h3>{question.text}</h3>
+                      </div>
+                      <div className={styles.timeline}><CalendarDays size={17} aria-hidden="true" /><span><small>MANDATORY FROM</small><b>12 Aug 2026</b></span></div>
+                    </div>
+                    <label className={styles.answerField}>Answer <span aria-hidden="true">*</span>
+                      <select required value={answer} onChange={(event) => {
+                        const value = event.target.value;
+                        setReuseAnswers((current) => ({ ...current, [question.id]: value }));
+                        if (!question.evidenceAnswers.includes(value)) setReuseProofs((current) => ({ ...current, [question.id]: undefined }));
+                      }}>
+                        <option value="" disabled>Select an answer</option>
+                        {question.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                      </select>
+                    </label>
+                    {requiresEvidence && (
+                      <EvidenceProof key={`${question.id}-${answer}`} questionId={question.id} file={reuseProofs[question.id]} onChange={(file) => setReuseProofs((current) => ({ ...current, [question.id]: file }))} />
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
           <div hidden={active !== 5}>
             <HeavyMetalsAssessment onAnswered={setHeavyAnsweredCount} />
           </div>
-          {active > 3 && active !== 5 && (
+          {active === 6 && (
+            <div className={styles.scopeContent}>
+              <header>
+                <div><span>FOOD-CONTACT ASSESSMENT</span><h2>Food-contact gate</h2></div>
+                <b className={styles.questionCount}>3 mandatory questions</b>
+              </header>
+              {foodContactQuestions.map((question) => {
+                const answer = foodContactAnswers[question.id] || "";
+                const requiresEvidence = question.evidenceAnswers.includes(answer);
+                const guidance = question.guidance?.[answer];
+                return (
+                  <article className={styles.questionCard} key={question.id}>
+                    <div className={styles.questionHeading}>
+                      <span>{question.id}</span>
+                      <div className={styles.questionCopy}>
+                        <div className={styles.questionMeta}><b>Mandatory</b><span>EU market</span></div>
+                        <h3>{question.text}</h3>
+                      </div>
+                      <div className={styles.timeline}>
+                        <CalendarDays size={17} aria-hidden="true" />
+                        <span><small>MANDATORY FROM</small><b>12 Aug 2026</b><em>Food-contact PFAS rule, where applicable</em></span>
+                      </div>
+                    </div>
+                    <label className={styles.answerField}>Answer <span aria-hidden="true">*</span>
+                      <select required value={answer} onChange={(event) => {
+                        const value = event.target.value;
+                        setFoodContactAnswers((current) => ({ ...current, [question.id]: value }));
+                        if (!question.evidenceAnswers.includes(value)) setFoodContactProofs((current) => ({ ...current, [question.id]: undefined }));
+                      }}>
+                        <option value="" disabled>Select an answer</option>
+                        {question.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                      </select>
+                    </label>
+                    {guidance && <p className={styles.guidance} role="note"><b>Action required:</b> {guidance}</p>}
+                    {requiresEvidence && (
+                      <EvidenceProof key={`${question.id}-${answer}`} questionId={question.id} file={foodContactProofs[question.id]} onChange={(file) => setFoodContactProofs((current) => ({ ...current, [question.id]: file }))} />
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+          {active > 6 && (
             <div className={styles.emptySection}>
               <Sparkles size={30} aria-hidden="true" />
               <span>SECTION {String(active + 1).padStart(2, "0")}</span>
@@ -1181,7 +1306,7 @@ export default function Article5Assessment({
               </button>
             </div>
           )}
-          {(active < 4 || active === 5) && (
+          {active < 7 && (
             <footer className={styles.sectionFooter}>
               <span>
                 <ShieldCheck size={16} aria-hidden="true" /> Review answers and
