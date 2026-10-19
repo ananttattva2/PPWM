@@ -13,7 +13,7 @@ nextEnv.loadEnvConfig(process.cwd());
 if (process.env.MONGODB_DNS_SERVERS)
   setServers(process.env.MONGODB_DNS_SERVERS.split(","));
 
-test("SKU-only overview hides components and opens coming-soon dialog", async ({
+test("component Analyse restores classification while SKU analysis stays separate", async ({
   page,
 }) => {
   test.setTimeout(120000);
@@ -124,70 +124,74 @@ test("SKU-only overview hides components and opens coming-soon dialog", async ({
     ).toBeVisible();
     await page.getByLabel("Search SKUs").fill("");
     await page.goto(
-      `/dashboard/packaging/${importId}/${row.rowNumber}/analyse?component=component-1`,
+      `/dashboard/clients?packaging=${importId}&row=${row.rowNumber}`,
     );
-    await expect(
-      page
-        .getByRole("heading", { name: "Mineral Water SKU", exact: true })
-        .first(),
-    ).toBeVisible();
+    await page
+      .locator('a[href*="analyse?component=component-1"]')
+      .first()
+      .click();
     await expect(
       page.getByRole("heading", { name: "Bottle", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Supplier details", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "SKU photo gallery" }),
     ).toHaveCount(0);
+    await page
+      .getByRole("button", { name: /Material Select material type/ })
+      .click();
+    await expect(
+      page.getByRole("heading", {
+        name: "What material is this component made from?",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await page.goto(
+      `/dashboard/packaging/${importId}/${row.rowNumber}/analyse?component=component-2`,
+    );
     await expect(
       page.getByRole("heading", { name: "Cap", exact: true }),
-    ).toHaveCount(0);
+    ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Label", exact: true }),
-    ).toHaveCount(0);
+      page.getByRole("heading", { name: "Supplier details", exact: true }),
+    ).toBeVisible();
+    await page.screenshot({
+      path: "artifacts/component-analyse-restored.png",
+      fullPage: true,
+    });
+    await page.goto(
+      `/dashboard/packaging/${importId}/${row.rowNumber}/analyse?component=component-1&section=articles`,
+    );
     await expect(
-      page.getByRole("link", { name: "Review component", exact: true }),
-    ).toHaveCount(0);
+      page.getByRole("heading", { name: "Articles", exact: true }),
+    ).toBeVisible();
+    await page.goto(
+      `/dashboard/packaging/${importId}/${row.rowNumber}/analyse`,
+    );
     const gallery = page.getByRole("region", { name: "SKU photo gallery" });
+    await expect(gallery.locator("img")).toHaveCount(1);
     await expect(gallery.locator("img").first()).toHaveAttribute(
       "src",
       new RegExp(assets[0].toString()),
     );
-    await expect(gallery.locator("img")).toHaveCount(1);
-    await expect(gallery.getByRole("button")).toHaveCount(0);
-    const analyse = page.getByRole("button", { name: "Analyse", exact: true });
-    await analyse.click();
+    await page.getByRole("link", { name: "Analyse", exact: true }).click();
     await expect(
-      page.getByRole("dialog", { name: "Coming soon" }),
+      page.getByRole("heading", { name: "SKU-level assessment", exact: true }),
     ).toBeVisible();
-    const modalBox = (await page.getByRole("dialog").boundingBox())!;
-    expect(modalBox.x).toBeGreaterThan(0);
-    expect(modalBox.y).toBeGreaterThan(0);
-    await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog")).not.toBeVisible();
-    await expect(analyse).toBeFocused();
-    await page.screenshot({
-      path: "artifacts/sku-analysis-desktop.png",
-      fullPage: true,
-    });
     await page.setViewportSize({ width: 390, height: 844 });
-    await analyse.click();
+    await page.goto(
+      `/dashboard/packaging/${importId}/${row.rowNumber}/analyse?component=component-1`,
+    );
     await expect(
-      page.getByRole("dialog", { name: "Coming soon" }),
+      page.getByRole("heading", { name: "Supplier details", exact: true }),
     ).toBeVisible();
-    await page.screenshot({
-      path: "artifacts/sku-analysis-coming-soon-mobile.png",
-      fullPage: true,
-    });
-    await page
-      .getByRole("button", { name: "Back to SKU", exact: true })
-      .click();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
-    await page.goto(
-      `/dashboard/packaging/${importId}/${row.rowNumber}/analyse?component=component-1&view=component`,
-    );
-    await expect(
-      page.getByRole("heading", { name: "Supplier details", exact: true }),
-    ).toBeVisible();
     const foreign = await page.request.get(
       `/dashboard/packaging/${foreignId}/${row.rowNumber}/analyse`,
     );

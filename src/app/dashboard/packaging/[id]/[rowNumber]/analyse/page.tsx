@@ -91,7 +91,11 @@ export default async function Page({
     if (!selectedComponent) redirect("/dashboard/supplier");
     if (!supplierOwnsComponent(user.email, selectedComponent)) notFound();
   }
-  if (user.role !== "supplier" && view === "sku-assessment") {
+  if (
+    !selectedComponent &&
+    user.role !== "supplier" &&
+    view === "sku-assessment"
+  ) {
     return (
       <SkuLevelAssessment
         productName={row.productName || "Product name pending"}
@@ -101,6 +105,7 @@ export default async function Page({
     );
   }
   if (
+    !selectedComponent &&
     user.role !== "supplier" &&
     view !== "component" &&
     section !== "articles"
