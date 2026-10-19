@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
   Boxes,
-  Clock3,
   Package,
   Search,
   Sparkles,
-  X,
 } from "lucide-react";
 import styles from "./sku-analysis.module.css";
 
@@ -104,24 +102,7 @@ export default function SkuAnalysisOverview({
   name: string;
   images: string[];
 }) {
-  const [comingSoon, setComingSoon] = useState(false);
-  const dialog = useRef<HTMLDialogElement>(null);
-  const analyse = useRef<HTMLButtonElement>(null);
   const selectedImage = images[0] || "";
-  useEffect(() => {
-    if (comingSoon) {
-      const previousOverflow = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      dialog.current?.showModal();
-      return () => {
-        document.body.style.overflow = previousOverflow;
-      };
-    } else if (dialog.current?.open) dialog.current.close();
-  }, [comingSoon]);
-  function close() {
-    setComingSoon(false);
-    analyse.current?.focus();
-  }
   return (
     <div className={styles.page}>
       <header className={styles.heading}>
@@ -163,14 +144,12 @@ export default function SkuAnalysisOverview({
             </div>
           </dl>
           <p>View the main product image and start SKU analysis.</p>
-          <button
-            ref={analyse}
+          <Link
             className={styles.analyse}
-            type="button"
-            onClick={() => setComingSoon(true)}
+            href={`/dashboard/packaging/${importId}/${rowNumber}/analyse?view=sku-assessment`}
           >
             <Sparkles size={17} /> Analyse <ArrowRight size={17} />
-          </button>
+          </Link>
           <Link
             className={styles.edit}
             href={`/dashboard/clients?packaging=${importId}&row=${rowNumber}`}
@@ -179,40 +158,6 @@ export default function SkuAnalysisOverview({
           </Link>
         </section>
       </div>
-      <dialog
-        ref={dialog}
-        className={styles.dialog}
-        aria-labelledby="sku-coming-soon-title"
-        aria-describedby="sku-coming-soon-description"
-        onCancel={() => setComingSoon(false)}
-        onClose={close}
-        onClick={(event) => {
-          if (event.target === event.currentTarget) close();
-        }}
-      >
-        <div className={styles.dialogContent}>
-          <button
-            className={styles.close}
-            type="button"
-            aria-label="Close coming soon"
-            onClick={close}
-          >
-            <X size={19} />
-          </button>
-          <div className={styles.soonIcon}>
-            <Clock3 size={34} strokeWidth={1.5} />
-          </div>
-          <span>SKU ANALYSIS</span>
-          <h2 id="sku-coming-soon-title">Coming soon</h2>
-          <p id="sku-coming-soon-description">
-            SKU-level analysis is on its way. You can review your SKU details in
-            the meantime.
-          </p>
-          <button type="button" className={styles.analyse} onClick={close}>
-            Back to SKU <ArrowLeft size={16} />
-          </button>
-        </div>
-      </dialog>
     </div>
   );
 }

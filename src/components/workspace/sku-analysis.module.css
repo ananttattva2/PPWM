@@ -143,6 +143,7 @@
   background: linear-gradient(135deg, #ff9b45, #f37820);
   font-size: 12px;
   font-weight: 650;
+  text-decoration: none;
   cursor: pointer;
   transition:
     transform 0.2s,

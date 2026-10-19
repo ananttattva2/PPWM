@@ -17,6 +17,7 @@ import { packagingAnalysis } from "@/lib/packaging-analysis";
 import type { PackagingRow } from "@/lib/packaging-import-schema";
 import { supplierOwnsComponent } from "@/lib/supplier-access";
 import SkuAnalysisOverview from "@/components/workspace/sku-analysis";
+import SkuLevelAssessment from "@/components/workspace/sku-level-assessment";
 import { initialComposition } from "@/lib/packaging-composition";
 export const metadata = { title: "Packaging analysis" };
 export default async function Page({
@@ -89,6 +90,15 @@ export default async function Page({
     if (record.status !== "confirmed") notFound();
     if (!selectedComponent) redirect("/dashboard/supplier");
     if (!supplierOwnsComponent(user.email, selectedComponent)) notFound();
+  }
+  if (user.role !== "supplier" && view === "sku-assessment") {
+    return (
+      <SkuLevelAssessment
+        productName={row.productName || "Product name pending"}
+        sku={row.sku || ""}
+        backHref={`/dashboard/packaging/${id}/${number}/analyse`}
+      />
+    );
   }
   if (
     user.role !== "supplier" &&
