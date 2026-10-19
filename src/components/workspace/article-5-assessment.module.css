@@ -426,6 +426,7 @@
   color: #e67a40;
 }
 .answerField select,
+.descriptionField input,
 .descriptionField textarea {
   display: block;
   width: 100%;
@@ -452,6 +453,7 @@
   resize: vertical;
 }
 .answerField select:focus,
+.descriptionField input:focus,
 .descriptionField textarea:focus {
   border-color: #ef9a5a;
   box-shadow: 0 0 0 4px #ff8a3010;

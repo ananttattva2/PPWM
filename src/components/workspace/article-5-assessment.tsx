@@ -104,14 +104,149 @@ type ConcernQuestion = {
 const standardConcernOptions = ["Yes", "No", "Unknown", "N/A"] as const;
 
 const concernQuestions: ConcernQuestion[] = [
-  { id: 1, text: "Have intentionally added substances beyond the base material been identified?", options: standardConcernOptions, evidenceAnswers: ["Yes"], guidance: { No: "Obtain a substantiating declaration." } },
-  { id: 2, text: "Are plasticisers, stabilisers, antioxidants, UV stabilisers, flame retardants, pigments, dyes, slip agents, lubricants, processing aids or similar additives present?", options: standardConcernOptions, evidenceAnswers: ["Yes"], guidance: { No: "Document supplier confirmation.", Unknown: "Escalate this evidence gap for review." } },
-  { id: 3, text: "Are any substances of concern known or reasonably expected to be present?", options: standardConcernOptions, evidenceAnswers: ["Yes", "No"], guidance: { No: "Retain the evidence supporting the negative conclusion.", Unknown: "Evidence gap: obtain sufficient information before completing the assessment." } },
-  { id: 4, text: "For each identified substance of concern, is the substance identity known?", options: standardConcernOptions, evidenceAnswers: ["Yes"], guidance: { No: "Obtain sufficient identity information." } },
-  { id: 5, text: "For each identified substance of concern, is its concentration or concentration range known?", options: standardConcernOptions, evidenceAnswers: ["Yes"], guidance: { No: "Obtain suitable evidence." } },
-  { id: 6, text: "Is the substance intentionally added, present as an impurity/residual, or generated during processing/use?", options: ["Intentionally added", "Impurity / residual", "Generated during processing/use", "Multiple sources", "Unknown", "N/A"], evidenceAnswers: ["Intentionally added", "Impurity / residual", "Generated during processing/use", "Multiple sources", "Unknown", "N/A"] },
-  { id: 7, text: "Has reduction or substitution potential been considered for an identified substance of concern?", options: standardConcernOptions, evidenceAnswers: ["Yes", "No"] },
-  { id: 8, text: "Is the substance subject to another applicable Union restriction or specific measure relevant to the packaging/use?", options: standardConcernOptions, evidenceAnswers: ["Yes", "No"] },
+  {
+    id: 1,
+    text: "Have intentionally added substances beyond the base material been identified?",
+    options: standardConcernOptions,
+    evidenceAnswers: ["Yes"],
+    guidance: { No: "Obtain a substantiating declaration." },
+  },
+  {
+    id: 2,
+    text: "Are plasticisers, stabilisers, antioxidants, UV stabilisers, flame retardants, pigments, dyes, slip agents, lubricants, processing aids or similar additives present?",
+    options: standardConcernOptions,
+    evidenceAnswers: ["Yes"],
+    guidance: {
+      No: "Document supplier confirmation.",
+      Unknown: "Escalate this evidence gap for review.",
+    },
+  },
+  {
+    id: 3,
+    text: "Are any substances of concern known or reasonably expected to be present?",
+    options: standardConcernOptions,
+    evidenceAnswers: ["Yes", "No"],
+    guidance: {
+      No: "Retain the evidence supporting the negative conclusion.",
+      Unknown:
+        "Evidence gap: obtain sufficient information before completing the assessment.",
+    },
+  },
+  {
+    id: 4,
+    text: "For each identified substance of concern, is the substance identity known?",
+    options: standardConcernOptions,
+    evidenceAnswers: ["Yes"],
+    guidance: { No: "Obtain sufficient identity information." },
+  },
+  {
+    id: 5,
+    text: "For each identified substance of concern, is its concentration or concentration range known?",
+    options: standardConcernOptions,
+    evidenceAnswers: ["Yes"],
+    guidance: { No: "Obtain suitable evidence." },
+  },
+  {
+    id: 6,
+    text: "Is the substance intentionally added, present as an impurity/residual, or generated during processing/use?",
+    options: [
+      "Intentionally added",
+      "Impurity / residual",
+      "Generated during processing/use",
+      "Multiple sources",
+      "Unknown",
+      "N/A",
+    ],
+    evidenceAnswers: [
+      "Intentionally added",
+      "Impurity / residual",
+      "Generated during processing/use",
+      "Multiple sources",
+      "Unknown",
+      "N/A",
+    ],
+  },
+  {
+    id: 7,
+    text: "Has reduction or substitution potential been considered for an identified substance of concern?",
+    options: standardConcernOptions,
+    evidenceAnswers: ["Yes", "No"],
+  },
+  {
+    id: 8,
+    text: "Is the substance subject to another applicable Union restriction or specific measure relevant to the packaging/use?",
+    options: standardConcernOptions,
+    evidenceAnswers: ["Yes", "No"],
+  },
+];
+
+type EmissionQuestion = {
+  id: number;
+  text: string;
+  guidance: Partial<Record<string, string>>;
+  detailLabels: Partial<Record<string, string>>;
+};
+
+const emissionQuestions: EmissionQuestion[] = [
+  {
+    id: 1,
+    text: "Could the substance be released or contribute to emissions during manufacture, filling, use, cleaning, transport or storage?",
+    guidance: {
+      Yes: "Characterise pathway/potential impact.",
+      No: "Document rationale.",
+    },
+    detailLabels: {
+      Yes: "Release pathway and potential impact",
+      No: "Rationale for no release or emissions",
+    },
+  },
+  {
+    id: 2,
+    text: "Could the substance or its transformation products remain in waste-management outputs such as secondary raw materials, ashes or other material for final disposal?",
+    guidance: {
+      Yes: "Characterise pathway/potential impact.",
+      No: "Document rationale.",
+    },
+    detailLabels: {
+      Yes: "Waste-management pathway and potential impact",
+      No: "Rationale for no remaining substance or transformation products",
+    },
+  },
+  {
+    id: 3,
+    text: "Could the packaging/component contribute to microplastic release through abrasion, fragmentation, weathering, mechanical stress or disposal pathways?",
+    guidance: {
+      Yes: "Assess pathway and supporting evidence.",
+      Unknown: "Assess pathway and supporting evidence.",
+      No: "Document basis.",
+    },
+    detailLabels: {
+      Yes: "Microplastic release pathway assessment",
+      Unknown: "Pathway assessment and evidence gaps",
+      No: "Basis for no microplastic release",
+    },
+  },
+  {
+    id: 4,
+    text: "Could coatings, labels, additives or surface treatments increase fragmentation, shedding or persistence at end-of-life?",
+    guidance: {
+      Yes: "Identify mechanism and mitigation.",
+      Unknown: "Obtain information.",
+    },
+    detailLabels: {
+      Yes: "Mechanism and mitigation",
+      Unknown: "Information needed and follow-up actions",
+    },
+  },
+  {
+    id: 5,
+    text: "Has an EU or Member State process identified this substance as negatively affecting reuse/recycling or proposed a relevant restriction?",
+    guidance: {
+      Yes: "Legal impact assessment/re-assessment.",
+      No: "Record monitoring date.",
+    },
+    detailLabels: { Yes: "Legal impact assessment / re-assessment" },
+  },
 ];
 
 function EvidenceProof({
@@ -221,6 +356,16 @@ export default function Article5Assessment({
     Record<number, File | undefined>
   >({});
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const [emissionAnswers, setEmissionAnswers] = useState<
+    Record<number, string>
+  >({});
+  const [emissionDetails, setEmissionDetails] = useState<
+    Record<number, string>
+  >({});
+  const [emissionProofs, setEmissionProofs] = useState<
+    Record<number, File | undefined>
+  >({});
+  const [monitoringDate, setMonitoringDate] = useState("");
   const answeredCount =
     active === 0
       ? Object.values(answers).filter(Boolean).length
@@ -229,7 +374,9 @@ export default function Article5Assessment({
           Object.values(constructionAnswers).filter(Boolean).length
         : active === 2
           ? Object.values(concernAnswers).filter(Boolean).length
-          : 0;
+          : active === 3
+            ? Object.values(emissionAnswers).filter(Boolean).length
+            : 0;
 
   function choose(index: number) {
     setActive(index);
@@ -383,9 +530,10 @@ export default function Article5Assessment({
             <span>
               SECTION {String(active + 1).padStart(2, "0")} <i>/ 08</i>
             </span>
-            {active < 3 && (
+            {active < 4 && (
               <span>
-                <Check size={14} aria-hidden="true" /> {answeredCount} of {active === 2 ? 8 : 4} answered
+                <Check size={14} aria-hidden="true" /> {answeredCount} of{" "}
+                {active === 2 ? 8 : active === 3 ? 5 : 4} answered
               </span>
             )}
           </div>
@@ -810,7 +958,8 @@ export default function Article5Assessment({
               {concernQuestions.map((question) => {
                 const answer = concernAnswers[question.id] || "";
                 const guidance = question.guidance?.[answer];
-                const requiresEvidence = question.evidenceAnswers.includes(answer);
+                const requiresEvidence =
+                  question.evidenceAnswers.includes(answer);
                 return (
                   <article className={styles.questionCard} key={question.id}>
                     <div className={styles.questionHeading}>
@@ -850,9 +999,13 @@ export default function Article5Assessment({
                           }
                         }}
                       >
-                        <option value="" disabled>Select an answer</option>
+                        <option value="" disabled>
+                          Select an answer
+                        </option>
                         {question.options.map((option) => (
-                          <option key={option} value={option}>{option}</option>
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
                         ))}
                       </select>
                     </label>
@@ -881,7 +1034,137 @@ export default function Article5Assessment({
               })}
             </div>
           )}
-          {active > 2 && (
+          {active === 3 && (
+            <div className={styles.scopeContent}>
+              <header>
+                <div>
+                  <span>EMISSIONS ASSESSMENT</span>
+                  <h2>Emissions, waste fate &amp; microplastics</h2>
+                </div>
+                <b className={styles.questionCount}>5 questions</b>
+              </header>
+              {emissionQuestions.map((question) => {
+                const answer = emissionAnswers[question.id] || "";
+                const guidance = question.guidance[answer];
+                const detailLabel = question.detailLabels[answer];
+                return (
+                  <article className={styles.questionCard} key={question.id}>
+                    <div className={styles.questionHeading}>
+                      <span>{question.id}</span>
+                      <div className={styles.questionCopy}>
+                        <div className={styles.questionMeta}>
+                          <b>
+                            {question.id === 5 ? "Monitoring" : "Mandatory"}
+                          </b>
+                          <span>EU market</span>
+                        </div>
+                        <h3>{question.text}</h3>
+                      </div>
+                      <div className={styles.timeline}>
+                        <CalendarDays size={17} aria-hidden="true" />
+                        <span>
+                          <small>
+                            {question.id === 5 ? "TIMING" : "MANDATORY FROM"}
+                          </small>
+                          <b>
+                            {question.id === 5
+                              ? "No direct company deadline"
+                              : "12 Aug 2026"}
+                          </b>
+                        </span>
+                      </div>
+                    </div>
+                    <label className={styles.answerField}>
+                      Answer <span aria-hidden="true">*</span>
+                      <select
+                        required
+                        value={answer}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setEmissionAnswers((current) => ({
+                            ...current,
+                            [question.id]: value,
+                          }));
+                          setEmissionDetails((current) => ({
+                            ...current,
+                            [question.id]: "",
+                          }));
+                          setEmissionProofs((current) => ({
+                            ...current,
+                            [question.id]: undefined,
+                          }));
+                          if (question.id === 5) setMonitoringDate("");
+                        }}
+                      >
+                        <option value="" disabled>
+                          Select an answer
+                        </option>
+                        {standardConcernOptions.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    {answer && (
+                      <EvidenceProof
+                        key={`${question.id}-${answer}`}
+                        questionId={question.id}
+                        file={emissionProofs[question.id]}
+                        onChange={(file) =>
+                          setEmissionProofs((current) => ({
+                            ...current,
+                            [question.id]: file,
+                          }))
+                        }
+                      />
+                    )}
+                    {guidance && (
+                      <p className={styles.guidance} role="note">
+                        <b>Action required:</b> {guidance}
+                      </p>
+                    )}
+                    {question.id === 3 && (
+                      <p className={styles.specificationNotice} role="note">
+                        Do not invent an Art. 5 numerical threshold where none
+                        is specified.
+                      </p>
+                    )}
+                    {detailLabel && (
+                      <label className={styles.descriptionField}>
+                        {detailLabel} <span aria-hidden="true">*</span>
+                        <textarea
+                          required
+                          rows={4}
+                          value={emissionDetails[question.id] || ""}
+                          onChange={(event) =>
+                            setEmissionDetails((current) => ({
+                              ...current,
+                              [question.id]: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    )}
+                    {question.id === 5 && answer === "No" && (
+                      <label className={styles.descriptionField}>
+                        Monitoring date <span aria-hidden="true">*</span>
+                        <input
+                          type="date"
+                          required
+                          value={monitoringDate}
+                          onChange={(event) =>
+                            setMonitoringDate(event.target.value)
+                          }
+                        />
+                      </label>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+          {active > 3 && (
             <div className={styles.emptySection}>
               <Sparkles size={30} aria-hidden="true" />
               <span>SECTION {String(active + 1).padStart(2, "0")}</span>
@@ -892,7 +1175,7 @@ export default function Article5Assessment({
               </button>
             </div>
           )}
-          {active < 3 && (
+          {active < 4 && (
             <footer className={styles.sectionFooter}>
               <span>
                 <ShieldCheck size={16} aria-hidden="true" /> Review answers and
