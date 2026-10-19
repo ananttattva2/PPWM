@@ -45,6 +45,24 @@ const principalMaterialOptions = [
   "Unknown",
 ] as const;
 
+const constructionQuestions = [
+  {
+    id: 2,
+    text: "Is the component homogeneous, or does it contain multiple layers/materials/formulations?",
+    options: ["Homogeneous", "Multilayer", "Composite", "Formulated"],
+  },
+  {
+    id: 3,
+    text: "Are there coatings, lacquers, varnishes, barrier layers, surface treatments or functional layers?",
+    options: ["Yes", "No", "Unknown", "N/A"],
+  },
+  {
+    id: 4,
+    text: "Are there adhesives, sealants, liners, gaskets, printing inks, primers, pigments or processing aids associated with this component?",
+    options: ["Yes", "No", "Unknown", "N/A"],
+  },
+] as const;
+
 export default function Article5Assessment({ componentName, productName, material, backHref }: {
   componentName: string;
   productName: string;
@@ -60,6 +78,8 @@ export default function Article5Assessment({ componentName, productName, materia
   const [materialDescription, setMaterialDescription] = useState("");
   const [materialEvidence, setMaterialEvidence] = useState<File | null>(null);
   const [materialEvidenceError, setMaterialEvidenceError] = useState("");
+  const [constructionAnswers, setConstructionAnswers] = useState<Record<number, string>>({});
+  const [constructionDetails, setConstructionDetails] = useState<Record<number, string>>({});
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   function choose(index: number) {
@@ -168,7 +188,7 @@ export default function Article5Assessment({ componentName, productName, materia
 
           {active === 1 && (
             <div className={styles.scopeContent}>
-              <header><div><span>MATERIAL ASSESSMENT</span><h2>Material &amp; construction</h2></div><b className={styles.questionCount}>1 mandatory question</b></header>
+              <header><div><span>MATERIAL ASSESSMENT</span><h2>Material &amp; construction</h2></div><b className={styles.questionCount}>4 mandatory questions</b></header>
               <article className={styles.questionCard}>
                 <div className={styles.questionHeading}>
                   <span>1</span>
@@ -223,6 +243,42 @@ export default function Article5Assessment({ componentName, productName, materia
                   </div>
                 )}
               </article>
+              {constructionQuestions.map((question) => {
+                const answer = constructionAnswers[question.id] || "";
+                const separateScreening = question.id === 2 && ["Multilayer", "Composite", "Formulated"].includes(answer);
+                const identifyCoatings = question.id === 3 && answer === "Yes";
+                return (
+                  <article className={styles.questionCard} key={question.id}>
+                    <div className={styles.questionHeading}>
+                      <span>{question.id}</span>
+                      <div className={styles.questionCopy}>
+                        <div className={styles.questionMeta}><b>Mandatory</b><span>EU market</span></div>
+                        <h3>{question.text}</h3>
+                      </div>
+                      <div className={styles.timeline}><CalendarDays size={17} aria-hidden="true" /><span><small>MANDATORY FROM</small><b>12 Aug 2026</b></span></div>
+                    </div>
+                    <label className={styles.answerField}>Answer <span aria-hidden="true">*</span>
+                      <select required value={answer} onChange={(event) => {
+                        const value = event.target.value;
+                        setConstructionAnswers((current) => ({ ...current, [question.id]: value }));
+                        setConstructionDetails((current) => ({ ...current, [question.id]: "" }));
+                      }}>
+                        <option value="" disabled>Select an answer</option>
+                        {question.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                      </select>
+                    </label>
+                    {question.id === 2 && answer === "Homogeneous" && <p className={styles.guidance} role="note"><b>Homogeneous:</b> One material screen.</p>}
+                    {separateScreening && <p className={styles.guidance} role="note"><b>Separate screening required:</b> Identify every relevant layer/formulation and screen separately.</p>}
+                    {identifyCoatings && <p className={styles.guidance} role="note"><b>Action required:</b> Identify each layer and chemistry.</p>}
+                    {question.id === 3 && answer === "No" && <p className={styles.guidance} role="note"><b>Confirmation:</b> No coatings, lacquers, varnishes, barrier layers, surface treatments or functional layers declared.</p>}
+                    {(separateScreening || identifyCoatings) && (
+                      <label className={styles.descriptionField}>{separateScreening ? "Layers / formulations to screen separately" : "Layers and chemistry"} <span aria-hidden="true">*</span>
+                        <textarea required rows={4} value={constructionDetails[question.id] || ""} onChange={(event) => setConstructionDetails((current) => ({ ...current, [question.id]: event.target.value }))} placeholder={separateScreening ? "List every relevant layer or formulation, including its material and composition, for separate screening." : "Identify each coating, treatment or functional layer and its chemistry."} />
+                      </label>
+                    )}
+                  </article>
+                );
+              })}
             </div>
           )}
         </section>
