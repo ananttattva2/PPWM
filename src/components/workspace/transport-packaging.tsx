@@ -66,7 +66,7 @@ export default function TransportPackaging({ imported, initialRowNumber, canEdit
     finally { setSaving(false); onBusy?.(false); }
   }
 
-  return <div className="transport-workspace">
+  return <div className="composition-builder transport-workspace">
     <header className="transport-heading"><div><div><h2>Transport packaging details</h2><span>Packaging configuration</span></div><p>Record the packaging used to transport grouped or sales packaging.</p></div><span className={dirty ? "unsaved" : ""}>{loading ? "Loading…" : dirty ? "Unsaved changes" : "Saved"}</span></header>
     <div className="transport-grid">
       <aside className="transport-photo-card composition-card">
