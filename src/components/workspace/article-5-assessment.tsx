@@ -93,6 +93,77 @@ const constructionQuestions = [
   },
 ] as const;
 
+function ConstructionProof({
+  questionId,
+  file,
+  onChange,
+}: {
+  questionId: number;
+  file?: File;
+  onChange: (file?: File) => void;
+}) {
+  const [error, setError] = useState("");
+  return (
+    <div className={styles.evidenceSection}>
+      <div>
+        <h4>
+          Supporting evidence <span>Required</span>
+        </h4>
+        <p>Upload a document supporting this selected answer.</p>
+      </div>
+      {file ? (
+        <div className={styles.evidenceFile}>
+          <FileText size={21} aria-hidden="true" />
+          <span>
+            <b>{file.name}</b>
+            <small>{(file.size / 1024).toFixed(1)} KB</small>
+          </span>
+          <button
+            type="button"
+            aria-label={`Remove material evidence for question ${questionId}`}
+            onClick={() => {
+              onChange();
+              setError("");
+            }}
+          >
+            <X size={17} />
+          </button>
+        </div>
+      ) : (
+        <label className={styles.evidenceUpload}>
+          <UploadCloud size={25} aria-hidden="true" />
+          <span>
+            <b>Upload evidence document</b>
+            <small>PDF, DOC, DOCX, XLS, XLSX, PNG or JPG · Max 10 MB</small>
+          </span>
+          <input
+            type="file"
+            required
+            aria-label={`Proof for material question ${questionId}`}
+            accept=".pdf,.doc,.docx,.xls,.xlsx,image/png,image/jpeg"
+            onChange={(event) => {
+              const selected = event.target.files?.[0];
+              if (!selected) return;
+              if (selected.size > 10 * 1024 * 1024) {
+                setError("Choose a document up to 10 MB.");
+                event.target.value = "";
+                return;
+              }
+              setError("");
+              onChange(selected);
+            }}
+          />
+        </label>
+      )}
+      {error && (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function Article5Assessment({
   componentName,
   productName,
@@ -113,6 +184,9 @@ export default function Article5Assessment({
   const [materialDescription, setMaterialDescription] = useState("");
   const [materialEvidence, setMaterialEvidence] = useState<File | null>(null);
   const [materialEvidenceError, setMaterialEvidenceError] = useState("");
+  const [constructionProofs, setConstructionProofs] = useState<
+    Record<number, File | undefined>
+  >({});
   const [constructionAnswers, setConstructionAnswers] = useState<
     Record<number, string>
   >({});
@@ -149,6 +223,17 @@ export default function Article5Assessment({
   return (
     <main className={styles.page}>
       <header className={styles.header}>
+        <div className={styles.heroArt} aria-hidden="true">
+          <span className={styles.heroOrb} />
+          <span className={styles.heroLeaf} />
+          <span className={styles.heroLeafSecond} />
+          <img
+            src="/images/materials/bottle-splash.webp"
+            alt=""
+            width={720}
+            height={720}
+          />
+        </div>
         <div>
           <span className={styles.eyebrow}>
             <ShieldCheck size={15} aria-hidden="true" /> ARTICLE 5 · SUBSTANCES
@@ -201,7 +286,7 @@ export default function Article5Assessment({
             className={styles.tabs}
             role="tablist"
             aria-label="Article 5 assessment sections"
-            aria-orientation="vertical"
+            aria-orientation="horizontal"
             onKeyDown={(event) => {
               if (
                 ![
@@ -603,6 +688,10 @@ export default function Article5Assessment({
                             ...current,
                             [question.id]: "",
                           }));
+                          setConstructionProofs((current) => ({
+                            ...current,
+                            [question.id]: undefined,
+                          }));
                         }}
                       >
                         <option value="" disabled>
@@ -615,6 +704,19 @@ export default function Article5Assessment({
                         ))}
                       </select>
                     </label>
+                    {answer && (
+                      <ConstructionProof
+                        key={`${question.id}-${answer}`}
+                        questionId={question.id}
+                        file={constructionProofs[question.id]}
+                        onChange={(file) =>
+                          setConstructionProofs((current) => ({
+                            ...current,
+                            [question.id]: file,
+                          }))
+                        }
+                      />
+                    )}
                     {question.id === 2 && answer === "Homogeneous" && (
                       <p className={styles.guidance} role="note">
                         <b>Homogeneous:</b> One material screen.
