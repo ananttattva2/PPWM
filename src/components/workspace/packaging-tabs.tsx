@@ -1,23 +1,29 @@
 "use client";
-import { useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
+import {
+  Layers3,
+  Package,
+  Truck,
+  ShoppingBag,
+  Coffee,
+  Repeat2,
+  Milk,
+  Boxes,
+} from "lucide-react";
 import PackagingTabPanel from "./packaging-tab-panel";
-import { Layers3, Package, Truck } from "lucide-react";
-type Scope = "sales" | "group" | "transport";
-function TabBlobs({ filterId }: { filterId: string }) {
-  return (
-    <span className="packaging-tab-fill" aria-hidden="true">
-      <span
-        className="packaging-tab-blobs"
-        style={{ filter: `url(#${filterId})` }}
-      >
-        {[0, 1, 2, 3].map((blob) => (
-          <span className="packaging-tab-blob" key={blob} />
-        ))}
-      </span>
-    </span>
-  );
-}
+import type { AdditionalKind } from "@/lib/additional-packaging";
+export type PackagingScope = "sales" | "group" | "transport" | AdditionalKind;
+const scopes = [
+  { key: "sales", label: "Sales Packaging", icon: Package },
+  { key: "group", label: "Group Packaging", icon: Layers3 },
+  { key: "transport", label: "Transport Packaging", icon: Truck },
+  { key: "ecommerce", label: "E-commerce", icon: ShoppingBag },
+  { key: "service", label: "Service Packaging", icon: Coffee },
+  { key: "reuse", label: "Re-use / Refill", icon: Repeat2 },
+  { key: "beverage", label: "Beverage / DRS", icon: Milk },
+  { key: "composite", label: "Composite / Multi-material", icon: Boxes },
+] as const;
 export default function PackagingTabs({
   value,
   onChange,
@@ -25,20 +31,53 @@ export default function PackagingTabs({
   children,
   groupContent,
   transportContent,
+  additionalContent,
 }: {
-  value: Scope;
-  onChange: (value: Scope) => void;
+  value: PackagingScope;
+  onChange: (value: PackagingScope) => void;
   disabled?: boolean;
   children: ReactNode;
   groupContent: ReactNode;
   transportContent: ReactNode;
+  additionalContent: Record<AdditionalKind, ReactNode>;
 }) {
   const id = useId();
   const filterId = `packaging-goo-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const reduce = useReducedMotion();
-  const sales = useRef<HTMLButtonElement>(null);
-  const group = useRef<HTMLButtonElement>(null);
-  const transport = useRef<HTMLButtonElement>(null);
+  const tabList = useRef<HTMLDivElement>(null);
+  const buttons = useRef<
+    Partial<Record<PackagingScope, HTMLButtonElement | null>>
+  >({});
+  const contents: Record<PackagingScope, ReactNode> = {
+    sales: children,
+    group: groupContent,
+    transport: transportContent,
+    ...additionalContent,
+  };
+  useEffect(() => {
+    const list = tabList.current;
+    if (!list) return;
+    const reveal = () => {
+      const selected = buttons.current[value];
+      if (!selected) return;
+      const item = selected.getBoundingClientRect();
+      const container = list.getBoundingClientRect();
+      if (item.left < container.left)
+        list.scrollBy({
+          left: item.left - container.left - 4,
+          behavior: reduce ? "instant" : "smooth",
+        });
+      else if (item.right > container.right)
+        list.scrollBy({
+          left: item.right - container.right + 4,
+          behavior: reduce ? "instant" : "smooth",
+        });
+    };
+    reveal();
+    const observer = new ResizeObserver(reveal);
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, [value, reduce]);
   return (
     <div className="packaging-scopes">
       <svg
@@ -67,6 +106,7 @@ export default function PackagingTabs({
         </defs>
       </svg>
       <div
+        ref={tabList}
         className="packaging-scope-tabs"
         role="tablist"
         aria-label="Packaging type"
@@ -77,104 +117,79 @@ export default function PackagingTabs({
           )
             return;
           event.preventDefault();
+          const index = scopes.findIndex((scope) => scope.key === value);
           const next =
             event.key === "Home"
-              ? "sales"
+              ? 0
               : event.key === "End"
-                ? "transport"
-                : event.key === "ArrowRight"
-                  ? value === "sales" ? "group" : value === "group" ? "transport" : "sales"
-                  : value === "transport" ? "group" : value === "group" ? "sales" : "transport";
-          onChange(next);
-          (next === "sales" ? sales : next === "group" ? group : transport).current?.focus();
+                ? scopes.length - 1
+                : (index +
+                    (event.key === "ArrowRight" ? 1 : -1) +
+                    scopes.length) %
+                  scopes.length;
+          const scope = scopes[next].key;
+          onChange(scope);
+          buttons.current[scope]?.focus();
+          buttons.current[scope]?.scrollIntoView({
+            block: "nearest",
+            inline: "nearest",
+            behavior: reduce ? "instant" : "smooth",
+          });
         }}
       >
-        <button
-          ref={sales}
-          type="button"
-          role="tab"
-          id={`${id}-sales-tab`}
-          aria-controls={`${id}-sales`}
-          aria-selected={value === "sales"}
-          tabIndex={value === "sales" ? 0 : -1}
-          disabled={disabled}
-          onClick={() => onChange("sales")}
-        >
-          {value === "sales" && (
-            <motion.span
-              className="packaging-tab-highlight"
-              layoutId={`${id}-highlight`}
-              transition={{
-                duration: reduce ? 0 : 0.3,
-                ease: [0.22, 1, 0.36, 1],
-              }}
-            />
-          )}
-          <TabBlobs filterId={filterId} />
-          <span className="packaging-tab-label">
-            <Package size={17} /> Sales Packaging
-          </span>
-        </button>
-        <button
-          ref={group}
-          type="button"
-          role="tab"
-          id={`${id}-group-tab`}
-          aria-controls={`${id}-group`}
-          aria-selected={value === "group"}
-          tabIndex={value === "group" ? 0 : -1}
-          disabled={disabled}
-          onClick={() => onChange("group")}
-        >
-          {value === "group" && (
-            <motion.span
-              className="packaging-tab-highlight"
-              layoutId={`${id}-highlight`}
-              transition={{
-                duration: reduce ? 0 : 0.3,
-                ease: [0.22, 1, 0.36, 1],
-              }}
-            />
-          )}
-          <TabBlobs filterId={filterId} />
-          <span className="packaging-tab-label">
-            <Layers3 size={17} /> Group Packaging
-          </span>
-        </button>
-        <button
-          ref={transport}
-          type="button"
-          role="tab"
-          id={`${id}-transport-tab`}
-          aria-controls={`${id}-transport`}
-          aria-selected={value === "transport"}
-          tabIndex={value === "transport" ? 0 : -1}
-          disabled={disabled}
-          onClick={() => onChange("transport")}
-        >
-          {value === "transport" && <motion.span className="packaging-tab-highlight" layoutId={`${id}-highlight`} transition={{ duration: reduce ? 0 : 0.3, ease: [0.22, 1, 0.36, 1] }} />}
-          <TabBlobs filterId={filterId} />
-          <span className="packaging-tab-label"><Truck size={17} /> Transport Packaging</span>
-        </button>
+        {scopes.map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            ref={(node) => {
+              buttons.current[key] = node;
+            }}
+            type="button"
+            role="tab"
+            id={`${id}-${key}-tab`}
+            aria-controls={`${id}-${key}`}
+            aria-selected={value === key}
+            tabIndex={value === key ? 0 : -1}
+            disabled={disabled}
+            onClick={() => onChange(key)}
+          >
+            {value === key && (
+              <motion.span
+                className="packaging-tab-highlight"
+                layoutId={`${id}-highlight`}
+                transition={{
+                  duration: reduce ? 0 : 0.3,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+              />
+            )}
+            <span className="packaging-tab-fill" aria-hidden="true">
+              <span
+                className="packaging-tab-blobs"
+                style={{ filter: `url(#${filterId})` }}
+              >
+                {[0, 1, 2, 3].map((blob) => (
+                  <span className="packaging-tab-blob" key={blob} />
+                ))}
+              </span>
+            </span>
+            <span className="packaging-tab-label">
+              <Icon size={17} aria-hidden="true" />
+              {label}
+            </span>
+          </button>
+        ))}
       </div>
       <div className="packaging-panels">
-        <PackagingTabPanel
-          active={value === "sales"}
-          id={`${id}-sales`}
-          labelledBy={`${id}-sales-tab`}
-        >
-          {children}
-        </PackagingTabPanel>
-        <PackagingTabPanel
-          active={value === "group"}
-          id={`${id}-group`}
-          labelledBy={`${id}-group-tab`}
-        >
-          {groupContent}
-        </PackagingTabPanel>
-        <PackagingTabPanel active={value === "transport"} id={`${id}-transport`} labelledBy={`${id}-transport-tab`}>
-          {transportContent}
-        </PackagingTabPanel>
+        {scopes.map(({ key }) => (
+          <PackagingTabPanel
+            key={key}
+            active={value === key}
+            id={`${id}-${key}`}
+            labelledBy={`${id}-${key}-tab`}
+          >
+            {contents[key]}
+          </PackagingTabPanel>
+        ))}
       </div>
     </div>
   );

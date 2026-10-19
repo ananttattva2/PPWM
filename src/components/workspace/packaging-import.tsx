@@ -39,6 +39,8 @@ import {
 import PackagingTabs from "./packaging-tabs";
 import GroupPackaging from "./group-packaging";
 import TransportPackaging from "./transport-packaging";
+import AdditionalPackaging from "./additional-packaging";
+import type { PackagingScope } from "./packaging-tabs";
 import {
   importCategories,
   importFields,
@@ -79,9 +81,7 @@ export default function PackagingImport({
   organisationName: string;
   onEditorChange?: (open: boolean) => void;
 }) {
-  const [packagingScope, setPackagingScope] = useState<"sales" | "group" | "transport">(
-    "sales",
-  );
+  const [packagingScope, setPackagingScope] = useState<PackagingScope>("sales");
   const [templateBusy, setTemplateBusy] = useState(false);
   const [groupBusy, setGroupBusy] = useState(false);
   const [result, setResult] = useState(parentResult);
@@ -288,6 +288,78 @@ export default function PackagingImport({
         value={packagingScope}
         onChange={setPackagingScope}
         disabled={busy || groupBusy}
+        additionalContent={{
+          ecommerce: (
+            <AdditionalPackaging
+              key={`${result.id}-${viewedRow.rowNumber}-ecommerce`}
+              kind="ecommerce"
+              importId={result.id}
+              rowNumber={viewedRow.rowNumber}
+              productName={viewedRow.productName}
+              canEdit={canEdit}
+              onBusy={(saving) => {
+                setGroupBusy(saving);
+                onBusy(saving);
+              }}
+            />
+          ),
+          service: (
+            <AdditionalPackaging
+              key={`${result.id}-${viewedRow.rowNumber}-service`}
+              kind="service"
+              importId={result.id}
+              rowNumber={viewedRow.rowNumber}
+              productName={viewedRow.productName}
+              canEdit={canEdit}
+              onBusy={(saving) => {
+                setGroupBusy(saving);
+                onBusy(saving);
+              }}
+            />
+          ),
+          reuse: (
+            <AdditionalPackaging
+              key={`${result.id}-${viewedRow.rowNumber}-reuse`}
+              kind="reuse"
+              importId={result.id}
+              rowNumber={viewedRow.rowNumber}
+              productName={viewedRow.productName}
+              canEdit={canEdit}
+              onBusy={(saving) => {
+                setGroupBusy(saving);
+                onBusy(saving);
+              }}
+            />
+          ),
+          beverage: (
+            <AdditionalPackaging
+              key={`${result.id}-${viewedRow.rowNumber}-beverage`}
+              kind="beverage"
+              importId={result.id}
+              rowNumber={viewedRow.rowNumber}
+              productName={viewedRow.productName}
+              canEdit={canEdit}
+              onBusy={(saving) => {
+                setGroupBusy(saving);
+                onBusy(saving);
+              }}
+            />
+          ),
+          composite: (
+            <AdditionalPackaging
+              key={`${result.id}-${viewedRow.rowNumber}-composite`}
+              kind="composite"
+              importId={result.id}
+              rowNumber={viewedRow.rowNumber}
+              productName={viewedRow.productName}
+              canEdit={canEdit}
+              onBusy={(saving) => {
+                setGroupBusy(saving);
+                onBusy(saving);
+              }}
+            />
+          ),
+        }}
         groupContent={
           <GroupPackaging
             key={`${result.id}-${viewedRow.rowNumber}`}
