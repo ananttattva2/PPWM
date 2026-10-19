@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import styles from "./article-5-assessment.module.css";
+import HeavyMetalsAssessment from "./heavy-metals-assessment";
 
 const tabs = [
   "Scope & identity",
@@ -332,6 +333,7 @@ export default function Article5Assessment({
   backHref: string;
 }) {
   const id = useId();
+  const [heavyAnsweredCount, setHeavyAnsweredCount] = useState(0);
   const [active, setActive] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [evidence, setEvidence] = useState<Record<number, File>>({});
@@ -520,7 +522,6 @@ export default function Article5Assessment({
         </aside>
 
         <section
-          key={active}
           className={styles.panel}
           role="tabpanel"
           id={`${id}-panel`}
@@ -530,10 +531,12 @@ export default function Article5Assessment({
             <span>
               SECTION {String(active + 1).padStart(2, "0")} <i>/ 08</i>
             </span>
-            {active < 4 && (
+            {(active < 4 || active === 5) && (
               <span>
-                <Check size={14} aria-hidden="true" /> {answeredCount} of{" "}
-                {active === 2 ? 8 : active === 3 ? 5 : 4} answered
+                <Check size={14} aria-hidden="true" />{" "}
+                {active === 5 ? heavyAnsweredCount : answeredCount} of{" "}
+                {active === 5 ? 11 : active === 2 ? 8 : active === 3 ? 5 : 4}{" "}
+                answered
               </span>
             )}
           </div>
@@ -1164,7 +1167,10 @@ export default function Article5Assessment({
               })}
             </div>
           )}
-          {active > 3 && (
+          <div hidden={active !== 5}>
+            <HeavyMetalsAssessment onAnswered={setHeavyAnsweredCount} />
+          </div>
+          {active > 3 && active !== 5 && (
             <div className={styles.emptySection}>
               <Sparkles size={30} aria-hidden="true" />
               <span>SECTION {String(active + 1).padStart(2, "0")}</span>
@@ -1175,7 +1181,7 @@ export default function Article5Assessment({
               </button>
             </div>
           )}
-          {active < 4 && (
+          {(active < 4 || active === 5) && (
             <footer className={styles.sectionFooter}>
               <span>
                 <ShieldCheck size={16} aria-hidden="true" /> Review answers and
