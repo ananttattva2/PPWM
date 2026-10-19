@@ -17,6 +17,8 @@ import {
 import { Button } from "../ui/button";
 import type { CompositionComponent } from "@/lib/packaging-composition";
 import SustainabilityChecklist from "./sustainability-checklist";
+import PackagingArticles from "./packaging-articles";
+import articleStyles from "./packaging-articles.module.css";
 import PackagingBackLink from "./packaging-back-link";
 import {
   materialFamilies,
@@ -95,7 +97,7 @@ export default function ComponentClassification({
     initial?.family || null,
   );
   const [categoryId, setCategoryId] = useState(initial?.categoryId || "");
-  const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
+  const [step, setStep] = useState<0 | 1 | 2 | 3 | 4>(0);
   const [busy, setBusy] = useState(false);
   const [categoryQuery, setCategoryQuery] = useState("");
   const [savedThisSession, setSavedThisSession] = useState(false);
@@ -194,7 +196,7 @@ export default function ComponentClassification({
         )}
       </header>
       <nav
-        className="classification-progress classification-progress-four"
+        className={`classification-progress classification-progress-four ${articleStyles.progress}`}
         aria-label="Analysis progress"
       >
         <button
@@ -240,16 +242,16 @@ export default function ComponentClassification({
           disabled={!family || busy}
           onClick={() => setStep(2)}
           aria-current={step === 2 ? "step" : undefined}
-          className={step === 3 ? "classification-step-complete" : undefined}
+          className={step >= 3 ? "classification-step-complete" : undefined}
         >
-          <span>{step === 3 ? <Check size={16} /> : "3"}</span>
+          <span>{step >= 3 ? <Check size={16} /> : "3"}</span>
           <div className="classification-step-copy">
             <b>Packaging category</b>
             <small>Choose packaging category</small>
           </div>
         </button>
         <span
-          className={`classification-connector ${step === 3 ? "material-completed" : step === 2 ? "category-current" : ""}`}
+          className={`classification-connector ${step >= 3 ? "material-completed" : step === 2 ? "category-current" : ""}`}
           aria-hidden="true"
         />
         <button
@@ -257,8 +259,25 @@ export default function ComponentClassification({
           disabled={!categoryId || busy}
           onClick={() => setStep(3)}
           aria-current={step === 3 ? "step" : undefined}
+          className={step === 4 ? "classification-step-complete" : undefined}
         >
-          <span>4</span>
+          <span>{step === 4 ? <Check size={16} /> : "4"}</span>
+          <div className="classification-step-copy">
+            <b>Articles</b>
+            <small>Explore articles 5–12</small>
+          </div>
+        </button>
+        <span
+          className={`classification-connector ${step === 4 ? "material-completed" : ""}`}
+          aria-hidden="true"
+        />
+        <button
+          type="button"
+          disabled={!categoryId || busy}
+          onClick={() => setStep(4)}
+          aria-current={step === 4 ? "step" : undefined}
+        >
+          <span>5</span>
           <div className="classification-step-copy">
             <b>Sustainability Checklist</b>
             <small>Review sustainability requirements</small>
@@ -281,7 +300,7 @@ export default function ComponentClassification({
           exit={{ opacity: 0, y: reduce ? 0 : -8 }}
           transition={{ duration: reduce ? 0 : 0.2 }}
         >
-          {step === 3 ? (
+          {step === 4 ? (
             <SustainabilityChecklist
               importId={importId}
               rowNumber={rowNumber}
@@ -290,7 +309,13 @@ export default function ComponentClassification({
               componentName={componentName}
               family={family}
               foodGrade={supplierDetails.foodGrade}
+              onBack={() => setStep(3)}
+            />
+          ) : step === 3 ? (
+            <PackagingArticles
+              componentName={componentName}
               onBack={() => setStep(2)}
+              onContinue={() => setStep(4)}
             />
           ) : step === 0 ? (
             <section
@@ -600,10 +625,9 @@ export default function ComponentClassification({
           )}
           {step === 2 && categoryId && savedThisSession && (
             <div className="classification-saved" role="status">
-              <Check size={18} /> Selection saved. Continue to the
-              Sustainability Checklist.
+              <Check size={18} /> Selection saved. Continue to the Articles.
               <Button type="button" onClick={() => setStep(3)}>
-                Sustainability Checklist <ArrowRight size={16} />
+                Articles <ArrowRight size={16} />
               </Button>
             </div>
           )}

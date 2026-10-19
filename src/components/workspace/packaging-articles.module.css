@@ -1,0 +1,223 @@
+.articles {
+  --article-ink: #17324e;
+  --article-surface: #fff;
+  color: var(--article-ink);
+}
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 28px 0;
+}
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #e77830;
+}
+.heading h2 {
+  font-size: clamp(28px, 3vw, 38px);
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+  margin: 9px 0;
+}
+.heading h2:focus {
+  outline: none;
+}
+.heading p,
+.footer p {
+  color: #71849a;
+  font-size: 14px;
+  line-height: 1.65;
+  margin: 0;
+  max-width: 650px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+.card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  min-height: 270px;
+  padding: 25px;
+  background: var(--article-surface);
+  border: 1px solid color-mix(in srgb, var(--article-accent) 23%, transparent);
+  border-radius: 24px;
+  box-shadow: 0 5px 20px #19375504;
+  transition:
+    box-shadow 0.3s,
+    border-color 0.3s;
+}
+.card:hover {
+  border-color: var(--article-accent);
+  box-shadow: 0 16px 35px
+    color-mix(in srgb, var(--article-accent) 14%, transparent);
+}
+.orb {
+  z-index: -1;
+  position: absolute;
+  width: 210px;
+  height: 210px;
+  border-radius: 50%;
+  right: -92px;
+  bottom: -112px;
+  background: color-mix(in srgb, var(--article-accent) 9%, transparent);
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.card:hover .orb {
+  transform: scale(1.65);
+}
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: 57px;
+  height: 57px;
+  border-radius: 18px;
+  color: var(--article-accent);
+  background: color-mix(in srgb, var(--article-accent) 11%, transparent);
+  transition: transform 0.35s;
+}
+.card:hover .icon {
+  transform: rotate(-8deg);
+}
+.badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--article-accent);
+  padding: 7px 11px;
+  border-radius: 30px;
+  background: color-mix(in srgb, var(--article-accent) 8%, transparent);
+  white-space: nowrap;
+}
+.topic {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: var(--article-accent);
+}
+.card h3 {
+  margin: 9px 0 28px;
+  font-size: clamp(17px, 1.4vw, 22px);
+  letter-spacing: -0.025em;
+  line-height: 1.35;
+  max-width: 290px;
+}
+.cardBottom {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.cardBottom > span:first-child {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: #7b8d9f;
+  white-space: nowrap;
+}
+.cardBottom b {
+  color: var(--article-accent);
+  font-size: 20px;
+  margin-left: 6px;
+}
+.line {
+  height: 1px;
+  flex: 1;
+  background: color-mix(in srgb, var(--article-accent) 22%, transparent);
+}
+.footer {
+  margin-top: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 28px;
+  background: var(--article-surface);
+  border: 1px solid #ff8a3029;
+  border-radius: 20px;
+}
+.footer strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 16px;
+}
+:global(.classification-progress).progress {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 0.18fr 1fr 0.18fr 1fr 0.18fr 1fr 0.18fr 1.2fr;
+}
+:global(.classification-progress).progress > button {
+  min-width: 0;
+}
+:global(.classification-progress).progress :global(.classification-step-copy) {
+  min-width: 0;
+}
+:global([data-mantine-color-scheme="dark"]) .articles {
+  --article-ink: #e4edf8;
+  --article-surface: #152335;
+}
+@media (max-width: 1200px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  :global(.classification-progress).progress {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  :global(.classification-progress).progress > button {
+    flex: 1 1 160px;
+  }
+  :global(.classification-progress).progress
+    > :global(.classification-connector) {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .heading,
+  .footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .card {
+    min-height: 235px;
+    padding: 22px;
+  }
+  .card h3 {
+    font-size: 21px;
+  }
+  .footer {
+    padding: 22px;
+  }
+  .footer button {
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .icon,
+  .orb {
+    transition: none;
+  }
+  .card:hover .orb,
+  .card:hover .icon {
+    transform: none;
+  }
+}

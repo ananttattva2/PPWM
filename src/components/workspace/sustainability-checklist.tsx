@@ -80,7 +80,7 @@ export default function SustainabilityChecklist({
         </div>
         <Button type="button" variant="outline" onClick={onBack}>
           <ArrowLeft size={16} />
-          Packaging category
+          Articles
         </Button>
       </header>
       {proofError && (
