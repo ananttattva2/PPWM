@@ -93,7 +93,28 @@ const constructionQuestions = [
   },
 ] as const;
 
-function ConstructionProof({
+type ConcernQuestion = {
+  id: number;
+  text: string;
+  options: readonly string[];
+  evidenceAnswers: readonly string[];
+  guidance?: Partial<Record<string, string>>;
+};
+
+const standardConcernOptions = ["Yes", "No", "Unknown", "N/A"] as const;
+
+const concernQuestions: ConcernQuestion[] = [
+  { id: 1, text: "Have intentionally added substances beyond the base material been identified?", options: standardConcernOptions, evidenceAnswers: ["Yes"], guidance: { No: "Obtain a substantiating declaration." } },
+  { id: 2, text: "Are plasticisers, stabilisers, antioxidants, UV stabilisers, flame retardants, pigments, dyes, slip agents, lubricants, processing aids or similar additives present?", options: standardConcernOptions, evidenceAnswers: ["Yes"], guidance: { No: "Document supplier confirmation.", Unknown: "Escalate this evidence gap for review." } },
+  { id: 3, text: "Are any substances of concern known or reasonably expected to be present?", options: standardConcernOptions, evidenceAnswers: ["Yes", "No"], guidance: { No: "Retain the evidence supporting the negative conclusion.", Unknown: "Evidence gap: obtain sufficient information before completing the assessment." } },
+  { id: 4, text: "For each identified substance of concern, is the substance identity known?", options: standardConcernOptions, evidenceAnswers: ["Yes"], guidance: { No: "Obtain sufficient identity information." } },
+  { id: 5, text: "For each identified substance of concern, is its concentration or concentration range known?", options: standardConcernOptions, evidenceAnswers: ["Yes"], guidance: { No: "Obtain suitable evidence." } },
+  { id: 6, text: "Is the substance intentionally added, present as an impurity/residual, or generated during processing/use?", options: ["Intentionally added", "Impurity / residual", "Generated during processing/use", "Multiple sources", "Unknown", "N/A"], evidenceAnswers: ["Intentionally added", "Impurity / residual", "Generated during processing/use", "Multiple sources", "Unknown", "N/A"] },
+  { id: 7, text: "Has reduction or substitution potential been considered for an identified substance of concern?", options: standardConcernOptions, evidenceAnswers: ["Yes", "No"] },
+  { id: 8, text: "Is the substance subject to another applicable Union restriction or specific measure relevant to the packaging/use?", options: standardConcernOptions, evidenceAnswers: ["Yes", "No"] },
+];
+
+function EvidenceProof({
   questionId,
   file,
   onChange,
@@ -139,7 +160,7 @@ function ConstructionProof({
           <input
             type="file"
             required
-            aria-label={`Proof for material question ${questionId}`}
+            aria-label={`Supporting evidence for question ${questionId}`}
             accept=".pdf,.doc,.docx,.xls,.xlsx,image/png,image/jpeg"
             onChange={(event) => {
               const selected = event.target.files?.[0];
@@ -193,6 +214,12 @@ export default function Article5Assessment({
   const [constructionDetails, setConstructionDetails] = useState<
     Record<number, string>
   >({});
+  const [concernAnswers, setConcernAnswers] = useState<Record<number, string>>(
+    {},
+  );
+  const [concernProofs, setConcernProofs] = useState<
+    Record<number, File | undefined>
+  >({});
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const answeredCount =
     active === 0
@@ -200,7 +227,9 @@ export default function Article5Assessment({
       : active === 1
         ? Number(Boolean(principalMaterial)) +
           Object.values(constructionAnswers).filter(Boolean).length
-        : 0;
+        : active === 2
+          ? Object.values(concernAnswers).filter(Boolean).length
+          : 0;
 
   function choose(index: number) {
     setActive(index);
@@ -354,10 +383,9 @@ export default function Article5Assessment({
             <span>
               SECTION {String(active + 1).padStart(2, "0")} <i>/ 08</i>
             </span>
-            {active < 2 && (
+            {active < 3 && (
               <span>
-                <Check size={14} aria-hidden="true" /> {answeredCount} of 4
-                answered
+                <Check size={14} aria-hidden="true" /> {answeredCount} of {active === 2 ? 8 : 4} answered
               </span>
             )}
           </div>
@@ -705,7 +733,7 @@ export default function Article5Assessment({
                       </select>
                     </label>
                     {answer && (
-                      <ConstructionProof
+                      <EvidenceProof
                         key={`${question.id}-${answer}`}
                         questionId={question.id}
                         file={constructionProofs[question.id]}
@@ -770,7 +798,90 @@ export default function Article5Assessment({
               })}
             </div>
           )}
-          {active > 1 && (
+          {active === 2 && (
+            <div className={styles.scopeContent}>
+              <header>
+                <div>
+                  <span>SUBSTANCE ASSESSMENT</span>
+                  <h2>Substances of concern</h2>
+                </div>
+                <b className={styles.questionCount}>8 mandatory questions</b>
+              </header>
+              {concernQuestions.map((question) => {
+                const answer = concernAnswers[question.id] || "";
+                const guidance = question.guidance?.[answer];
+                const requiresEvidence = question.evidenceAnswers.includes(answer);
+                return (
+                  <article className={styles.questionCard} key={question.id}>
+                    <div className={styles.questionHeading}>
+                      <span>{question.id}</span>
+                      <div className={styles.questionCopy}>
+                        <div className={styles.questionMeta}>
+                          <b>Mandatory</b>
+                          <span>EU market</span>
+                        </div>
+                        <h3>{question.text}</h3>
+                      </div>
+                      <div className={styles.timeline}>
+                        <CalendarDays size={17} aria-hidden="true" />
+                        <span>
+                          <small>MANDATORY FROM</small>
+                          <b>12 Aug 2026</b>
+                        </span>
+                      </div>
+                    </div>
+
+                    <label className={styles.answerField}>
+                      Answer <span aria-hidden="true">*</span>
+                      <select
+                        required
+                        value={answer}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setConcernAnswers((current) => ({
+                            ...current,
+                            [question.id]: value,
+                          }));
+                          if (!question.evidenceAnswers.includes(value)) {
+                            setConcernProofs((current) => ({
+                              ...current,
+                              [question.id]: undefined,
+                            }));
+                          }
+                        }}
+                      >
+                        <option value="" disabled>Select an answer</option>
+                        {question.options.map((option) => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </label>
+
+                    {guidance && (
+                      <p className={styles.guidance} role="note">
+                        <b>Action required:</b> {guidance}
+                      </p>
+                    )}
+
+                    {requiresEvidence && (
+                      <EvidenceProof
+                        key={`${question.id}-${answer}`}
+                        questionId={question.id}
+                        file={concernProofs[question.id]}
+                        onChange={(file) =>
+                          setConcernProofs((current) => ({
+                            ...current,
+                            [question.id]: file,
+                          }))
+                        }
+                      />
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+          {active > 2 && (
             <div className={styles.emptySection}>
               <Sparkles size={30} aria-hidden="true" />
               <span>SECTION {String(active + 1).padStart(2, "0")}</span>
@@ -781,7 +892,7 @@ export default function Article5Assessment({
               </button>
             </div>
           )}
-          {active < 2 && (
+          {active < 3 && (
             <footer className={styles.sectionFooter}>
               <span>
                 <ShieldCheck size={16} aria-hidden="true" /> Review answers and
