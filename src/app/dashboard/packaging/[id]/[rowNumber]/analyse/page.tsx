@@ -16,13 +16,19 @@ import { currentUser } from "@/lib/access";
 import { packagingAnalysis } from "@/lib/packaging-analysis";
 import type { PackagingRow } from "@/lib/packaging-import-schema";
 import { supplierOwnsComponent } from "@/lib/supplier-access";
+import SkuAnalysisOverview from "@/components/workspace/sku-analysis";
+import { initialComposition } from "@/lib/packaging-composition";
 export const metadata = { title: "Packaging analysis" };
 export default async function Page({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string; rowNumber: string }>;
-  searchParams: Promise<{ component?: string | string[]; section?: string | string[] }>;
+  searchParams: Promise<{
+    component?: string | string[];
+    section?: string | string[];
+    view?: string | string[];
+  }>;
 }) {
   const { id, rowNumber } = await params;
   const user = await currentUser();
@@ -71,7 +77,7 @@ export default async function Page({
   );
   if (!row) notFound();
   const analysis = packagingAnalysis(row);
-  const { component: componentId, section } = await searchParams;
+  const { component: componentId, section, view } = await searchParams;
   const selectedComponent =
     typeof componentId === "string"
       ? row.composition?.components.find(
@@ -83,6 +89,36 @@ export default async function Page({
     if (record.status !== "confirmed") notFound();
     if (!selectedComponent) redirect("/dashboard/supplier");
     if (!supplierOwnsComponent(user.email, selectedComponent)) notFound();
+  }
+  if (
+    user.role !== "supplier" &&
+    view !== "component" &&
+    section !== "articles"
+  ) {
+    const composition = initialComposition(row);
+    return (
+      <SkuAnalysisOverview
+        importId={id}
+        rowNumber={number}
+        sku={row.sku}
+        name={row.productName}
+        images={[
+          ...new Set(
+            [composition.productImage, ...composition.productImages].filter(
+              Boolean,
+            ),
+          ),
+        ]}
+        components={composition.components.map((component) => ({
+          id: component.id,
+          name: component.name,
+          image: component.image || "",
+          material: component.material,
+          weight: component.weight,
+          supplier: component.supplierName || "",
+        }))}
+      />
+    );
   }
   if (selectedComponent) {
     const saved = await db().collection("packagingClassifications").findOne({

@@ -20,6 +20,7 @@ import {
   ArrowUpRight,
   PanelLeftClose,
   PanelLeftOpen,
+  ScanLine,
 } from "lucide-react";
 import { Avatar } from "@heroui/react";
 import { toast } from "sonner";
@@ -75,6 +76,11 @@ export default function Shell({
               label: "Client onboarding",
               icon: UserPlus,
             },
+            {
+              url: "/dashboard/sku-analysis",
+              label: "SKU Analyse",
+              icon: ScanLine,
+            },
           ],
     },
     {
@@ -87,8 +93,12 @@ export default function Shell({
       ],
     },
   ];
+  const isActive = (url: string) =>
+    path === url ||
+    (url === "/dashboard/sku-analysis" &&
+      path.startsWith("/dashboard/packaging/"));
   const current =
-    groups.flatMap((g) => g.items).find((n) => n.url === path)?.label ||
+    groups.flatMap((g) => g.items).find((n) => isActive(n.url))?.label ||
     "Workspace";
   useEffect(() => {
     if (!open) return;
@@ -155,14 +165,14 @@ export default function Shell({
                   key={url}
                   href={url}
                   onClick={() => setOpen(false)}
-                  className={path === url ? "active" : ""}
-                  aria-current={path === url ? "page" : undefined}
+                  className={isActive(url) ? "active" : ""}
+                  aria-current={isActive(url) ? "page" : undefined}
                   aria-label={label}
                   title={collapsed ? label : undefined}
                 >
                   <Icon size={17} />
                   <span>{label}</span>
-                  {path === url && <span className="nav-active-dot" />}
+                  {isActive(url) && <span className="nav-active-dot" />}
                 </Link>
               ))}
             </div>
