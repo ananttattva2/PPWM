@@ -109,14 +109,6 @@ export default async function Page({
             ),
           ),
         ]}
-        components={composition.components.map((component) => ({
-          id: component.id,
-          name: component.name,
-          image: component.image || "",
-          material: component.material,
-          weight: component.weight,
-          supplier: component.supplierName || "",
-        }))}
       />
     );
   }

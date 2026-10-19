@@ -7,7 +7,6 @@ import {
   ArrowRight,
   Boxes,
   Clock3,
-  Layers3,
   Package,
   Search,
   Sparkles,
@@ -21,17 +20,7 @@ export type SkuAnalysisItem = {
   sku: string;
   name: string;
   image: string;
-  count: number;
 };
-export type SkuComponent = {
-  id: string;
-  name: string;
-  image: string;
-  material: string;
-  weight: string;
-  supplier: string;
-};
-
 export function SkuAnalysisDirectory({ items }: { items: SkuAnalysisItem[] }) {
   const [query, setQuery] = useState("");
   const shown = items.filter((item) =>
@@ -45,7 +34,7 @@ export function SkuAnalysisDirectory({ items }: { items: SkuAnalysisItem[] }) {
         <div>
           <span>PACKAGING INTELLIGENCE</span>
           <h1>SKU Analyse</h1>
-          <p>Explore each SKU and its packaging components.</p>
+          <p>Explore your SKUs and open SKU analysis.</p>
         </div>
         <label className={styles.search}>
           <Search size={17} />
@@ -77,9 +66,6 @@ export function SkuAnalysisDirectory({ items }: { items: SkuAnalysisItem[] }) {
             <div>
               <small>{item.sku || "SKU pending"}</small>
               <h2>{item.name || "Unnamed product"}</h2>
-              <p>
-                <Layers3 size={13} /> {item.count} components
-              </p>
             </div>
             <span className={styles.open}>
               <ArrowRight size={17} />
@@ -111,25 +97,17 @@ export default function SkuAnalysisOverview({
   sku,
   name,
   images,
-  components,
 }: {
   importId: string;
   rowNumber: number;
   sku: string;
   name: string;
   images: string[];
-  components: SkuComponent[];
 }) {
-  const [selected, setSelected] = useState("sku:0");
   const [comingSoon, setComingSoon] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const analyse = useRef<HTMLButtonElement>(null);
-  const current = selected.startsWith("component:")
-    ? components.find((component) => component.id === selected.slice(10))
-    : undefined;
-  const selectedImage = current
-    ? current.image
-    : images[Number(selected.split(":")[1]) || 0] || "";
+  const selectedImage = images[0] || "";
   useEffect(() => {
     if (comingSoon) {
       const previousOverflow = document.body.style.overflow;
@@ -150,7 +128,7 @@ export default function SkuAnalysisOverview({
         <div>
           <span>SKU ANALYSE · PACKAGING OVERVIEW</span>
           <h1>{name || "Product name pending"}</h1>
-          <p>Review the complete product and all its packaging components.</p>
+          <p>Review your SKU and open its analysis.</p>
         </div>
         <Link className={styles.back} href="/dashboard/sku-analysis">
           <ArrowLeft size={15} /> All SKUs
@@ -163,61 +141,14 @@ export default function SkuAnalysisOverview({
               <img
                 key={selectedImage}
                 src={`/api/packaging-imports/${importId}/assets/${selectedImage}`}
-                alt={current?.name || name}
+                alt={name}
               />
             ) : (
               <div className={styles.noPhoto}>
                 <Package size={75} strokeWidth={1} />
-                <span>
-                  No {current ? "component" : "product"} photo available
-                </span>
+                <span>No product photo available</span>
               </div>
             )}
-          </div>
-          <div
-            className={styles.thumbnails}
-            aria-label="Product and component photos"
-          >
-            {(images.length ? images : [""]).map((image, index) => (
-              <button
-                key={`product-${index}`}
-                type="button"
-                aria-label={
-                  index === 0 ? "Main SKU image" : `SKU photo ${index + 1}`
-                }
-                aria-pressed={selected === `sku:${index}`}
-                onClick={() => setSelected(`sku:${index}`)}
-              >
-                {image ? (
-                  <img
-                    src={`/api/packaging-imports/${importId}/assets/${image}`}
-                    alt=""
-                  />
-                ) : (
-                  <Package size={25} />
-                )}
-                <small>{index === 0 ? "SKU" : `Photo ${index + 1}`}</small>
-              </button>
-            ))}
-            {components.map((component, index) => (
-              <button
-                key={component.id}
-                type="button"
-                aria-label={`View ${component.name || `component ${index + 1}`} image`}
-                aria-pressed={selected === `component:${component.id}`}
-                onClick={() => setSelected(`component:${component.id}`)}
-              >
-                {component.image ? (
-                  <img
-                    src={`/api/packaging-imports/${importId}/assets/${component.image}`}
-                    alt=""
-                  />
-                ) : (
-                  <Package size={25} />
-                )}
-                <small>{component.name || `Part ${index + 1}`}</small>
-              </button>
-            ))}
           </div>
         </section>
         <section className={styles.productDetails}>
@@ -230,19 +161,8 @@ export default function SkuAnalysisOverview({
               <dt>SKU</dt>
               <dd>{sku || "Not provided"}</dd>
             </div>
-            <div>
-              <dt>Packaging components</dt>
-              <dd>{components.length}</dd>
-            </div>
-            <div>
-              <dt>Selected view</dt>
-              <dd>{current?.name || "Main product"}</dd>
-            </div>
           </dl>
-          <p>
-            Explore the saved packaging photos and components, then open SKU
-            analysis.
-          </p>
+          <p>View the main product image and start SKU analysis.</p>
           <button
             ref={analyse}
             className={styles.analyse}
@@ -259,67 +179,6 @@ export default function SkuAnalysisOverview({
           </Link>
         </section>
       </div>
-      <div className={styles.componentHeading}>
-        <h2>
-          Packaging components <span>{components.length}</span>
-        </h2>
-        <p>All components saved for this SKU.</p>
-      </div>
-      <div className={styles.components}>
-        {components.map((component, index) => (
-          <article key={component.id} className={styles.component}>
-            <button
-              className={styles.componentPhoto}
-              type="button"
-              onClick={() => {
-                setSelected(`component:${component.id}`);
-                window.scrollTo({
-                  top: 0,
-                  behavior: window.matchMedia(
-                    "(prefers-reduced-motion: reduce)",
-                  ).matches
-                    ? "instant"
-                    : "smooth",
-                });
-              }}
-              aria-label={`Preview ${component.name || `component ${index + 1}`}`}
-            >
-              {component.image ? (
-                <img
-                  src={`/api/packaging-imports/${importId}/assets/${component.image}`}
-                  alt={component.name}
-                />
-              ) : (
-                <Package size={38} strokeWidth={1.2} />
-              )}
-            </button>
-            <div className={styles.componentCopy}>
-              <small>COMPONENT {String(index + 1).padStart(2, "0")}</small>
-              <h3>{component.name || `Component ${index + 1}`}</h3>
-              <p>
-                {component.material || "Material not provided"}
-                <span>·</span>
-                {component.weight
-                  ? `${component.weight} g`
-                  : "Weight not provided"}
-              </p>
-              <p>{component.supplier || "Supplier not provided"}</p>
-              <Link
-                href={`/dashboard/packaging/${importId}/${rowNumber}/analyse?component=${encodeURIComponent(component.id)}&view=component`}
-              >
-                Review component <ArrowRight size={13} />
-              </Link>
-            </div>
-          </article>
-        ))}
-      </div>
-      {!components.length && (
-        <div className={styles.empty}>
-          <Layers3 size={35} />
-          <h3>No components saved yet</h3>
-          <p>Add components in the packaging workspace to see them here.</p>
-        </div>
-      )}
       <dialog
         ref={dialog}
         className={styles.dialog}
@@ -346,8 +205,8 @@ export default function SkuAnalysisOverview({
           <span>SKU ANALYSIS</span>
           <h2 id="sku-coming-soon-title">Coming soon</h2>
           <p id="sku-coming-soon-description">
-            SKU-level analysis is on its way. You can explore your product
-            images and packaging components in the meantime.
+            SKU-level analysis is on its way. You can review your SKU details in
+            the meantime.
           </p>
           <button type="button" className={styles.analyse} onClick={close}>
             Back to SKU <ArrowLeft size={16} />

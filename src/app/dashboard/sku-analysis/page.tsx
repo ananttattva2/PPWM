@@ -76,7 +76,6 @@ export default async function Page({
         sku: row.sku,
         name: row.productName,
         image: composition.productImage || composition.productImages[0] || "",
-        count: composition.components.length,
       });
     }
   }

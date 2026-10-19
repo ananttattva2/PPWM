@@ -13,7 +13,7 @@ nextEnv.loadEnvConfig(process.cwd());
 if (process.env.MONGODB_DNS_SERVERS)
   setServers(process.env.MONGODB_DNS_SERVERS.split(","));
 
-test("SKU sidebar, product gallery, all components and coming-soon dialog", async ({
+test("SKU-only overview hides components and opens coming-soon dialog", async ({
   page,
 }) => {
   test.setTimeout(120000);
@@ -133,28 +133,23 @@ test("SKU sidebar, product gallery, all components and coming-soon dialog", asyn
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Bottle", exact: true }),
-    ).toBeVisible();
+    ).toHaveCount(0);
     await expect(
       page.getByRole("heading", { name: "Cap", exact: true }),
-    ).toBeVisible();
+    ).toHaveCount(0);
     await expect(
       page.getByRole("heading", { name: "Label", exact: true }),
-    ).toBeVisible();
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: "Review component", exact: true }),
+    ).toHaveCount(0);
     const gallery = page.getByRole("region", { name: "SKU photo gallery" });
     await expect(gallery.locator("img").first()).toHaveAttribute(
       "src",
       new RegExp(assets[0].toString()),
     );
-    await page
-      .getByRole("button", { name: "View Cap image", exact: true })
-      .click();
-    await expect(gallery.locator("img").first()).toHaveAttribute(
-      "src",
-      new RegExp(assets[2].toString()),
-    );
-    await page
-      .getByRole("button", { name: "Main SKU image", exact: true })
-      .click();
+    await expect(gallery.locator("img")).toHaveCount(1);
+    await expect(gallery.getByRole("button")).toHaveCount(0);
     const analyse = page.getByRole("button", { name: "Analyse", exact: true });
     await analyse.click();
     await expect(
@@ -187,10 +182,9 @@ test("SKU sidebar, product gallery, all components and coming-soon dialog", asyn
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
-    await page
-      .getByRole("link", { name: "Review component", exact: true })
-      .first()
-      .click();
+    await page.goto(
+      `/dashboard/packaging/${importId}/${row.rowNumber}/analyse?component=component-1&view=component`,
+    );
     await expect(
       page.getByRole("heading", { name: "Supplier details", exact: true }),
     ).toBeVisible();
