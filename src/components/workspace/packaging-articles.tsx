@@ -84,13 +84,17 @@ export default function PackagingArticles({
   importId,
   rowNumber,
   componentId,
+  scope = "component",
+  articleHref,
 }: {
   componentName: string;
   onBack: () => void;
-  onContinue: () => void;
+  onContinue?: () => void;
   importId: string;
   rowNumber: number;
-  componentId: string;
+  componentId?: string;
+  scope?: "component" | "sku";
+  articleHref?: (number: number) => string;
 }) {
   const reduce = useReducedMotion();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -111,12 +115,15 @@ export default function PackagingArticles({
             Articles
           </h2>
           <p>
-            Explore the packaging articles before reviewing the Sustainability
-            Checklist for <strong>{componentName}</strong>.
+            {scope === "sku"
+              ? "Select an article to review the packaging requirements for "
+              : "Explore the packaging articles before reviewing the Sustainability Checklist for "}
+            <strong>{componentName}</strong>.
           </p>
         </div>
         <Button type="button" variant="outline" onClick={onBack}>
-          <ArrowLeft size={16} /> Packaging category
+          <ArrowLeft size={16} />{" "}
+          {scope === "sku" ? "SKU overview" : "Packaging category"}
         </Button>
       </header>
       <div className={styles.grid}>
@@ -133,51 +140,66 @@ export default function PackagingArticles({
               <span className={styles.topic}>{topic}</span>
               <h3>{title}</h3>
               <div className={styles.cardBottom}>
-                <span>ARTICLE <b>{String(number).padStart(2, "0")}</b></span>
+                <span>
+                  ARTICLE <b>{String(number).padStart(2, "0")}</b>
+                </span>
                 <span className={styles.line} aria-hidden="true" />
-                {number === 5 && <ArrowRight className={styles.openIcon} size={18} aria-hidden="true" />}
+                {(number === 5 || articleHref) && (
+                  <ArrowRight
+                    className={styles.openIcon}
+                    size={18}
+                    aria-hidden="true"
+                  />
+                )}
               </div>
             </>
           );
           return (
-          <motion.div
-            key={number}
-            style={{ "--article-accent": color } as CSSProperties}
-            initial={reduce ? false : { opacity: 0, y: 24, scale: 0.98 }}
-            whileInView={{ opacity: 1, y: 0, scale: 1 }}
-            viewport={{ once: true, amount: 0.15 }}
-            whileHover={reduce ? undefined : { y: -6 }}
-            transition={{
-              duration: reduce ? 0 : 0.4,
-              delay: reduce ? 0 : index * 0.045,
-            }}
-            className={styles.cardMotion}
-          >
-            {number === 5 ? (
-              <Link
-                className={`${styles.card} ${styles.clickable}`}
-                href={`/dashboard/packaging/${importId}/${rowNumber}/article-5?component=${encodeURIComponent(componentId)}`}
-                aria-label={`Open Article 5 assessment for ${componentName}`}
-              >
-                {content}
-              </Link>
-            ) : (
-              <article className={styles.card}>{content}</article>
-            )}
-          </motion.div>
-        );})}
+            <motion.div
+              key={number}
+              style={{ "--article-accent": color } as CSSProperties}
+              initial={reduce ? false : { opacity: 0, y: 24, scale: 0.98 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              viewport={{ once: true, amount: 0.15 }}
+              whileHover={reduce ? undefined : { y: -6 }}
+              transition={{
+                duration: reduce ? 0 : 0.4,
+                delay: reduce ? 0 : index * 0.045,
+              }}
+              className={styles.cardMotion}
+            >
+              {number === 5 || articleHref ? (
+                <Link
+                  className={`${styles.card} ${styles.clickable}`}
+                  href={
+                    articleHref
+                      ? articleHref(number)
+                      : `/dashboard/packaging/${importId}/${rowNumber}/article-5?component=${encodeURIComponent(componentId || "")}`
+                  }
+                  aria-label={`Open Article ${number} assessment for ${componentName}`}
+                >
+                  {content}
+                </Link>
+              ) : (
+                <article className={styles.card}>{content}</article>
+              )}
+            </motion.div>
+          );
+        })}
       </div>
-      <footer className={styles.footer}>
-        <div>
-          <strong>Ready to review your component?</strong>
-          <p>
-            Continue to the sustainability requirements and supporting proofs.
-          </p>
-        </div>
-        <Button type="button" onClick={onContinue}>
-          Sustainability Checklist <ArrowRight size={17} />
-        </Button>
-      </footer>
+      {scope === "component" && onContinue && (
+        <footer className={styles.footer}>
+          <div>
+            <strong>Ready to review your component?</strong>
+            <p>
+              Continue to the sustainability requirements and supporting proofs.
+            </p>
+          </div>
+          <Button type="button" onClick={onContinue}>
+            Sustainability Checklist <ArrowRight size={17} />
+          </Button>
+        </footer>
+      )}
     </section>
   );
 }

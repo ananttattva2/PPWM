@@ -18,6 +18,7 @@ import type { PackagingRow } from "@/lib/packaging-import-schema";
 import { supplierOwnsComponent } from "@/lib/supplier-access";
 import SkuAnalysisOverview from "@/components/workspace/sku-analysis";
 import SkuLevelAssessment from "@/components/workspace/sku-level-assessment";
+import SkuArticles from "@/components/workspace/sku-articles";
 import { initialComposition } from "@/lib/packaging-composition";
 export const metadata = { title: "Packaging analysis" };
 export default async function Page({
@@ -29,6 +30,7 @@ export default async function Page({
     component?: string | string[];
     section?: string | string[];
     view?: string | string[];
+    article?: string | string[];
   }>;
 }) {
   const { id, rowNumber } = await params;
@@ -78,7 +80,7 @@ export default async function Page({
   );
   if (!row) notFound();
   const analysis = packagingAnalysis(row);
-  const { component: componentId, section, view } = await searchParams;
+  const { component: componentId, section, view, article } = await searchParams;
   const selectedComponent =
     typeof componentId === "string"
       ? row.composition?.components.find(
@@ -96,11 +98,25 @@ export default async function Page({
     user.role !== "supplier" &&
     view === "sku-assessment"
   ) {
+    if (
+      article !== undefined &&
+      (typeof article !== "string" || !/^(5|6|7|8|9|10|11|12)$/.test(article))
+    )
+      notFound();
+    if (article !== "5")
+      return (
+        <SkuArticles
+          importId={id}
+          rowNumber={number}
+          productName={row.productName || "Product name pending"}
+          article={article ? Number(article) : undefined}
+        />
+      );
     return (
       <SkuLevelAssessment
         productName={row.productName || "Product name pending"}
         sku={row.sku || ""}
-        backHref={`/dashboard/packaging/${id}/${number}/analyse`}
+        backHref={`/dashboard/packaging/${id}/${number}/analyse?view=sku-assessment`}
       />
     );
   }

@@ -38,7 +38,7 @@ export default function SkuLevelAssessment({ productName, sku, backHref }: { pro
     <main className={styles.page}>
       <header className={styles.header}>
         <div><span>SKU ANALYSE · PACKAGING ASSESSMENT</span><h1>SKU-level assessment</h1><p>Review the complete packaging configuration for <strong>{productName}</strong>.</p></div>
-        <Link href={backHref}><ArrowLeft size={16} /> Back to SKU overview</Link>
+        <Link href={backHref}><ArrowLeft size={16} /> Back to Articles</Link>
       </header>
 
       <section className={styles.context} aria-label="SKU assessment context">

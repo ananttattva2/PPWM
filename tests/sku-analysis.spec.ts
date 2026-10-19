@@ -18,6 +18,7 @@ test("component Analyse restores classification while SKU analysis stays separat
 }) => {
   test.setTimeout(120000);
   page.setDefaultTimeout(15000);
+  await page.emulateMedia({ reducedMotion: "reduce" });
   const mongo = new MongoClient(process.env.MONGODB_URI!, {
     serverSelectionTimeoutMS: 10000,
   });
@@ -178,8 +179,51 @@ test("component Analyse restores classification while SKU analysis stays separat
     );
     await page.getByRole("link", { name: "Analyse", exact: true }).click();
     await expect(
+      page.getByRole("heading", { name: "Articles", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: /Open Article \d+ assessment/ }),
+    ).toHaveCount(8);
+    await page.screenshot({
+      path: "artifacts/sku-articles-desktop.png",
+      fullPage: true,
+    });
+    await page.getByRole("link", { name: /Open Article 6 assessment/ }).click();
+    await expect(
+      page.getByRole("heading", { name: "Article 6 assessment", exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("link", { name: "Back to Articles", exact: true })
+      .click();
+    await page.getByRole("link", { name: /Open Article 5 assessment/ }).click();
+    await expect(
       page.getByRole("heading", { name: "SKU-level assessment", exact: true }),
     ).toBeVisible();
+    await expect(
+      page.getByRole("tab", { name: /Scope & identity/ }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("tab", { name: /Material & construction/ }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("tab", { name: /Reuse & recycling interaction/ }),
+    ).toBeVisible();
+    await page
+      .getByRole("link", { name: "Back to Articles", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Articles", exact: true }),
+    ).toBeVisible();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({
+      path: "artifacts/sku-articles-mobile.png",
+      fullPage: true,
+    });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(
       `/dashboard/packaging/${importId}/${row.rowNumber}/analyse?component=component-1`,
