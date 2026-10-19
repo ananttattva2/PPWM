@@ -1,5 +1,7 @@
+import { readMedia } from "@/lib/cloudinary-storage";
+import { storeMedia } from "@/lib/cloudinary-storage";
 import { assertImportAccess } from "@/lib/client-access";
-import { ObjectId, Binary } from "mongodb";
+import { ObjectId } from "mongodb";
 import { db, getClient } from "@/lib/db";
 import { requireUser, apiError, checkOrigin } from "@/lib/access";
 import {
@@ -31,10 +33,7 @@ export async function GET(
       return Response.json({ error: "Import not found" }, { status: 404 });
     await assertImportAccess(user, record);
     if (new URL(req.url).searchParams.get("download") === "true") {
-      const bytes =
-        record.file.data instanceof Binary
-          ? record.file.data.buffer
-          : record.file.data;
+      const bytes = await readMedia(record.file);
       return new Response(new Uint8Array(bytes), {
         headers: {
           "Content-Type":
@@ -205,7 +204,7 @@ async function saveRow(
               createdBy: user.id,
               name: file.name.slice(0, 180),
               type: file.type,
-              data: new Binary(bytes),
+              ...(await storeMedia(bytes, file.name, file.type)),
               createdAt: new Date(),
               ...(record.expiresAt ? { expiresAt: record.expiresAt } : {}),
             },

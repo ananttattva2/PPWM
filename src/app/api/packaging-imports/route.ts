@@ -1,5 +1,6 @@
+import { storeMedia } from "@/lib/cloudinary-storage";
 import { groupComponentRows } from "@/lib/component-import";
-import { Binary, ObjectId } from "mongodb";
+import { ObjectId } from "mongodb";
 import { db } from "@/lib/db";
 import { requireUser, checkOrigin, apiError } from "@/lib/access";
 import {
@@ -96,7 +97,7 @@ export async function POST(req: Request) {
       uploadedBy: user.name,
     };
     const value = {
-      file: { ...metadata, data: new Binary(bytes) },
+      file: { ...metadata, ...(await storeMedia(bytes, file.name, file.type)) },
       headers: parsed.headers,
       rawRows: parsed.rawRows,
       mapping,

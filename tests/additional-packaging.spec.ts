@@ -1,3 +1,8 @@
+import { readFile } from "node:fs/promises";
+import {
+  cleanupCloudinaryTestFiles,
+  cleanupCloudinaryTestAvatar,
+} from "./cloudinary-test-cleanup";
 import { test, expect } from "@playwright/test";
 import { MongoClient, ObjectId } from "mongodb";
 import { createHash, randomUUID } from "node:crypto";
@@ -15,7 +20,7 @@ if (process.env.MONGODB_DNS_SERVERS)
 test("five additional packaging tabs persist details and evidence with isolated access", async ({
   page,
 }) => {
-  test.setTimeout(180000);
+  test.setTimeout(240000);
   page.setDefaultTimeout(15000);
   const mongo = new MongoClient(process.env.MONGODB_URI!, {
     serverSelectionTimeoutMS: 10000,
@@ -45,6 +50,7 @@ test("five additional packaging tabs persist details and evidence with isolated 
   const rowNumber = analysis.rows[0].rowNumber;
   const path = (kind: string) =>
     `/api/packaging-imports/${importId}/details/${kind}`;
+  let uploadedImportId: string | undefined;
   try {
     await db.collection("user").insertOne({
       _id: userId,
@@ -138,15 +144,12 @@ test("five additional packaging tabs persist details and evidence with isolated 
         await panel.getByLabel(/Total unit weight/).fill("13");
       const upload = panel.getByLabel("Upload photo", { exact: true });
       await upload.setInputFiles({
-        name: "packaging.png",
-        mimeType: "image/png",
-        buffer: Buffer.from(
-          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=",
-          "base64",
-        ),
+        name: "packaging.webp",
+        mimeType: "image/webp",
+        buffer: await readFile("public/images/materials/bottle-splash.webp"),
       });
       await expect(
-        panel.getByRole("link", { name: "packaging.png", exact: true }),
+        panel.getByRole("link", { name: "packaging.webp", exact: true }),
       ).toBeVisible();
       const saved = page.waitForResponse(
         (response) =>
@@ -162,11 +165,16 @@ test("five additional packaging tabs persist details and evidence with isolated 
         .findOne({ importId: importId.toString(), kind, rowNumber });
       expect(stored?.name).toBe(`${label} record`);
       expect(stored?.attachments.photo.id).toBeTruthy();
+      const uploadedFile = await db
+        .collection("packagingDetailFiles")
+        .findOne({ _id: new ObjectId(stored!.attachments.photo.id) });
+      expect(uploadedFile?.storage?.provider).toBe("cloudinary");
+      expect(uploadedFile?.data).toBeUndefined();
       const fileResponse = await page.request.get(
         `${path(kind)}/files?rowNumber=${rowNumber}&asset=${stored!.attachments.photo.id}`,
       );
       expect(fileResponse.status()).toBe(200);
-      expect(fileResponse.headers()["content-type"]).toBe("image/png");
+      expect(fileResponse.headers()["content-type"]).toBe("image/webp");
       const otherRow = await page.request.get(
         `${path(kind)}?rowNumber=${analysis.rows[1].rowNumber}`,
       );
@@ -185,7 +193,7 @@ test("five additional packaging tabs persist details and evidence with isolated 
         panel.getByLabel("Packaging name", { exact: true }),
       ).toHaveValue(`${label} record`);
       await expect(
-        panel.getByRole("link", { name: "packaging.png", exact: true }),
+        panel.getByRole("link", { name: "packaging.webp", exact: true }),
       ).toBeVisible();
     }
     await page.setViewportSize({ width: 390, height: 844 });
@@ -224,6 +232,128 @@ test("five additional packaging tabs persist details and evidence with isolated 
       await page.request.get(`${path("ecommerce")}?rowNumber=${rowNumber}`)
     ).json();
     const headers = { Origin: "http://localhost:3000" };
+    const genericUpload = await page.request.post("/api/uploads", {
+      headers,
+      multipart: {
+        importId: importId.toString(),
+        rowNumber: String(rowNumber),
+        slot: "integration-proof",
+        file: {
+          name: "evidence.csv",
+          mimeType: "text/csv",
+          buffer: Buffer.from("SKU,Weight\nTEST,10\n"),
+        },
+      },
+    });
+    expect(genericUpload.status(), await genericUpload.text()).toBe(200);
+    const genericFile = await genericUpload.json();
+    const genericStored = await db
+      .collection("mediaUploads")
+      .findOne({ _id: new ObjectId(genericFile.id) });
+    expect(genericStored?.storage?.provider).toBe("cloudinary");
+    expect(genericStored?.data).toBeUndefined();
+    const genericDownload = await page.request.get(
+      `/api/uploads?id=${genericFile.id}`,
+    );
+    expect(await genericDownload.text()).toBe("SKU,Weight\nTEST,10\n");
+    const avatarBytes = await readFile(
+      "public/images/materials/bottle-splash.webp",
+    );
+    const profileResponse = await page.request.patch("/api/profile", {
+      headers,
+      data: {
+        firstName: "Cloudinary",
+        lastName: "Test",
+        image: `data:image/webp;base64,${avatarBytes.toString("base64")}`,
+      },
+    });
+    expect(profileResponse.status()).toBe(200);
+    const profile = await db.collection("user").findOne({ _id: userId });
+    expect(profile?.imageStorage.provider).toBe("cloudinary");
+    expect((await page.request.get(profile!.image)).status()).toBe(200);
+    const photoBytes = await page.screenshot({ type: "png" });
+    const photoResponse = await page.request.post(
+      `/api/packaging-imports/${importId}/photos`,
+      {
+        headers,
+        multipart: {
+          rowNumber: String(rowNumber),
+          photos: {
+            name: "test-product.png",
+            mimeType: "image/png",
+            buffer: photoBytes,
+          },
+        },
+      },
+    );
+    expect(photoResponse.status(), await photoResponse.text()).toBe(200);
+    const photo = await db
+      .collection("packagingAssets")
+      .findOne({ importId: importId.toString() });
+    expect(photo?.storage.provider).toBe("cloudinary");
+    expect(photo?.data).toBeUndefined();
+    const photoDownloaded = await page.request.get(
+      `/api/packaging-imports/${importId}/assets/${photo!._id}`,
+    );
+    expect((await photoDownloaded.body()).equals(photoBytes)).toBe(true);
+    const csv = Buffer.from(
+      "SKU,Product Name,Category,Packaging Type,Material,Total Weight (g),Components\nCLOUD-001,Cloudinary Test,Beverages,Bottle,PET,20,1\n",
+    );
+    const importResponse = await page.request.post("/api/packaging-imports", {
+      headers,
+      multipart: {
+        file: {
+          name: "cloudinary-test.csv",
+          mimeType: "text/csv",
+          buffer: csv,
+        },
+        settings: JSON.stringify(settings),
+      },
+    });
+    expect(importResponse.status(), await importResponse.text()).toBe(200);
+    uploadedImportId = (await importResponse.json()).id;
+    const storedImport = await db
+      .collection("packagingImports")
+      .findOne({ _id: new ObjectId(uploadedImportId) });
+    expect(storedImport?.file.storage.provider).toBe("cloudinary");
+    expect(storedImport?.file.data).toBeUndefined();
+    expect(
+      await (
+        await page.request.get(
+          `/api/packaging-imports/${uploadedImportId}?download=true`,
+        )
+      ).text(),
+    ).toBe(csv.toString());
+    const componentId = analysis.rows[0].composition!.components[0].id;
+    await db
+      .collection("packagingClassifications")
+      .insertOne({
+        importId: importId.toString(),
+        rowNumber,
+        componentId,
+        family: "Plastic",
+      });
+    const proofBase = `/api/packaging-imports/${importId}/proofs?rowNumber=${rowNumber}&componentId=${componentId}`;
+    const proofResponse = await page.request.post(proofBase, {
+      headers,
+      multipart: {
+        requirementId: "heavy",
+        files: {
+          name: "lab-proof.pdf",
+          mimeType: "application/pdf",
+          buffer: Buffer.from("%PDF-1.4\nCloudinary test"),
+        },
+      },
+    });
+    expect(proofResponse.status(), await proofResponse.text()).toBe(200);
+    const proof = await db
+      .collection("sustainabilityProofs")
+      .findOne({ importId: importId.toString() });
+    expect(proof?.storage.provider).toBe("cloudinary");
+    expect(proof?.data).toBeUndefined();
+    expect(
+      (await page.request.get(`${proofBase}&file=${proof!._id}`)).status(),
+    ).toBe(200);
     expect(
       (
         await page.request.put(path("ecommerce"), {
@@ -253,7 +383,44 @@ test("five additional packaging tabs persist details and evidence with isolated 
         await page.request.put(path("ecommerce"), { headers, data: payload })
       ).status(),
     ).toBe(403);
+    expect(
+      (
+        await page.request.post("/api/uploads", {
+          headers,
+          multipart: {
+            importId: importId.toString(),
+            rowNumber: String(rowNumber),
+            slot: "blocked-proof",
+            file: {
+              name: "evidence.csv",
+              mimeType: "text/csv",
+              buffer: Buffer.from("SKU,Weight\nTEST,10\n"),
+            },
+          },
+        })
+      ).status(),
+    ).toBe(403);
   } finally {
+    await cleanupCloudinaryTestFiles(db, importId.toString());
+    await cleanupCloudinaryTestAvatar(db, userId);
+    if (uploadedImportId) {
+      await cleanupCloudinaryTestFiles(db, uploadedImportId);
+      await db
+        .collection("packagingImports")
+        .deleteOne({ _id: new ObjectId(uploadedImportId) });
+    }
+    await db
+      .collection("packagingAssets")
+      .deleteMany({ importId: importId.toString() });
+    await db
+      .collection("sustainabilityProofs")
+      .deleteMany({ importId: importId.toString() });
+    await db
+      .collection("packagingClassifications")
+      .deleteMany({ importId: importId.toString() });
+    await db
+      .collection("mediaUploads")
+      .deleteMany({ importId: importId.toString() });
     await db
       .collection("packagingDetailFiles")
       .deleteMany({ importId: importId.toString() });

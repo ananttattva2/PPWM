@@ -1,4 +1,6 @@
-import { Binary, ObjectId } from "mongodb";
+import { validMediaSignature } from "@/lib/media-types";
+import { storeMedia } from "@/lib/cloudinary-storage";
+import { ObjectId } from "mongodb";
 import { ZodError } from "zod";
 import { db } from "@/lib/db";
 import { apiError, checkOrigin, requireUser } from "@/lib/access";
@@ -51,6 +53,12 @@ export async function PATCH(
     const { id } = await params;
     if (!/^[a-f0-9]{24}$/i.test(id))
       return Response.json({ error: "Client not found" }, { status: 404 });
+    const authorizedClient = await db()
+      .collection("clients")
+      .findOne({ _id: new ObjectId(id) }, { projection: { createdBy: 1 } });
+    if (!authorizedClient)
+      return Response.json({ error: "Client not found" }, { status: 404 });
+    assertClientAccess(user, authorizedClient);
     if (Number(req.headers.get("content-length")) > 12 * 1024 * 1024)
       throw new Error("Upload too large");
     const form = await req.formData();
@@ -68,23 +76,18 @@ export async function PATCH(
         file.size > MAX_DOCUMENT_SIZE ||
         !documentTypes.includes(file.type)
       )
-        throw new Error("Use PDF, PNG or JPEG documents up to 2 MB each.");
+        throw new Error(
+          "Use supported image, video, PDF, Excel or document documents up to 2 MB each.",
+        );
       const bytes = Buffer.from(await file.arrayBuffer());
-      const valid =
-        file.type === "application/pdf"
-          ? bytes.subarray(0, 5).toString() === "%PDF-"
-          : file.type === "image/png"
-            ? bytes
-                .subarray(0, 8)
-                .equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
-            : bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
+      const valid = validMediaSignature(file.type, bytes);
       if (!valid)
         throw new Error("A document does not match its declared file type.");
       documents.push({
         name: file.name.replace(/[\r\n/\\]/g, "_").slice(0, 180),
         type: file.type,
         size: file.size,
-        data: new Binary(bytes),
+        ...(await storeMedia(bytes, file.name, file.type)),
         uploadedAt: new Date(),
         uploadedBy: user.id,
       });

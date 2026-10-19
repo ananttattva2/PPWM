@@ -1,4 +1,5 @@
 "use client";
+import { mediaAccept } from "@/lib/media-types";
 import { useRef, useState } from "react";
 import { ArrowUp, FileText, ImagePlus, LoaderCircle } from "lucide-react";
 
@@ -19,7 +20,7 @@ export default function ProofUploadChoices({
         ref={input}
         type="file"
         multiple
-        accept="image/png,image/jpeg,image/webp,application/pdf"
+        accept={mediaAccept}
         hidden
         disabled={busy}
         aria-label={`Upload proofs for ${title}`}
@@ -43,7 +44,7 @@ export default function ProofUploadChoices({
               <h3>
                 Upload <em>Files</em>
               </h3>
-              <p>Upload images or PDF documents</p>
+              <p>Upload images, videos, PDF or Excel documents</p>
             </div>
             <span className="proof-size-badge">
               <FileText size={18} />
@@ -101,7 +102,7 @@ export default function ProofUploadChoices({
                 ? "Uploading your files…"
                 : dragging === theme
                   ? "Drop your files here"
-                  : "Drag & drop images or PDFs here"}
+                  : "Drag & drop files here"}
             </h4>
             <p className="proof-choice-browse">
               or{" "}
@@ -114,7 +115,7 @@ export default function ProofUploadChoices({
               </button>
             </p>
             <p className="proof-choice-help">
-              You can upload multiple files (JPG, JPEG, PNG, WebP, PDF)
+              Upload images, videos, PDF, Excel, Word or text files
             </p>
           </div>
           <footer className="proof-type-badges">

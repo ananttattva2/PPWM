@@ -1,3 +1,4 @@
+import { mediaTypes } from "./media-types";
 import { z } from "zod";
 
 export const additionalKinds = [
@@ -230,7 +231,7 @@ export const packagingDetails: Record<
 const attachment = z.object({
   id: z.string().regex(/^[a-f0-9]{24}$/),
   name: z.string().max(180),
-  type: z.enum(["application/pdf", "image/png", "image/jpeg", "image/webp"]),
+  type: z.enum(mediaTypes),
 });
 export const additionalPackagingSchema = z
   .object({

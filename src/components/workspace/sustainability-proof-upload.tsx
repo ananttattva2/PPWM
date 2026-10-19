@@ -1,4 +1,5 @@
 "use client";
+import { mediaTypes } from "@/lib/media-types";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Download, Eye, FileText, ImageIcon, Plus, X } from "lucide-react";
@@ -71,15 +72,10 @@ export default function SustainabilityProofUpload({
         (file) =>
           !file.size ||
           file.size > PROOF_MAX_SIZE ||
-          ![
-            "image/png",
-            "image/jpeg",
-            "image/webp",
-            "application/pdf",
-          ].includes(file.type),
+          !(mediaTypes as readonly string[]).includes(file.type),
       )
     ) {
-      setError("Choose up to 6 PNG, JPEG, WebP or PDF files, 10 MB each.");
+      setError("Choose up to 6 supported files, 10 MB each.");
       return;
     }
     setBusy(true);
@@ -189,7 +185,7 @@ export default function SustainabilityProofUpload({
                 </div>
                 {proofs.length === 0 ? (
                   <p className="proof-library-empty">
-                    No proofs yet. Upload an image or PDF to get started.
+                    No proofs yet. Upload a supported file to get started.
                   </p>
                 ) : (
                   <div className="proof-library-layout">
@@ -207,7 +203,7 @@ export default function SustainabilityProofUpload({
                             aria-pressed={selected?.id === proof.id}
                             onClick={() => setSelected(proof)}
                           >
-                            {proof.type === "application/pdf" ? (
+                            {!proof.type.startsWith("image/") ? (
                               <FileText size={21} />
                             ) : (
                               <ImageIcon size={21} />
@@ -215,9 +211,11 @@ export default function SustainabilityProofUpload({
                             <span>
                               <strong>{proof.name}</strong>
                               <small>
-                                {proof.type === "application/pdf"
-                                  ? "PDF document"
-                                  : "Image"}{" "}
+                                {proof.type.startsWith("image/")
+                                  ? "Image"
+                                  : proof.type.startsWith("video/")
+                                    ? "Video"
+                                    : "Document"}{" "}
                                 · {Math.ceil(proof.size / 1024)} KB
                               </small>
                             </span>
@@ -256,12 +254,28 @@ export default function SustainabilityProofUpload({
                                 </a>
                               </p>
                             </object>
-                          ) : (
+                          ) : selected.type.startsWith("video/") ? (
+                            <video
+                              key={selected.id}
+                              src={fileUrl(selected, true)}
+                              controls
+                              preload="metadata"
+                              style={{ maxWidth: "100%" }}
+                            />
+                          ) : selected.type.startsWith("image/") ? (
                             <img
                               key={selected.id}
                               src={fileUrl(selected, true)}
                               alt={selected.name}
                             />
+                          ) : (
+                            <p>
+                              <FileText size={28} />
+                              <br />
+                              {selected.name}
+                              <br />
+                              <a href={fileUrl(selected)}>Download document</a>
+                            </p>
                           )}
                           <a
                             className="proof-open-original"

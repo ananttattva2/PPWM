@@ -1,4 +1,5 @@
 "use client";
+import { mediaTypes, mediaAccept } from "@/lib/media-types";
 
 import { useEffect, useState, type ReactNode } from "react";
 import {
@@ -211,13 +212,11 @@ export default function AdditionalPackaging({
     if (
       !file.size ||
       file.size > 2 * 1024 * 1024 ||
-      !["application/pdf", "image/png", "image/jpeg", "image/webp"].includes(
-        file.type,
-      ) ||
+      !(mediaTypes as readonly string[]).includes(file.type) ||
       (slot === "photo" && !file.type.startsWith("image/"))
     ) {
       setError(
-        "Choose an image or PDF up to 2 MB. Product photos must be images.",
+        "Choose a supported file up to 2 MB. Product photos must be images.",
       );
       return;
     }
@@ -286,9 +285,7 @@ export default function AdditionalPackaging({
             type="file"
             disabled={locked}
             accept={
-              slot === "photo"
-                ? "image/png,image/jpeg,image/webp"
-                : "application/pdf,image/png,image/jpeg,image/webp"
+              slot === "photo" ? "image/png,image/jpeg,image/webp" : mediaAccept
             }
             onChange={(event) => {
               const file = event.target.files?.[0];

@@ -1,4 +1,7 @@
-import { Binary, ObjectId } from "mongodb";
+import { mediaTypes } from "@/lib/media-types";
+import { readMedia } from "@/lib/cloudinary-storage";
+import { storeMedia } from "@/lib/cloudinary-storage";
+import { ObjectId } from "mongodb";
 import { db } from "@/lib/db";
 import { apiError, checkOrigin } from "@/lib/access";
 import { detailAccess } from "@/lib/additional-packaging-access";
@@ -28,9 +31,7 @@ export async function POST(req: Request, { params }: Context) {
       !(file instanceof File) ||
       !file.size ||
       file.size > 2 * 1024 * 1024 ||
-      !["application/pdf", "image/png", "image/jpeg", "image/webp"].includes(
-        file.type,
-      ) ||
+      !(mediaTypes as readonly string[]).includes(file.type) ||
       (slot === "photo" && !file.type.startsWith("image/"))
     )
       return Response.json(
@@ -58,7 +59,7 @@ export async function POST(req: Request, { params }: Context) {
         slot,
         name,
         type: file.type,
-        data: new Binary(bytes),
+        ...(await storeMedia(bytes, file.name, file.type)),
         createdAt: new Date(),
         createdBy: access.user.id,
       });
@@ -81,19 +82,14 @@ export async function GET(req: Request, { params }: Context) {
       .collection("packagingDetailFiles")
       .findOne({ _id: new ObjectId(assetId), importId: id, kind, rowNumber });
     if (!file) return new Response(null, { status: 404 });
-    return new Response(
-      new Uint8Array(
-        file.data instanceof Binary ? file.data.buffer : file.data,
-      ),
-      {
-        headers: {
-          "Content-Type": file.type,
-          "Cache-Control": "private, no-store",
-          "X-Content-Type-Options": "nosniff",
-          "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(file.name)}`,
-        },
+    return new Response(await readMedia(file), {
+      headers: {
+        "Content-Type": file.type,
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
+        "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(file.name)}`,
       },
-    );
+    });
   } catch (error) {
     return apiError(error);
   }

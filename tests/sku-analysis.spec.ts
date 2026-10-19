@@ -131,6 +131,9 @@ test("component Analyse restores classification while SKU analysis stays separat
       .locator('a[href*="analyse?component=component-1"]')
       .first()
       .click();
+    await expect(page).toHaveURL(/\/analyse\?component=component-1/, {
+      timeout: 15000,
+    });
     await expect(
       page.getByRole("heading", { name: "Bottle", exact: true }),
     ).toBeVisible();

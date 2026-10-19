@@ -1,5 +1,6 @@
+import { storeMedia, type CloudinaryStorage } from "@/lib/cloudinary-storage";
 import { assertImportAccess } from "@/lib/client-access";
-import { Binary, ObjectId } from "mongodb";
+import { ObjectId } from "mongodb";
 import { db, getClient } from "@/lib/db";
 import { apiError, checkOrigin, requireUser } from "@/lib/access";
 import { hydrateImportSuppliers } from "@/lib/hydrate-import-suppliers";
@@ -44,7 +45,11 @@ export async function POST(
       files.length > 6
     )
       throw new Error("Choose 1–6 photos for this SKU.");
-    const uploads: { name: string; type: string; data: Binary }[] = [];
+    const uploads: {
+      name: string;
+      type: string;
+      storage: CloudinaryStorage;
+    }[] = [];
     for (const file of files) {
       if (
         !(file instanceof File) ||
@@ -65,7 +70,7 @@ export async function POST(
       uploads.push({
         name: file.name.slice(0, 180),
         type: file.type,
-        data: new Binary(bytes),
+        ...(await storeMedia(bytes, file.name, file.type)),
       });
     }
     const database = db();

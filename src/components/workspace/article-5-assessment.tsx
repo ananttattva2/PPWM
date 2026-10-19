@@ -1,4 +1,6 @@
 "use client";
+import { persistAssessmentFile } from "@/lib/upload-media-client";
+import { mediaAccept } from "@/lib/media-types";
 
 import { useId, useRef, useState } from "react";
 import Link from "next/link";
@@ -456,13 +458,22 @@ function EvidenceProof({
             type="file"
             required
             aria-label={`Supporting evidence for question ${questionId}`}
-            accept=".pdf,.doc,.docx,.xls,.xlsx,image/png,image/jpeg"
-            onChange={(event) => {
+            accept={mediaAccept}
+            onChange={async (event) => {
               const selected = event.target.files?.[0];
               if (!selected) return;
               if (selected.size > 10 * 1024 * 1024) {
                 setError("Choose a document up to 10 MB.");
                 event.target.value = "";
+                return;
+              }
+              try {
+                await persistAssessmentFile(
+                  selected,
+                  event.currentTarget.closest("article")?.querySelector("h3")
+                    ?.textContent || "assessment evidence",
+                );
+              } catch {
                 return;
               }
               setError("");
@@ -841,8 +852,8 @@ export default function Article5Assessment({
                             <input
                               type="file"
                               required
-                              accept=".pdf,.doc,.docx,.xls,.xlsx,image/png,image/jpeg"
-                              onChange={(event) => {
+                              accept={mediaAccept}
+                              onChange={async (event) => {
                                 const file = event.target.files?.[0];
                                 if (!file) return;
                                 if (file.size > 10 * 1024 * 1024) {
@@ -852,6 +863,17 @@ export default function Article5Assessment({
                                       "Choose a document up to 10 MB.",
                                   }));
                                   event.target.value = "";
+                                  return;
+                                }
+                                try {
+                                  await persistAssessmentFile(
+                                    file,
+                                    event.currentTarget
+                                      .closest("article")
+                                      ?.querySelector("h3")?.textContent ||
+                                      "assessment evidence",
+                                  );
+                                } catch {
                                   return;
                                 }
                                 setEvidence((current) => ({
@@ -998,8 +1020,8 @@ export default function Article5Assessment({
                         <input
                           type="file"
                           required
-                          accept=".pdf,.doc,.docx,.xls,.xlsx,image/png,image/jpeg"
-                          onChange={(event) => {
+                          accept={mediaAccept}
+                          onChange={async (event) => {
                             const file = event.target.files?.[0];
                             if (!file) return;
                             if (file.size > 10 * 1024 * 1024) {
@@ -1007,6 +1029,17 @@ export default function Article5Assessment({
                                 "Choose a document up to 10 MB.",
                               );
                               event.target.value = "";
+                              return;
+                            }
+                            try {
+                              await persistAssessmentFile(
+                                file,
+                                event.currentTarget
+                                  .closest("article")
+                                  ?.querySelector("h3")?.textContent ||
+                                  "assessment evidence",
+                              );
+                            } catch {
                               return;
                             }
                             setMaterialEvidence(file);

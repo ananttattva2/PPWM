@@ -1,3 +1,4 @@
+import { mediaTypes } from "./media-types";
 import { z } from "zod";
 export const organisationRoles = [
   "Producer",
@@ -142,4 +143,4 @@ export const clientSchema = companySchema.extend({
 });
 export const MAX_DOCUMENT_SIZE = 2 * 1024 * 1024;
 export const MAX_DOCUMENTS = 5;
-export const documentTypes = ["application/pdf", "image/png", "image/jpeg"];
+export const documentTypes: readonly string[] = mediaTypes;

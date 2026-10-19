@@ -1,4 +1,5 @@
-import { ObjectId, Binary } from "mongodb";
+import { readMedia } from "@/lib/cloudinary-storage";
+import { ObjectId } from "mongodb";
 import { db } from "@/lib/db";
 import { apiError, requireUser } from "@/lib/access";
 import { assertClientAccess } from "@/lib/client-access";
@@ -22,8 +23,7 @@ export async function GET(
     const document = client?.documents?.[Number(index)];
     if (!document)
       return Response.json({ error: "Document not found" }, { status: 404 });
-    const bytes =
-      document.data instanceof Binary ? document.data.buffer : document.data;
+    const bytes = await readMedia(document);
     return new Response(new Uint8Array(bytes), {
       headers: {
         "Content-Type": document.type,

@@ -1,4 +1,6 @@
-import { Binary, ObjectId } from "mongodb";
+import { validMediaSignature } from "@/lib/media-types";
+import { storeMedia, type CloudinaryStorage } from "@/lib/cloudinary-storage";
+import { ObjectId } from "mongodb";
 import { ZodError } from "zod";
 import { db, getClient } from "@/lib/db";
 import { apiError, checkOrigin, requireUser } from "@/lib/access";
@@ -26,15 +28,6 @@ export async function GET() {
   } catch (e) {
     return apiError(e);
   }
-}
-function validSignature(bytes: Buffer, type: string) {
-  if (type === "application/pdf")
-    return bytes.subarray(0, 5).toString() === "%PDF-";
-  if (type === "image/png")
-    return bytes
-      .subarray(0, 8)
-      .equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
-  return bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
 }
 export async function POST(req: Request) {
   try {
@@ -86,7 +79,7 @@ export async function POST(req: Request) {
       name: string;
       type: string;
       size: number;
-      data: Binary;
+      storage: CloudinaryStorage;
       uploadedAt: Date;
       uploadedBy: string;
     }[] = [];
@@ -99,12 +92,13 @@ export async function POST(req: Request) {
       )
         return Response.json(
           {
-            error: "Documents must be PDF, PNG or JPEG files, up to 2 MB each.",
+            error:
+              "Documents must be supported image, video, PDF, Excel or document files, up to 2 MB each.",
           },
           { status: 400 },
         );
       const bytes = Buffer.from(await file.arrayBuffer());
-      if (!validSignature(bytes, file.type))
+      if (!validMediaSignature(file.type, bytes))
         return Response.json(
           { error: "A document does not match its declared file type." },
           { status: 400 },
@@ -113,7 +107,7 @@ export async function POST(req: Request) {
         name: file.name.replace(/[\r\n/\\]/g, "_").slice(0, 180),
         type: file.type,
         size: file.size,
-        data: new Binary(bytes),
+        ...(await storeMedia(bytes, file.name, file.type)),
         uploadedAt: new Date(),
         uploadedBy: user.id,
       });

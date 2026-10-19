@@ -1,5 +1,7 @@
+import { readMedia } from "@/lib/cloudinary-storage";
+import { storeMedia, type CloudinaryStorage } from "@/lib/cloudinary-storage";
 import { assertImportAccess } from "@/lib/client-access";
-import { Binary, ObjectId } from "mongodb";
+import { ObjectId } from "mongodb";
 import { db, getClient } from "@/lib/db";
 import { apiError, checkOrigin, requireUser } from "@/lib/access";
 import {
@@ -73,7 +75,7 @@ export async function GET(req: Request, context: Context) {
         _id: new ObjectId(fileId),
       });
       if (!proof) return new Response(null, { status: 404 });
-      return new Response(new Uint8Array((proof.data as Binary).buffer), {
+      return new Response(await readMedia(proof), {
         headers: {
           "Content-Type": proof.type,
           "Content-Disposition": `${new URL(req.url).searchParams.get("preview") === "1" ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(proof.name)}`,
@@ -144,7 +146,7 @@ export async function POST(req: Request, context: Context) {
       name: string;
       type: string;
       size: number;
-      data: Binary;
+      storage: CloudinaryStorage;
       createdBy: string;
       createdAt: Date;
       expiresAt?: Date;
@@ -168,7 +170,7 @@ export async function POST(req: Request, context: Context) {
         name: file.name.slice(0, 180),
         type: file.type,
         size: file.size,
-        data: new Binary(bytes),
+        ...(await storeMedia(bytes, file.name, file.type)),
         createdBy: user.id,
         createdAt: new Date(),
         ...(record.expiresAt ? { expiresAt: record.expiresAt } : {}),

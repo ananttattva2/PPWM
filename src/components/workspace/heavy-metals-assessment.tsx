@@ -1,4 +1,6 @@
 "use client";
+import { persistAssessmentFile } from "@/lib/upload-media-client";
+import { mediaAccept } from "@/lib/media-types";
 
 import { useState } from "react";
 import {
@@ -208,8 +210,8 @@ export default function HeavyMetalsAssessment({
                       type="file"
                       required
                       aria-label={`Heavy metal proof ${number}`}
-                      accept=".pdf,.doc,.docx,.xls,.xlsx,image/png,image/jpeg"
-                      onChange={(event) => {
+                      accept={mediaAccept}
+                      onChange={async (event) => {
                         const file = event.target.files?.[0];
                         if (!file) return;
                         if (file.size > 10 * 1024 * 1024) {
@@ -218,6 +220,17 @@ export default function HeavyMetalsAssessment({
                             [number]: "Choose a document up to 10 MB.",
                           }));
                           event.target.value = "";
+                          return;
+                        }
+                        try {
+                          await persistAssessmentFile(
+                            file,
+                            event.currentTarget
+                              .closest("article")
+                              ?.querySelector("h3")?.textContent ||
+                              "assessment evidence",
+                          );
+                        } catch {
                           return;
                         }
                         setProofs((current) => ({
@@ -417,7 +430,9 @@ export default function HeavyMetalsAssessment({
           (!basis.trim() || (method === "combined" && !totalBasis.trim())) && (
             <p className={styles.guidance}>
               Documentation incomplete: record the sample basis
-              {method === "combined" ? " and laboratory reporting basis" : ""}{" "}
+              {method === "combined"
+                ? " and laboratory reporting basis"
+                : ""}{" "}
               before completing the review.
             </p>
           )}

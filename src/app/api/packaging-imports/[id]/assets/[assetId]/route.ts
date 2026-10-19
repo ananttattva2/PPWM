@@ -1,5 +1,6 @@
+import { readMedia } from "@/lib/cloudinary-storage";
 import { assertImportAccess } from "@/lib/client-access";
-import { ObjectId, Binary } from "mongodb";
+import { ObjectId } from "mongodb";
 import { db } from "@/lib/db";
 import { requireUser, apiError } from "@/lib/access";
 import { hydrateImportSuppliers } from "@/lib/hydrate-import-suppliers";
@@ -43,18 +44,13 @@ export async function GET(
       .collection("packagingAssets")
       .findOne({ _id: new ObjectId(assetId), importId: id });
     if (!asset) return new Response(null, { status: 404 });
-    return new Response(
-      new Uint8Array(
-        asset.data instanceof Binary ? asset.data.buffer : asset.data,
-      ),
-      {
-        headers: {
-          "Content-Type": asset.type,
-          "Cache-Control": "private, no-store",
-          "X-Content-Type-Options": "nosniff",
-        },
+    return new Response(await readMedia(asset), {
+      headers: {
+        "Content-Type": asset.type,
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
       },
-    );
+    });
   } catch (error) {
     return apiError(error);
   }

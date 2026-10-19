@@ -1,4 +1,5 @@
 "use client";
+import { mediaAccept } from "@/lib/media-types";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { clearPackagingWorkspaceLocation } from "@/lib/packaging-navigation";
@@ -220,7 +221,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
     );
     if (invalid) {
       toast.error(
-        `${invalid.name}: choose a PDF, PNG or JPEG file, up to 2 MB.`,
+        `${invalid.name}: choose a supported image, video, PDF, Excel or document file, up to 2 MB.`,
       );
       return;
     }
@@ -1009,7 +1010,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                       <UploadCloud size={30} />
                       <b>Drag your documents here</b>
                       <p>
-                        PDF, PNG or JPEG · Up to 2 MB each · Maximum 5 files
+                        Images, videos, PDF, Excel and documents · Up to 2 MB each · Maximum 5 files
                       </p>
                       <Button
                         type="button"
@@ -1022,7 +1023,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                         ref={fileInput}
                         type="file"
                         aria-label="Supporting documents"
-                        accept="application/pdf,image/png,image/jpeg"
+                        accept={mediaAccept}
                         multiple
                         className="sr-only"
                         onChange={(e) => {
