@@ -178,7 +178,22 @@ test("saved component progress, mandatory sections and company packaging permiss
       fullPage: true,
     });
     console.info("Verified progress restoration and required section gates");
-    await page.goto("/dashboard/companies", { waitUntil: "domcontentloaded" });
+    await page.goto("/dashboard/users", { waitUntil: "domcontentloaded" });
+    await expect(
+      page.getByRole("columnheader", { name: "Packaging access", exact: true }),
+    ).toHaveCount(0);
+    await page.getByRole("button", { name: /Add team member/ }).click();
+    await expect(
+      page.getByRole("combobox", { name: /Packaging access/ }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("textbox", { name: "First name", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByLabel("Initial password", { exact: false }),
+    ).toBeVisible();
+
+    await page.goto("/dashboard/companies");
     console.info("Company management opened");
     await page
       .getByRole("textbox", { name: "Company name", exact: true })

@@ -85,6 +85,7 @@ export default function UserManagement({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          packagingScopes: companyId ? form.packagingScopes : undefined,
           ...(companyId
             ? {
                 companyId,
@@ -206,15 +207,17 @@ export default function UserManagement({
               value={form.role}
               onChange={(v) => setForm({ ...form, role: v || "user" })}
             />
-            <MultiSelect
-              label="Packaging access"
-              required
-              data={packagingScopeOptions}
-              value={form.packagingScopes}
-              onChange={(packagingScopes) =>
-                setForm({ ...form, packagingScopes })
-              }
-            />
+            {companyId && (
+              <MultiSelect
+                label="Packaging access"
+                required
+                data={packagingScopeOptions}
+                value={form.packagingScopes}
+                onChange={(packagingScopes) =>
+                  setForm({ ...form, packagingScopes })
+                }
+              />
+            )}
             <Switch
               label="Active account"
               color="orange"
@@ -264,7 +267,7 @@ export default function UserManagement({
                   <th>Team member</th>
                   <th>Email</th>
                   <th>Role</th>
-                  <th>Packaging access</th>
+                  {companyId && <th>Packaging access</th>}
                   <th>Account status</th>
                 </tr>
               </thead>
@@ -304,18 +307,20 @@ export default function UserManagement({
                             </span>
                           )}
                         </td>
-                        <td>
-                          <MultiSelect
-                            aria-label={`Packaging access for ${u.name}`}
-                            data={packagingScopeOptions}
-                            value={u.packagingScopes || [...packagingScopes]}
-                            disabled={!editable || busy}
-                            onChange={(values) => {
-                              if (values.length)
-                                void update(u, { packagingScopes: values });
-                            }}
-                          />
-                        </td>
+                        {companyId && (
+                          <td>
+                            <MultiSelect
+                              aria-label={`Packaging access for ${u.name}`}
+                              data={packagingScopeOptions}
+                              value={u.packagingScopes || [...packagingScopes]}
+                              disabled={!editable || busy}
+                              onChange={(values) => {
+                                if (values.length)
+                                  void update(u, { packagingScopes: values });
+                              }}
+                            />
+                          </td>
+                        )}
                         <td>
                           <Switch
                             aria-label={`Active status for ${u.name}`}
