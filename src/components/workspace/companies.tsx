@@ -4,6 +4,7 @@ import { TextInput, Select } from "../ui/floating-fields";
 import { Button } from "../ui/button";
 import PackagingAccess from "./packaging-access";
 import { packagingScopes } from "@/lib/packaging-scopes";
+import styles from "./companies.module.css";
 import UserManagement from "./users";
 type Company = {
   id: string;
@@ -18,55 +19,98 @@ export default function CompanyManagement({
   role: string;
   actorId: string;
 }) {
-  const [defaultScopes, setDefaultScopes] = useState<string[]>([
-    ...packagingScopes,
-  ]);
-  const [companies, setCompanies] = useState<Company[]>([]),
-    [selected, setSelected] = useState("");
-  const [name, setName] = useState(""),
-    [email, setEmail] = useState(""),
-    [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
-  async function load() {
-    try {
-      const r = await fetch("/api/companies");
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error);
-      setCompanies(data);
-    } catch (e) {
-      setError((e as Error).message);
-    }
-  }
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selected, setSelected] = useState("");
+  const [email, setEmail] = useState("");
+  const [accountRole, setAccountRole] = useState("user");
+  const [scopes, setScopes] = useState<string[]>([...packagingScopes]);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [revision, setRevision] = useState(0);
   useEffect(() => {
-    void load();
+    let active = true;
+    fetch("/api/companies")
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok)
+          throw new Error(data.error || "Unable to load companies");
+        if (active) setCompanies(data);
+      })
+      .catch((error) => {
+        if (active) setError((error as Error).message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
-  async function create(e: React.FormEvent) {
-    e.preventDefault();
-    if (!defaultScopes.length) {
+  function chooseCompany(value: string | null) {
+    const id = value || "";
+    setSelected(id);
+    setError("");
+    setSuccess("");
+    setEmail("");
+    setAccountRole("user");
+    setScopes(
+      companies.find((company) => company.id === id)?.packagingScopes || [
+        ...packagingScopes,
+      ],
+    );
+  }
+  async function createUser(event: React.FormEvent) {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
+    if (!selected) {
+      setError("Select a company first.");
+      return;
+    }
+    if (!scopes.length) {
       setError("Select at least one packaging type.");
       return;
     }
     setBusy(true);
-    setError("");
     try {
-      const r = await fetch("/api/companies", {
+      const response = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, packagingScopes: defaultScopes }),
+        body: JSON.stringify({
+          companyId: selected,
+          firstName: email.split("@")[0],
+          lastName: "Member",
+          email,
+          role: accountRole,
+          active: true,
+          packagingScopes: scopes,
+        }),
       });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error);
-      await load();
-      setSelected(data.id);
-      setName("");
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to create user");
+      setSuccess(`Access assigned to ${email}.`);
       setEmail("");
-      setDefaultScopes([...packagingScopes]);
-    } catch (e) {
-      setError((e as Error).message);
+      setRevision((value) => value + 1);
+    } catch (error) {
+      setError((error as Error).message);
     } finally {
       setBusy(false);
     }
   }
+  const roles = [
+    { value: "user", label: "User" },
+    { value: "supplier", label: "Supplier" },
+    { value: "manager", label: "Manager" },
+    { value: "compliance", label: "Compliance" },
+    ...(role === "super_admin"
+      ? [
+          { value: "admin", label: "Admin" },
+          { value: "super_admin", label: "Super admin" },
+        ]
+      : []),
+  ];
   return (
     <>
       <div className="page-heading">
@@ -74,7 +118,7 @@ export default function CompanyManagement({
           <span className="eyebrow">COMPANIES & ACCESS</span>
           <h1>Company management</h1>
           <p>
-            Create a company, then add its users and select their packaging
+            Select a company, enter the user’s email and choose their packaging
             access.
           </p>
         </div>
@@ -84,61 +128,75 @@ export default function CompanyManagement({
           {error}
         </p>
       )}
-      <form className="panel user-form" onSubmit={create}>
-        <h3>Create company</h3>
-        <div className="form-grid">
-          <TextInput
-            label="Company name"
+      {success && (
+        <p role="status" className="permission-note">
+          {success}
+        </p>
+      )}
+      <form
+        className="panel user-form"
+        onSubmit={createUser}
+        aria-label="Company access"
+      >
+        <div className={`form-grid ${styles.fields}`}>
+          <Select
+            label="Manage company"
+            placeholder={loading ? "Loading companies…" : "Select a company"}
+            searchable
             required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            disabled={loading || busy}
+            data={companies.map((company) => ({
+              value: company.id,
+              label: `${company.name} · ${company.email}`,
+            }))}
+            value={selected}
+            onChange={chooseCompany}
           />
           <TextInput
-            label="Company email"
+            label="User email"
             type="email"
             required
+            disabled={busy}
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+          <Select
+            label="Role"
+            data={roles}
+            value={accountRole}
+            disabled={busy}
+            onChange={(value) => setAccountRole(value || "user")}
           />
         </div>
-        <PackagingAccess
-          value={defaultScopes}
-          onChange={setDefaultScopes}
-          disabled={busy}
-        />
-        <p>
-          These selections are the default access for new company users. You can
-          change them for each user below.
-        </p>
+        <div className={styles.access}>
+          <PackagingAccess
+            value={scopes}
+            onChange={setScopes}
+            disabled={busy}
+          />
+        </div>
         <div className="form-actions">
-          <Button type="submit" disabled={busy}>
-            {busy ? "Creating…" : "Create company"}
+          <Button type="submit" disabled={!selected || busy}>
+            {busy ? "Creating…" : "Create user"}
           </Button>
         </div>
+        {!loading && !companies.length && (
+          <p>
+            No companies available. Add a company through Client onboarding
+            first.
+          </p>
+        )}
       </form>
-      <section className="panel user-form">
-        <Select
-          label="Manage company"
-          placeholder="Select a company"
-          data={companies.map((c) => ({
-            value: c.id,
-            label: `${c.name} · ${c.email}`,
-          }))}
-          value={selected}
-          onChange={(v) => setSelected(v || "")}
-        />
-      </section>
       {selected && (
-        <UserManagement
-          key={selected}
-          role={role}
-          actorId={actorId}
-          companyId={selected}
-          initialPackagingScopes={
-            companies.find((company) => company.id === selected)
-              ?.packagingScopes
-          }
-        />
+        <section className={styles.team} aria-label="Company users">
+          <UserManagement
+            key={`${selected}-${revision}`}
+            role={role}
+            actorId={actorId}
+            companyId={selected}
+            allowCreate={false}
+          />
+        </section>
       )}
     </>
   );

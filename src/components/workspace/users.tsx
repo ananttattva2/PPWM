@@ -34,11 +34,13 @@ export default function UserManagement({
   actorId,
   companyId,
   initialPackagingScopes,
+  allowCreate = true,
 }: {
   role: string;
   actorId: string;
   companyId?: string;
   initialPackagingScopes?: string[];
+  allowCreate?: boolean;
 }) {
   const [users, setUsers] = useState<User[]>([]);
   const companyInitial = {
@@ -46,7 +48,7 @@ export default function UserManagement({
     packagingScopes: initialPackagingScopes || initial.packagingScopes,
   };
   const [form, setForm] = useState(companyInitial);
-  const [show, setShow] = useState(Boolean(companyId));
+  const [show, setShow] = useState(Boolean(companyId) && allowCreate);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [search, setSearch] = useState("");
@@ -143,31 +145,39 @@ export default function UserManagement({
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">PEOPLE WITH PURPOSE</span>
-          <h1>{companyId ? "Company users" : "User management"}</h1>
-          <p>The right people. The right access. A better-connected team.</p>
+          {!companyId && <span className="eyebrow">PEOPLE WITH PURPOSE</span>}
+          {companyId ? <h2>Company users</h2> : <h1>User management</h1>}
+          <p>
+            {companyId
+              ? "Manage the selected company’s users, roles and packaging access."
+              : "The right people. The right access. A better-connected team."}
+          </p>
         </div>
-        <Button onClick={() => setShow(!show)}>
-          <Plus size={17} />{" "}
-          {companyId
-            ? show
-              ? "Hide user form"
-              : "Add company user"
-            : "Add team member"}
-        </Button>
+        {allowCreate && (
+          <Button onClick={() => setShow(!show)}>
+            <Plus size={17} />{" "}
+            {companyId
+              ? show
+                ? "Hide user form"
+                : "Add company user"
+              : "Add team member"}
+          </Button>
+        )}
       </div>
-      <div className="permission-note">
-        <ShieldCheck size={18} />{" "}
-        {role === "super_admin"
-          ? "You can manage every workspace role."
-          : "You can manage user, supplier, manager and compliance roles."}
-      </div>
+      {!companyId && (
+        <div className="permission-note">
+          <ShieldCheck size={18} />{" "}
+          {role === "super_admin"
+            ? "You can manage every workspace role."
+            : "You can manage user, supplier, manager and compliance roles."}
+        </div>
+      )}
       {error && (
         <p className="error-message" role="alert">
           {error}
         </p>
       )}
-      {show && (
+      {allowCreate && show && (
         <form className="panel user-form" onSubmit={(e) => void create(e)}>
           <div className="panel-heading">
             <h3>
@@ -256,7 +266,8 @@ export default function UserManagement({
         <div className="panel-heading">
           <div>
             <h3>
-              Your team <span className="count-badge">{users.length}</span>
+              {companyId ? "Company team" : "Your team"}{" "}
+              <span className="count-badge">{users.length}</span>
             </h3>
             <p>Manage roles and account access.</p>
           </div>
@@ -275,7 +286,16 @@ export default function UserManagement({
         ) : !users.length ? (
           <div className="empty-state">
             <Users />
-            <h3>Bring your team together.</h3>
+            <h3>
+              {companyId
+                ? "No users assigned yet."
+                : "Bring your team together."}
+            </h3>
+            {companyId && (
+              <p>
+                Use the form above to create a user and assign packaging access.
+              </p>
+            )}
           </div>
         ) : (
           <div className="table-scroll">

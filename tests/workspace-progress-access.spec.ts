@@ -193,12 +193,28 @@ test("saved component progress, mandatory sections and company packaging permiss
       page.getByLabel("Initial password", { exact: false }),
     ).toBeVisible();
 
-    await page.goto("/dashboard/companies");
-    console.info("Company management opened");
-    const createCompanyForm = page.locator("form").filter({
-      has: page.getByRole("heading", { name: "Create company", exact: true }),
+    const companyResponse = await page.request.post("/api/companies", {
+      headers: { Origin: "http://localhost:3000" },
+      data: {
+        name: "Progress Company",
+        email: `company-${email}`,
+        packagingScopes: ["group", "transport"],
+      },
     });
-    await expect(createCompanyForm.getByRole("checkbox")).toHaveCount(8);
+    expect(companyResponse.status()).toBe(201);
+    companyId = (await companyResponse.json()).id;
+    await db
+      .collection("packagingImports")
+      .updateOne({ _id: importId }, { $set: { clientId: companyId } });
+    await page.goto("/dashboard/companies");
+    const accessForm = page.getByRole("form", {
+      name: "Company access",
+      exact: true,
+    });
+    await expect(
+      page.getByRole("textbox", { name: "Company name", exact: true }),
+    ).toHaveCount(0);
+    await expect(accessForm.getByRole("checkbox")).toHaveCount(8);
     for (const name of [
       "Sales Packaging",
       "Group Packaging",
@@ -210,75 +226,82 @@ test("saved component progress, mandatory sections and company packaging permiss
       "Composite / Multi-material",
     ])
       await expect(
-        createCompanyForm.getByRole("checkbox", { name, exact: true }),
+        accessForm.getByRole("checkbox", { name, exact: true }),
       ).toBeVisible();
-    await createCompanyForm
-      .getByRole("checkbox", { name: "Sales Packaging", exact: true })
-      .uncheck();
+    await accessForm
+      .getByRole("combobox", { name: "Manage company", exact: true })
+      .click();
     await page
-      .getByRole("textbox", { name: "Company name", exact: true })
-      .fill("Progress Company");
-    await page
-      .getByRole("textbox", { name: "Company email", exact: true })
-      .fill(`company-${email}`);
-    await page
-      .getByRole("button", { name: "Create company", exact: true })
+      .getByRole("option", {
+        name: `Progress Company · company-${email}`,
+        exact: true,
+      })
       .click();
     await expect(
-      page.getByRole("heading", { name: "Company users" }),
+      page.getByRole("heading", { name: "Company users", exact: true }),
     ).toBeVisible();
-    const company = await db
-      .collection("clients")
-      .findOne({ email: `company-${email}` });
-    companyId = company!._id.toString();
-    await db
-      .collection("packagingImports")
-      .updateOne({ _id: importId }, { $set: { clientId: companyId } });
-    console.info("Company created");
-    const memberEmail = `member-${email}`;
-    const created = await page.request.post("/api/users", {
-      headers: { Origin: "http://localhost:3000" },
-      data: {
-        firstName: "Company",
-        lastName: "Member",
-        email: memberEmail,
-        role: "user",
-        active: true,
-        companyId,
-        packagingScopes: ["group", "transport"],
-      },
-    });
-    expect(created.status(), await created.text()).toBe(201);
-    memberId = (await created.json()).id;
-    console.info("Company user created");
-    const saved = await db
-      .collection("user")
-      .findOne({ _id: new ObjectId(memberId) });
-    expect(saved?.packagingScopes).toEqual(["group", "transport"]);
-    const companyUserForm = page.locator("form").filter({
-      has: page.getByRole("heading", {
-        name: "Add company user",
+    await expect(
+      page.getByRole("button", { name: /Add company user|Hide user form/ }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("heading", {
+        name: "No users assigned yet.",
         exact: true,
       }),
-    });
+    ).toBeVisible();
     await expect(
-      companyUserForm
-        .getByRole("group", { name: "Packaging access", exact: true })
-        .getByRole("checkbox"),
-    ).toHaveCount(8);
-    await expect(
-      companyUserForm.getByRole("checkbox", {
+      accessForm.getByRole("checkbox", {
         name: "Sales Packaging",
         exact: true,
       }),
     ).not.toBeChecked();
     await expect(
-      companyUserForm.getByRole("checkbox", {
+      accessForm.getByRole("checkbox", {
         name: "Group Packaging",
         exact: true,
       }),
     ).toBeChecked();
+    const memberEmail = `member-${email}`;
+    await accessForm
+      .getByRole("textbox", { name: "User email", exact: true })
+      .fill(memberEmail);
+    const createdResponse = page.waitForResponse(
+      (response) =>
+        response.url().endsWith("/api/users") &&
+        response.request().method() === "POST",
+    );
+    await accessForm
+      .getByRole("button", { name: "Create user", exact: true })
+      .click();
+    const created = await createdResponse;
+    expect(created.status(), await created.text()).toBe(201);
+    memberId = (await created.json()).id;
+    const saved = await db
+      .collection("user")
+      .findOne({ _id: new ObjectId(memberId) });
+    expect(saved?.packagingScopes).toEqual(["group", "transport"]);
+    await expect(
+      page.getByRole("cell", { name: memberEmail, exact: true }),
+    ).toBeVisible();
     await expect(page.getByLabel("Initial password")).toHaveCount(0);
+    await page.screenshot({
+      path: "artifacts/company-management-consolidated.png",
+      fullPage: true,
+    });
+    await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+    await page.evaluate(() =>
+      document.documentElement.setAttribute(
+        "data-mantine-color-scheme",
+        "dark",
+      ),
+    );
+    await page.screenshot({
+      path: "artifacts/company-management-consolidated-dark.png",
+      fullPage: true,
+    });
+    console.info(
+      "Verified company selector, single user form and refreshed company team",
+    );
     memberContext = await browser.newContext();
     await login(memberContext, memberEmail);
     console.info("Company member signed in");
