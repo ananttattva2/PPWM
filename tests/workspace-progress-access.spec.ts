@@ -214,6 +214,12 @@ test("saved component progress, mandatory sections and company packaging permiss
     await expect(
       page.getByRole("textbox", { name: "Company name", exact: true }),
     ).toHaveCount(0);
+    await expect(
+      accessForm.getByRole("combobox", { name: "Role", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      accessForm.getByRole("group", { name: "Packaging roles", exact: true }),
+    ).toBeVisible();
     await expect(accessForm.getByRole("checkbox")).toHaveCount(8);
     for (const name of [
       "Sales Packaging",
@@ -279,7 +285,14 @@ test("saved component progress, mandatory sections and company packaging permiss
     const saved = await db
       .collection("user")
       .findOne({ _id: new ObjectId(memberId) });
+    expect(saved?.role).toBe("user");
     expect(saved?.packagingScopes).toEqual(["group", "transport"]);
+    await expect(
+      page.getByRole("columnheader", { name: "Role", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("columnheader", { name: "Packaging roles", exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByRole("cell", { name: memberEmail, exact: true }),
     ).toBeVisible();

@@ -5,14 +5,16 @@ export default function PackagingAccess({
   value,
   onChange,
   disabled = false,
+  label = "Packaging access",
 }: {
   value: readonly string[];
   onChange: (value: string[]) => void;
   disabled?: boolean;
+  label?: string;
 }) {
   return (
     <fieldset className={styles.fieldset} disabled={disabled}>
-      <legend>Packaging access</legend>
+      <legend>{label}</legend>
       <p>Select one or more packaging types to grant access.</p>
       <div className={styles.options}>
         {packagingScopeOptions.map((option) => (

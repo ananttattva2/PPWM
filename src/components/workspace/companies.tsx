@@ -22,7 +22,6 @@ export default function CompanyManagement({
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selected, setSelected] = useState("");
   const [email, setEmail] = useState("");
-  const [accountRole, setAccountRole] = useState("user");
   const [scopes, setScopes] = useState<string[]>([...packagingScopes]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -54,7 +53,6 @@ export default function CompanyManagement({
     setError("");
     setSuccess("");
     setEmail("");
-    setAccountRole("user");
     setScopes(
       companies.find((company) => company.id === id)?.packagingScopes || [
         ...packagingScopes,
@@ -83,7 +81,7 @@ export default function CompanyManagement({
           firstName: email.split("@")[0],
           lastName: "Member",
           email,
-          role: accountRole,
+          role: "user",
           active: true,
           packagingScopes: scopes,
         }),
@@ -99,18 +97,6 @@ export default function CompanyManagement({
       setBusy(false);
     }
   }
-  const roles = [
-    { value: "user", label: "User" },
-    { value: "supplier", label: "Supplier" },
-    { value: "manager", label: "Manager" },
-    { value: "compliance", label: "Compliance" },
-    ...(role === "super_admin"
-      ? [
-          { value: "admin", label: "Admin" },
-          { value: "super_admin", label: "Super admin" },
-        ]
-      : []),
-  ];
   return (
     <>
       <div className="page-heading">
@@ -119,7 +105,7 @@ export default function CompanyManagement({
           <h1>Company management</h1>
           <p>
             Select a company, enter the user’s email and choose their packaging
-            access.
+            roles.
           </p>
         </div>
       </div>
@@ -160,16 +146,10 @@ export default function CompanyManagement({
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
-          <Select
-            label="Role"
-            data={roles}
-            value={accountRole}
-            disabled={busy}
-            onChange={(value) => setAccountRole(value || "user")}
-          />
         </div>
         <div className={styles.access}>
           <PackagingAccess
+            label="Packaging roles"
             value={scopes}
             onChange={setScopes}
             disabled={busy}

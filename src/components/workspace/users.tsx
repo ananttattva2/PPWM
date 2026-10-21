@@ -231,12 +231,14 @@ export default function UserManagement({
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
               />
             )}
-            <Select
-              label="Role"
-              data={options}
-              value={form.role}
-              onChange={(v) => setForm({ ...form, role: v || "user" })}
-            />
+            {!companyId && (
+              <Select
+                label="Role"
+                data={options}
+                value={form.role}
+                onChange={(v) => setForm({ ...form, role: v || "user" })}
+              />
+            )}
             {companyId && (
               <PackagingAccess
                 value={form.packagingScopes}
@@ -304,8 +306,8 @@ export default function UserManagement({
                 <tr>
                   <th>Team member</th>
                   <th>Email</th>
-                  <th>Role</th>
-                  {companyId && <th>Packaging access</th>}
+                  {!companyId && <th>Role</th>}
+                  {companyId && <th>Packaging roles</th>}
                   <th>Account status</th>
                 </tr>
               </thead>
@@ -330,25 +332,29 @@ export default function UserManagement({
                           </div>
                         </td>
                         <td>{u.email}</td>
-                        <td>
-                          {editable ? (
-                            <Select
-                              aria-label={`Role for ${u.name}`}
-                              data={options}
-                              value={u.role}
-                              disabled={busy}
-                              onChange={(v) => v && void update(u, { role: v })}
-                            />
-                          ) : (
-                            <span className="role-badge">
-                              {u.role.replace("_", " ")}
-                            </span>
-                          )}
-                        </td>
+                        {!companyId && (
+                          <td>
+                            {editable ? (
+                              <Select
+                                aria-label={`Role for ${u.name}`}
+                                data={options}
+                                value={u.role}
+                                disabled={busy}
+                                onChange={(v) =>
+                                  v && void update(u, { role: v })
+                                }
+                              />
+                            ) : (
+                              <span className="role-badge">
+                                {u.role.replace("_", " ")}
+                              </span>
+                            )}
+                          </td>
+                        )}
                         {companyId && (
                           <td>
                             <MultiSelect
-                              aria-label={`Packaging access for ${u.name}`}
+                              aria-label={`Packaging roles for ${u.name}`}
                               data={packagingScopeOptions}
                               value={u.packagingScopes || [...packagingScopes]}
                               disabled={!editable || busy}
