@@ -2,7 +2,7 @@
 import { persistAssessmentFile } from "@/lib/upload-media-client";
 import { mediaAccept } from "@/lib/media-types";
 
-import { useState } from "react";
+import { useDraftState } from "@/lib/use-draft-state";
 import {
   CalendarDays,
   Calculator,
@@ -75,16 +75,28 @@ export default function HeavyMetalsAssessment({
 }: {
   onAnswered: (count: number) => void;
 }) {
-  const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [details, setDetails] = useState<Record<number, string>>({});
-  const [proofs, setProofs] = useState<Record<number, File | undefined>>({});
-  const [errors, setErrors] = useState<Record<number, string>>({});
-  const [method, setMethod] = useState("four");
-  const [values, setValues] = useState(["", "", "", ""]);
-  const [combined, setCombined] = useState("");
-  const [basis, setBasis] = useState("");
-  const [totalBasis, setTotalBasis] = useState("");
-  const [act, setAct] = useState({
+  const [answers, setAnswers] = useDraftState<Record<number, string>>(
+    "heavy-answers",
+    {},
+  );
+  const [details, setDetails] = useDraftState<Record<number, string>>(
+    "heavy-details",
+    {},
+  );
+  const [proofs, setProofs] = useDraftState<Record<number, File | undefined>>(
+    "heavy-proofs",
+    {},
+  );
+  const [errors, setErrors] = useDraftState<Record<number, string>>(
+    "heavy-errors",
+    {},
+  );
+  const [method, setMethod] = useDraftState("heavy-method", "four");
+  const [values, setValues] = useDraftState("heavy-values", ["", "", "", ""]);
+  const [combined, setCombined] = useDraftState("heavy-combined", "");
+  const [basis, setBasis] = useDraftState("heavy-basis", "");
+  const [totalBasis, setTotalBasis] = useDraftState("heavy-totalBasis", "");
+  const [act, setAct] = useDraftState("heavy-act", {
     name: "",
     date: "",
     scope: "",

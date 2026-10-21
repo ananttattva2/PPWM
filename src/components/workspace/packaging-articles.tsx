@@ -80,7 +80,6 @@ const articles = [
 export default function PackagingArticles({
   componentName,
   onBack,
-  onContinue,
   importId,
   rowNumber,
   componentId,
@@ -89,7 +88,6 @@ export default function PackagingArticles({
 }: {
   componentName: string;
   onBack: () => void;
-  onContinue?: () => void;
   importId: string;
   rowNumber: number;
   componentId?: string;
@@ -117,7 +115,7 @@ export default function PackagingArticles({
           <p>
             {scope === "sku"
               ? "Select an article to review the packaging requirements for "
-              : "Explore the packaging articles before reviewing the Sustainability Checklist for "}
+              : "Select an article to review the packaging requirements for "}
             <strong>{componentName}</strong>.
           </p>
         </div>
@@ -187,19 +185,6 @@ export default function PackagingArticles({
           );
         })}
       </div>
-      {scope === "component" && onContinue && (
-        <footer className={styles.footer}>
-          <div>
-            <strong>Ready to review your component?</strong>
-            <p>
-              Continue to the sustainability requirements and supporting proofs.
-            </p>
-          </div>
-          <Button type="button" onClick={onContinue}>
-            Sustainability Checklist <ArrowRight size={17} />
-          </Button>
-        </footer>
-      )}
     </section>
   );
 }

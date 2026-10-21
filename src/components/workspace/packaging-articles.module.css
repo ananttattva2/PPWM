@@ -181,7 +181,7 @@
 :global(.classification-progress).progress {
   display: grid;
   gap: 12px;
-  grid-template-columns: 1fr 0.18fr 1fr 0.18fr 1fr 0.18fr 1fr 0.18fr 1.2fr;
+  grid-template-columns: 1fr 0.18fr 1fr 0.18fr 1fr 0.18fr 1fr;
 }
 :global(.classification-progress).progress > button {
   min-width: 0;

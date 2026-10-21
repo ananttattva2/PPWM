@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
+import { MultiSelect } from "@mantine/core";
+import { packagingScopeOptions, packagingScopes } from "@/lib/packaging-scopes";
 import { Switch } from "@mantine/core";
 import { TextInput, PasswordInput, Select } from "../ui/floating-fields";
 import { Avatar } from "@heroui/react";
@@ -13,6 +15,8 @@ type User = {
   email: string;
   image?: string;
   role: string;
+  companyId?: string;
+  packagingScopes?: string[];
   active: boolean;
 };
 const initial = {
@@ -22,13 +26,16 @@ const initial = {
   password: "",
   role: "user",
   active: true,
+  packagingScopes: [...packagingScopes] as string[],
 };
 export default function UserManagement({
   role,
   actorId,
+  companyId,
 }: {
   role: string;
   actorId: string;
+  companyId?: string;
 }) {
   const [users, setUsers] = useState<User[]>([]);
   const [form, setForm] = useState(initial);
@@ -53,7 +60,12 @@ export default function UserManagement({
     try {
       const r = await fetch("/api/users");
       if (!r.ok) throw new Error("Unable to load users");
-      setUsers(await r.json());
+      const loaded: User[] = await r.json();
+      setUsers(
+        companyId
+          ? loaded.filter((user) => user.companyId === companyId)
+          : loaded,
+      );
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -71,7 +83,17 @@ export default function UserManagement({
       const r = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          ...(companyId
+            ? {
+                companyId,
+                firstName: form.firstName || form.email.split("@")[0],
+                lastName: form.lastName || "Member",
+                password: undefined,
+              }
+            : {}),
+        }),
       });
       if (!r.ok) throw new Error((await r.json()).error);
       setShow(false);
@@ -110,7 +132,7 @@ export default function UserManagement({
       <div className="page-heading">
         <div>
           <span className="eyebrow">PEOPLE WITH PURPOSE</span>
-          <h1>User management</h1>
+          <h1>{companyId ? "Company users" : "User management"}</h1>
           <p>The right people. The right access. A better-connected team.</p>
         </div>
         <Button onClick={() => setShow(!show)}>
@@ -141,18 +163,26 @@ export default function UserManagement({
             </button>
           </div>
           <div className="form-grid">
-            <TextInput
-              label="First name"
-              required
-              value={form.firstName}
-              onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-            />
-            <TextInput
-              label="Last name"
-              required
-              value={form.lastName}
-              onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-            />
+            {!companyId && (
+              <>
+                <TextInput
+                  label="First name"
+                  required
+                  value={form.firstName}
+                  onChange={(e) =>
+                    setForm({ ...form, firstName: e.target.value })
+                  }
+                />
+                <TextInput
+                  label="Last name"
+                  required
+                  value={form.lastName}
+                  onChange={(e) =>
+                    setForm({ ...form, lastName: e.target.value })
+                  }
+                />
+              </>
+            )}
             <TextInput
               type="email"
               label="Email"
@@ -160,19 +190,30 @@ export default function UserManagement({
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
-            <PasswordInput
-              label="Initial password"
-              description="At least 12 characters. OTP remains the primary sign-in method."
-              required
-              minLength={12}
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-            />
+            {!companyId && (
+              <PasswordInput
+                label="Initial password"
+                description="At least 12 characters. OTP remains the primary sign-in method."
+                required
+                minLength={12}
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+              />
+            )}
             <Select
               label="Role"
               data={options}
               value={form.role}
               onChange={(v) => setForm({ ...form, role: v || "user" })}
+            />
+            <MultiSelect
+              label="Packaging access"
+              required
+              data={packagingScopeOptions}
+              value={form.packagingScopes}
+              onChange={(packagingScopes) =>
+                setForm({ ...form, packagingScopes })
+              }
             />
             <Switch
               label="Active account"
@@ -223,6 +264,7 @@ export default function UserManagement({
                   <th>Team member</th>
                   <th>Email</th>
                   <th>Role</th>
+                  <th>Packaging access</th>
                   <th>Account status</th>
                 </tr>
               </thead>
@@ -261,6 +303,18 @@ export default function UserManagement({
                               {u.role.replace("_", " ")}
                             </span>
                           )}
+                        </td>
+                        <td>
+                          <MultiSelect
+                            aria-label={`Packaging access for ${u.name}`}
+                            data={packagingScopeOptions}
+                            value={u.packagingScopes || [...packagingScopes]}
+                            disabled={!editable || busy}
+                            onChange={(values) => {
+                              if (values.length)
+                                void update(u, { packagingScopes: values });
+                            }}
+                          />
                         </td>
                         <td>
                           <Switch

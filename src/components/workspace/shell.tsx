@@ -1,4 +1,9 @@
 "use client";
+import { WorkspaceContext } from "@/lib/workspace-context";
+import {
+  allowedPackagingScopes,
+  type PackagingScope,
+} from "@/lib/packaging-scopes";
 import Link from "next/link";
 import Image from "next/image";
 import ThemeToggle from "../theme-toggle";
@@ -21,6 +26,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ScanLine,
+  Building2,
 } from "lucide-react";
 import { Avatar } from "@heroui/react";
 import { toast } from "sonner";
@@ -32,6 +38,7 @@ export type WorkspaceUser = {
   email: string;
   image: string;
   role: string;
+  packagingScopes?: PackagingScope[];
   firstName: string;
   lastName: string;
 };
@@ -87,7 +94,18 @@ export default function Shell({
       label: "Team & account",
       items: [
         ...(privileged
-          ? [{ url: "/dashboard/users", label: "User management", icon: Users }]
+          ? [
+              {
+                url: "/dashboard/users",
+                label: "User management",
+                icon: Users,
+              },
+              {
+                url: "/dashboard/companies",
+                label: "Company management",
+                icon: Building2,
+              },
+            ]
           : []),
         { url: "/dashboard/profile", label: "My profile", icon: UserRound },
       ],
@@ -122,195 +140,199 @@ export default function Shell({
     }
   }
   return (
-    <div className={`workspace ${collapsed ? "sidebar-collapsed" : ""}`}>
-      {open && (
-        <button
-          className="sidebar-backdrop"
-          aria-label="Close navigation overlay"
-          onClick={() => setOpen(false)}
-        />
-      )}
-      <aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
-        <div className="sidebar-brand">
-          <div className="sidebar-logo-full">
-            <Brand />
-          </div>
-          <Link
-            href="/"
-            className="sidebar-logo-mark"
-            aria-label="Anant Tattva home"
-          >
-            <Image
-              src="/brand/anant-tattva-mark.svg"
-              alt=""
-              width={100}
-              height={90}
-            />
-          </Link>
-          <small>SUSTAINABILITY FOR A CLEARER TOMORROW</small>
-        </div>
-        <button
-          className="mobile-menu sidebar-close"
-          onClick={() => setOpen(false)}
-          aria-label="Close sidebar"
-        >
-          <X size={19} />
-        </button>
-        <nav aria-label="Workspace navigation">
-          {groups.map((group) => (
-            <div className="sidebar-group" key={group.label}>
-              <div className="workspace-label">{group.label}</div>
-              {group.items.map(({ url, label, icon: Icon }) => (
-                <Link
-                  key={url}
-                  href={url}
-                  onClick={() => setOpen(false)}
-                  className={isActive(url) ? "active" : ""}
-                  aria-current={isActive(url) ? "page" : undefined}
-                  aria-label={label}
-                  title={collapsed ? label : undefined}
-                >
-                  <Icon size={17} />
-                  <span>{label}</span>
-                  {isActive(url) && <span className="nav-active-dot" />}
-                </Link>
-              ))}
-            </div>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="sidebar-tip">
-            <div className="tip-leaf">
-              <Leaf size={22} />
-            </div>
-            <div>
-              <b>
-                Less complexity.
-                <br />
-                More possibility.
-              </b>
-              <p>One connected, greener workspace.</p>
-            </div>
-          </div>
-          <div className="sidebar-user">
-            <span className="sidebar-secure">
-              <ShieldCheck size={14} />
-            </span>
-            <div>
-              <b>Secure workspace</b>
-              <small>Access: {user.role.replace("_", " ")}</small>
-            </div>
-            <button
-              aria-label="Sign out"
-              title="Sign out"
-              disabled={signingOut}
-              onClick={() => void signOut()}
-            >
-              <LogOut size={16} />
-            </button>
-          </div>
-        </div>
-      </aside>
-      <div className="workspace-main">
-        <header className="workspace-header">
+    <WorkspaceContext.Provider
+      value={{ userId: user.id, scopes: allowedPackagingScopes(user) }}
+    >
+      <div className={`workspace ${collapsed ? "sidebar-collapsed" : ""}`}>
+        {open && (
           <button
-            type="button"
-            className="sidebar-collapse-toggle"
-            onClick={toggleSidebar}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-expanded={!collapsed}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? (
-              <PanelLeftOpen size={19} />
-            ) : (
-              <PanelLeftClose size={19} />
-            )}
-          </button>
-          <button
-            className="mobile-menu"
-            aria-label="Open sidebar"
-            aria-expanded={open}
-            onClick={() => setOpen(true)}
-          >
-            <Menu size={20} />
-          </button>
-          {!supplier && (
-            <form
-              className="workspace-search"
-              role="search"
-              onSubmit={(e) => {
-                e.preventDefault();
-                router.push(
-                  `/dashboard/clients?q=${encodeURIComponent(query.trim())}`,
-                );
-              }}
+            className="sidebar-backdrop"
+            aria-label="Close navigation overlay"
+            onClick={() => setOpen(false)}
+          />
+        )}
+        <aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
+          <div className="sidebar-brand">
+            <div className="sidebar-logo-full">
+              <Brand />
+            </div>
+            <Link
+              href="/"
+              className="sidebar-logo-mark"
+              aria-label="Anant Tattva home"
             >
-              <Search size={15} />
-              <input
-                aria-label="Search workspace clients"
-                placeholder="Search clients, GST or email…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
+              <Image
+                src="/brand/anant-tattva-mark.svg"
+                alt=""
+                width={100}
+                height={90}
               />
-              <kbd>↵</kbd>
-            </form>
-          )}
-          <div className="header-workspace-badge">
-            <span className="green-dot" /> Workspace
+            </Link>
+            <small>SUSTAINABILITY FOR A CLEARER TOMORROW</small>
           </div>
-          <ThemeToggle />
-          <a
-            className="header-help"
-            href="mailto:crm@ananttattva.com?subject=Workspace%20support"
-            aria-label="Contact workspace support"
-            title="Contact support"
+          <button
+            className="mobile-menu sidebar-close"
+            onClick={() => setOpen(false)}
+            aria-label="Close sidebar"
           >
-            <HelpCircle size={18} />
-          </a>
-          <details className="header-account">
-            <summary>
-              <Avatar
-                name={user.name}
-                src={user.image || undefined}
-                size="sm"
-                className="header-avatar"
-              />
-              <span>
-                <b>{user.name}</b>
-                <small>{user.role.replace("_", " ")}</small>
+            <X size={19} />
+          </button>
+          <nav aria-label="Workspace navigation">
+            {groups.map((group) => (
+              <div className="sidebar-group" key={group.label}>
+                <div className="workspace-label">{group.label}</div>
+                {group.items.map(({ url, label, icon: Icon }) => (
+                  <Link
+                    key={url}
+                    href={url}
+                    onClick={() => setOpen(false)}
+                    className={isActive(url) ? "active" : ""}
+                    aria-current={isActive(url) ? "page" : undefined}
+                    aria-label={label}
+                    title={collapsed ? label : undefined}
+                  >
+                    <Icon size={17} />
+                    <span>{label}</span>
+                    {isActive(url) && <span className="nav-active-dot" />}
+                  </Link>
+                ))}
+              </div>
+            ))}
+          </nav>
+          <div className="sidebar-bottom">
+            <div className="sidebar-tip">
+              <div className="tip-leaf">
+                <Leaf size={22} />
+              </div>
+              <div>
+                <b>
+                  Less complexity.
+                  <br />
+                  More possibility.
+                </b>
+                <p>One connected, greener workspace.</p>
+              </div>
+            </div>
+            <div className="sidebar-user">
+              <span className="sidebar-secure">
+                <ShieldCheck size={14} />
               </span>
-              <ChevronDown size={14} />
-            </summary>
-            <div className="account-menu">
-              <span>{user.email}</span>
-              <Link href="/dashboard/profile">
-                <UserRound size={15} />
-                My profile
-                <ArrowUpRight size={13} />
-              </Link>
-              <button disabled={signingOut} onClick={() => void signOut()}>
-                <LogOut size={15} />
-                {signingOut ? "Signing out…" : "Sign out"}
+              <div>
+                <b>Secure workspace</b>
+                <small>Access: {user.role.replace("_", " ")}</small>
+              </div>
+              <button
+                aria-label="Sign out"
+                title="Sign out"
+                disabled={signingOut}
+                onClick={() => void signOut()}
+              >
+                <LogOut size={16} />
               </button>
             </div>
-          </details>
-        </header>
-        <div className="workspace-content">
-          <div className="workspace-context">
-            <span>
-              Workspace <span>/</span> <b>{current}</b>
-            </span>
-            <span className="context-status">
-              <ShieldCheck size={12} /> Secure access
-            </span>
           </div>
-          {children}
+        </aside>
+        <div className="workspace-main">
+          <header className="workspace-header">
+            <button
+              type="button"
+              className="sidebar-collapse-toggle"
+              onClick={toggleSidebar}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-expanded={!collapsed}
+              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {collapsed ? (
+                <PanelLeftOpen size={19} />
+              ) : (
+                <PanelLeftClose size={19} />
+              )}
+            </button>
+            <button
+              className="mobile-menu"
+              aria-label="Open sidebar"
+              aria-expanded={open}
+              onClick={() => setOpen(true)}
+            >
+              <Menu size={20} />
+            </button>
+            {!supplier && (
+              <form
+                className="workspace-search"
+                role="search"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  router.push(
+                    `/dashboard/clients?q=${encodeURIComponent(query.trim())}`,
+                  );
+                }}
+              >
+                <Search size={15} />
+                <input
+                  aria-label="Search workspace clients"
+                  placeholder="Search clients, GST or email…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+                <kbd>↵</kbd>
+              </form>
+            )}
+            <div className="header-workspace-badge">
+              <span className="green-dot" /> Workspace
+            </div>
+            <ThemeToggle />
+            <a
+              className="header-help"
+              href="mailto:crm@ananttattva.com?subject=Workspace%20support"
+              aria-label="Contact workspace support"
+              title="Contact support"
+            >
+              <HelpCircle size={18} />
+            </a>
+            <details className="header-account">
+              <summary>
+                <Avatar
+                  name={user.name}
+                  src={user.image || undefined}
+                  size="sm"
+                  className="header-avatar"
+                />
+                <span>
+                  <b>{user.name}</b>
+                  <small>{user.role.replace("_", " ")}</small>
+                </span>
+                <ChevronDown size={14} />
+              </summary>
+              <div className="account-menu">
+                <span>{user.email}</span>
+                <Link href="/dashboard/profile">
+                  <UserRound size={15} />
+                  My profile
+                  <ArrowUpRight size={13} />
+                </Link>
+                <button disabled={signingOut} onClick={() => void signOut()}>
+                  <LogOut size={15} />
+                  {signingOut ? "Signing out…" : "Sign out"}
+                </button>
+              </div>
+            </details>
+          </header>
+          <div className="workspace-content">
+            <div className="workspace-context">
+              <span>
+                Workspace <span>/</span> <b>{current}</b>
+              </span>
+              <span className="context-status">
+                <ShieldCheck size={12} /> Secure access
+              </span>
+            </div>
+            {children}
+          </div>
+          <footer className="workspace-footer">
+            ANANT TATTVA <span>Connected data. Clearer decisions.</span>
+          </footer>
         </div>
-        <footer className="workspace-footer">
-          ANANT TATTVA <span>Connected data. Clearer decisions.</span>
-        </footer>
       </div>
-    </div>
+    </WorkspaceContext.Provider>
   );
 }

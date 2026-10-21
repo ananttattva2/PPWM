@@ -22,6 +22,9 @@ export async function currentUser() {
   return {
     ...session.user,
     role: String(record.role || "user"),
+    packagingScopes: record.packagingScopes as
+      import("./packaging-scopes").PackagingScope[] | undefined,
+    companyId: record.companyId as string | undefined,
     firstName: String(record.firstName || ""),
     lastName: String(record.lastName || ""),
     name: String(record.name),

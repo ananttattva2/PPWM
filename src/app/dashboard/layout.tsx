@@ -16,6 +16,7 @@ export default async function Layout({
         email: user.email,
         image: user.image ?? "",
         role: user.role,
+        packagingScopes: user.packagingScopes,
         firstName: user.firstName,
         lastName: user.lastName,
       }}

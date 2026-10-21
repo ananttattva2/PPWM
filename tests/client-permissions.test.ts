@@ -38,3 +38,19 @@ test("normal users can create/edit, while supplier access stays component-scoped
     false,
   );
 });
+
+test("company members can access their assigned company but not another company", () => {
+  const actor = { id: "member", role: "user", companyId: "company-a" };
+  assert.equal(
+    canAccessClient(actor, { _id: "company-a", createdBy: "admin" }),
+    true,
+  );
+  assert.equal(
+    canAccessClient(actor, { _id: "company-b", createdBy: "admin" }),
+    false,
+  );
+  assert.equal(
+    canAccessClient({ ...actor, role: "supplier" }, { _id: "company-a" }),
+    false,
+  );
+});

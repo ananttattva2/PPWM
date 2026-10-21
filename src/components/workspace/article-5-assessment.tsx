@@ -2,6 +2,7 @@
 import { persistAssessmentFile } from "@/lib/upload-media-client";
 import { mediaAccept } from "@/lib/media-types";
 
+import { useDraftState } from "@/lib/use-draft-state";
 import { useId, useRef, useState } from "react";
 import Link from "next/link";
 import {
@@ -503,59 +504,95 @@ export default function Article5Assessment({
   backHref: string;
 }) {
   const id = useId();
-  const [heavyAnsweredCount, setHeavyAnsweredCount] = useState(0);
-  const [pfasAnswers, setPfasAnswers] = useState<Record<number, string>>({});
-  const [pfasDetails, setPfasDetails] = useState<Record<number, string>>({});
-  const [pfasProofs, setPfasProofs] = useState<
+  const [heavyAnsweredCount, setHeavyAnsweredCount] = useDraftState(
+    "heavyAnsweredCount",
+    0,
+  );
+  const [pfasAnswers, setPfasAnswers] = useDraftState<Record<number, string>>(
+    "pfasAnswers",
+    {},
+  );
+  const [pfasDetails, setPfasDetails] = useDraftState<Record<number, string>>(
+    "pfasDetails",
+    {},
+  );
+  const [pfasProofs, setPfasProofs] = useDraftState<
     Record<number, File | undefined>
-  >({});
+  >("pfasProofs", {});
   const pfasConflict =
     pfasAnswers[12] === "Yes" &&
     [3, 5, 7].some((number) => pfasAnswers[number] === "Yes");
-  const [active, setActive] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [evidence, setEvidence] = useState<Record<number, File>>({});
-  const [errors, setErrors] = useState<Record<number, string>>({});
-  const [principalMaterial, setPrincipalMaterial] = useState("");
-  const [materialDescription, setMaterialDescription] = useState("");
-  const [materialEvidence, setMaterialEvidence] = useState<File | null>(null);
-  const [materialEvidenceError, setMaterialEvidenceError] = useState("");
-  const [constructionProofs, setConstructionProofs] = useState<
-    Record<number, File | undefined>
-  >({});
-  const [constructionAnswers, setConstructionAnswers] = useState<
-    Record<number, string>
-  >({});
-  const [constructionDetails, setConstructionDetails] = useState<
-    Record<number, string>
-  >({});
-  const [concernAnswers, setConcernAnswers] = useState<Record<number, string>>(
+  const [active, setActive] = useDraftState("active", 0);
+  const [answers, setAnswers] = useDraftState<Record<number, string>>(
+    "answers",
     {},
   );
-  const [concernProofs, setConcernProofs] = useState<
+  const [evidence, setEvidence] = useDraftState<Record<number, File>>(
+    "evidence",
+    {},
+  );
+  const [errors, setErrors] = useDraftState<Record<number, string>>(
+    "errors",
+    {},
+  );
+  const [principalMaterial, setPrincipalMaterial] = useDraftState(
+    "principalMaterial",
+    "",
+  );
+  const [materialDescription, setMaterialDescription] = useDraftState(
+    "materialDescription",
+    "",
+  );
+  const [materialEvidence, setMaterialEvidence] = useDraftState<File | null>(
+    "materialEvidence",
+    null,
+  );
+  const [materialEvidenceError, setMaterialEvidenceError] = useDraftState(
+    "materialEvidenceError",
+    "",
+  );
+  const [constructionProofs, setConstructionProofs] = useDraftState<
     Record<number, File | undefined>
-  >({});
+  >("constructionProofs", {});
+  const [constructionAnswers, setConstructionAnswers] = useDraftState<
+    Record<number, string>
+  >("constructionAnswers", {});
+  const [constructionDetails, setConstructionDetails] = useDraftState<
+    Record<number, string>
+  >("constructionDetails", {});
+  const [concernAnswers, setConcernAnswers] = useDraftState<
+    Record<number, string>
+  >("concernAnswers", {});
+  const [concernProofs, setConcernProofs] = useDraftState<
+    Record<number, File | undefined>
+  >("concernProofs", {});
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const [emissionAnswers, setEmissionAnswers] = useState<
+  const [emissionAnswers, setEmissionAnswers] = useDraftState<
     Record<number, string>
-  >({});
-  const [emissionDetails, setEmissionDetails] = useState<
+  >("emissionAnswers", {});
+  const [emissionDetails, setEmissionDetails] = useDraftState<
     Record<number, string>
-  >({});
-  const [emissionProofs, setEmissionProofs] = useState<
+  >("emissionDetails", {});
+  const [emissionProofs, setEmissionProofs] = useDraftState<
     Record<number, File | undefined>
-  >({});
-  const [monitoringDate, setMonitoringDate] = useState("");
-  const [reuseAnswers, setReuseAnswers] = useState<Record<number, string>>({});
-  const [reuseProofs, setReuseProofs] = useState<
+  >("emissionProofs", {});
+  const [monitoringDate, setMonitoringDate] = useDraftState(
+    "monitoringDate",
+    "",
+  );
+  const [reuseAnswers, setReuseAnswers] = useDraftState<Record<number, string>>(
+    "reuseAnswers",
+    {},
+  );
+  const [reuseProofs, setReuseProofs] = useDraftState<
     Record<number, File | undefined>
-  >({});
-  const [foodContactAnswers, setFoodContactAnswers] = useState<
+  >("reuseProofs", {});
+  const [foodContactAnswers, setFoodContactAnswers] = useDraftState<
     Record<number, string>
-  >({});
-  const [foodContactProofs, setFoodContactProofs] = useState<
+  >("foodContactAnswers", {});
+  const [foodContactProofs, setFoodContactProofs] = useDraftState<
     Record<number, File | undefined>
-  >({});
+  >("foodContactProofs", {});
   const answeredCount =
     active === 0
       ? Object.values(answers).filter(Boolean).length
@@ -572,7 +609,40 @@ export default function Article5Assessment({
                 ? Object.values(foodContactAnswers).filter(Boolean).length
                 : 0;
 
+  const panel = useRef<HTMLElement>(null);
+  const [completed, setCompleted] = useDraftState<boolean[]>("completed", []);
+  const [navigationError, setNavigationError] = useState("");
   function choose(index: number) {
+    if (index > active + 1) return;
+    if (index > active) {
+      if (
+        Array.from({ length: active }, (_, i) => i).some((i) => !completed[i])
+      )
+        return;
+      const fields = panel.current?.querySelectorAll<
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >("input[required],select[required],textarea[required]");
+      const invalid = Array.from(fields || []).find(
+        (field) =>
+          !field.closest("[hidden]") &&
+          (!field.checkValidity() ||
+            (field.tagName === "TEXTAREA" && !field.value.trim())),
+      );
+      if (invalid) {
+        setNavigationError(
+          "Complete all mandatory answers, details and evidence before continuing.",
+        );
+        invalid.reportValidity();
+        invalid.focus();
+        return;
+      }
+      setCompleted((current) =>
+        current
+          .map((value, i) => (i === active ? true : value))
+          .concat(Array(Math.max(0, active + 1 - current.length)).fill(true)),
+      );
+    }
+    setNavigationError("");
     setActive(index);
     tabRefs.current[index]?.focus();
   }
@@ -693,7 +763,14 @@ export default function Article5Assessment({
                 aria-controls={`${id}-panel`}
                 aria-selected={active === index}
                 tabIndex={active === index ? 0 : -1}
-                onClick={() => setActive(index)}
+                disabled={
+                  index > active + 1 ||
+                  (index > active &&
+                    Array.from({ length: active }, (_, i) => i).some(
+                      (i) => !completed[i],
+                    ))
+                }
+                onClick={() => choose(index)}
               >
                 <span>{String(index + 1).padStart(2, "0")}</span>
                 <b>{tab}</b>
@@ -714,11 +791,22 @@ export default function Article5Assessment({
         </aside>
 
         <section
+          ref={panel}
+          onChangeCapture={() => {
+            setCompleted((current) =>
+              current.map((done, index) => (index >= active ? false : done)),
+            );
+          }}
           className={styles.panel}
           role="tabpanel"
           id={`${id}-panel`}
           aria-labelledby={`${id}-tab-${active}`}
         >
+          {navigationError && (
+            <p role="alert" className={styles.error}>
+              {navigationError}
+            </p>
+          )}
           <div className={styles.sectionOverview}>
             <span>
               SECTION {String(active + 1).padStart(2, "0")} <i>/ 08</i>

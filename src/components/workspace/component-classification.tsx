@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import type { CompositionComponent } from "@/lib/packaging-composition";
-import SustainabilityChecklist from "./sustainability-checklist";
+import { useDraftState } from "@/lib/use-draft-state";
 import PackagingArticles from "./packaging-articles";
 import articleStyles from "./packaging-articles.module.css";
 import PackagingBackLink from "./packaging-back-link";
@@ -93,13 +93,23 @@ export default function ComponentClassification({
   initial?: Pick<Classification, "family" | "categoryId">;
   canEdit: boolean;
   supplierView?: boolean;
-  initialStep?: 0 | 1 | 2 | 3 | 4;
+  initialStep?: 0 | 1 | 2 | 3;
 }) {
-  const [family, setFamily] = useState<Classification["family"] | null>(
+  const [family, setFamily] = useDraftState<Classification["family"] | null>(
+    "family",
     initial?.family || null,
   );
-  const [categoryId, setCategoryId] = useState(initial?.categoryId || "");
-  const [step, setStep] = useState<0 | 1 | 2 | 3 | 4>(initialStep);
+  const [categoryId, setCategoryId] = useDraftState(
+    "category",
+    initial?.categoryId || "",
+  );
+  const [step, setStep] = useDraftState<0 | 1 | 2 | 3>(
+    "step",
+    initialStep || (initial?.categoryId ? 3 : 0),
+  );
+  useEffect(() => {
+    if (initialStep === 3) setStep(3);
+  }, [initialStep]);
   const [busy, setBusy] = useState(false);
   const [categoryQuery, setCategoryQuery] = useState("");
   const [savedThisSession, setSavedThisSession] = useState(false);
@@ -261,28 +271,11 @@ export default function ComponentClassification({
           disabled={!categoryId || busy}
           onClick={() => setStep(3)}
           aria-current={step === 3 ? "step" : undefined}
-          className={step === 4 ? "classification-step-complete" : undefined}
         >
-          <span>{step === 4 ? <Check size={16} /> : "4"}</span>
+          <span>4</span>
           <div className="classification-step-copy">
             <b>Articles</b>
             <small>Explore articles 5–12</small>
-          </div>
-        </button>
-        <span
-          className={`classification-connector ${step === 4 ? "material-completed" : ""}`}
-          aria-hidden="true"
-        />
-        <button
-          type="button"
-          disabled={!categoryId || busy}
-          onClick={() => setStep(4)}
-          aria-current={step === 4 ? "step" : undefined}
-        >
-          <span>5</span>
-          <div className="classification-step-copy">
-            <b>Sustainability Checklist</b>
-            <small>Review sustainability requirements</small>
           </div>
         </button>
       </nav>
@@ -302,25 +295,13 @@ export default function ComponentClassification({
           exit={{ opacity: 0, y: reduce ? 0 : -8 }}
           transition={{ duration: reduce ? 0 : 0.2 }}
         >
-          {step === 4 ? (
-            <SustainabilityChecklist
-              importId={importId}
-              rowNumber={rowNumber}
-              componentId={componentId}
-              canEdit={canEdit}
-              componentName={componentName}
-              family={family}
-              foodGrade={supplierDetails.foodGrade}
-              onBack={() => setStep(3)}
-            />
-          ) : step === 3 ? (
+          {step === 3 ? (
             <PackagingArticles
               componentName={componentName}
               importId={importId}
               rowNumber={rowNumber}
               componentId={componentId}
               onBack={() => setStep(2)}
-              onContinue={() => setStep(4)}
             />
           ) : step === 0 ? (
             <section

@@ -1,3 +1,4 @@
+import { assertPackagingScope } from "@/lib/packaging-scopes";
 import { ObjectId } from "mongodb";
 import { apiError, checkOrigin, requireUser } from "@/lib/access";
 import { db } from "@/lib/db";
@@ -20,6 +21,7 @@ async function authorize(
       ? ["super_admin", "admin", "manager", "user", "supplier"]
       : ["super_admin", "admin", "manager", "user", "compliance", "supplier"],
   );
+  assertPackagingScope(user, "sales");
   if (!/^[a-f0-9]{24}$/i.test(importId) || !Number.isInteger(rowNumber))
     throw new Error("FORBIDDEN");
   const record = await db()

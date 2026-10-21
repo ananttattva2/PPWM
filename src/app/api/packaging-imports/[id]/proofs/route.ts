@@ -1,3 +1,4 @@
+import { assertPackagingScope } from "@/lib/packaging-scopes";
 import { readMedia } from "@/lib/cloudinary-storage";
 import { storeMedia, type CloudinaryStorage } from "@/lib/cloudinary-storage";
 import { assertImportAccess } from "@/lib/client-access";
@@ -25,6 +26,7 @@ async function scope(req: Request, context: Context, write = false) {
       ? ["super_admin", "admin", "manager", "user", "supplier"]
       : ["super_admin", "admin", "manager", "compliance", "user", "supplier"],
   );
+  assertPackagingScope(user, "sales");
   const { id } = await context.params;
   if (!/^[a-f0-9]{24}$/i.test(id)) throw new Error("FORBIDDEN");
   const query = new URL(req.url).searchParams;

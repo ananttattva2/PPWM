@@ -11,6 +11,7 @@ import {
   Milk,
   Boxes,
 } from "lucide-react";
+import { useWorkspace } from "@/lib/workspace-context";
 import PackagingTabPanel from "./packaging-tab-panel";
 import type { AdditionalKind } from "@/lib/additional-packaging";
 export type PackagingScope = "sales" | "group" | "transport" | AdditionalKind;
@@ -41,6 +42,11 @@ export default function PackagingTabs({
   transportContent: ReactNode;
   additionalContent: Record<AdditionalKind, ReactNode>;
 }) {
+  const { scopes: allowed } = useWorkspace();
+  const visibleScopes = scopes.filter((scope) => allowed.includes(scope.key));
+  const selected = visibleScopes.some((scope) => scope.key === value)
+    ? value
+    : visibleScopes[0]?.key;
   const id = useId();
   const filterId = `packaging-goo-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const reduce = useReducedMotion();
@@ -113,21 +119,24 @@ export default function PackagingTabs({
         onKeyDown={(event) => {
           if (
             disabled ||
+            !visibleScopes.length ||
             !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)
           )
             return;
           event.preventDefault();
-          const index = scopes.findIndex((scope) => scope.key === value);
+          const index = visibleScopes.findIndex(
+            (scope) => scope.key === selected,
+          );
           const next =
             event.key === "Home"
               ? 0
               : event.key === "End"
-                ? scopes.length - 1
+                ? visibleScopes.length - 1
                 : (index +
                     (event.key === "ArrowRight" ? 1 : -1) +
-                    scopes.length) %
-                  scopes.length;
-          const scope = scopes[next].key;
+                    visibleScopes.length) %
+                  visibleScopes.length;
+          const scope = visibleScopes[next].key;
           onChange(scope);
           buttons.current[scope]?.focus();
           buttons.current[scope]?.scrollIntoView({
@@ -137,7 +146,7 @@ export default function PackagingTabs({
           });
         }}
       >
-        {scopes.map(({ key, label, icon: Icon }) => (
+        {visibleScopes.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             ref={(node) => {
@@ -147,12 +156,12 @@ export default function PackagingTabs({
             role="tab"
             id={`${id}-${key}-tab`}
             aria-controls={`${id}-${key}`}
-            aria-selected={value === key}
-            tabIndex={value === key ? 0 : -1}
+            aria-selected={selected === key}
+            tabIndex={selected === key ? 0 : -1}
             disabled={disabled}
             onClick={() => onChange(key)}
           >
-            {value === key && (
+            {selected === key && (
               <motion.span
                 className="packaging-tab-highlight"
                 layoutId={`${id}-highlight`}
@@ -180,10 +189,10 @@ export default function PackagingTabs({
         ))}
       </div>
       <div className="packaging-panels">
-        {scopes.map(({ key }) => (
+        {visibleScopes.map(({ key }) => (
           <PackagingTabPanel
             key={key}
-            active={value === key}
+            active={selected === key}
             id={`${id}-${key}`}
             labelledBy={`${id}-${key}-tab`}
           >

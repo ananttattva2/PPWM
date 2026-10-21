@@ -1,3 +1,4 @@
+import { assertPackagingScope } from "@/lib/packaging-scopes";
 import { storeMedia, type CloudinaryStorage } from "@/lib/cloudinary-storage";
 import { assertImportAccess } from "@/lib/client-access";
 import { ObjectId } from "mongodb";
@@ -22,6 +23,7 @@ export async function POST(
       "user",
       "supplier",
     ]);
+    assertPackagingScope(user, "sales");
     const { id } = await params;
     if (!/^[a-f0-9]{24}$/i.test(id))
       return Response.json({ error: "Import not found" }, { status: 404 });

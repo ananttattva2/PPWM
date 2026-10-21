@@ -1,4 +1,5 @@
 import "server-only";
+import { assertPackagingScope } from "./packaging-scopes";
 import { ObjectId } from "mongodb";
 import { db } from "./db";
 import { requireUser } from "./access";
@@ -25,6 +26,7 @@ export async function detailAccess(
     rowNumber > 1001
   )
     return null;
+  assertPackagingScope(user, kind.data);
   const record = await db()
     .collection("packagingImports")
     .findOne(

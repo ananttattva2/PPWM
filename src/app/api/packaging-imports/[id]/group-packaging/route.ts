@@ -1,3 +1,4 @@
+import { assertPackagingScope } from "@/lib/packaging-scopes";
 import { ObjectId } from "mongodb";
 import { db } from "@/lib/db";
 import { apiError, checkOrigin, requireUser } from "@/lib/access";
@@ -34,6 +35,7 @@ export async function GET(
 ) {
   try {
     const user = await requireUser();
+    assertPackagingScope(user, "group");
     const { id } = await params;
     if (!(await readableImport(id, user)))
       return Response.json({ error: "Import not found" }, { status: 404 });
@@ -80,6 +82,7 @@ export async function PUT(
   try {
     checkOrigin(req);
     const user = await requireUser(["super_admin", "admin", "manager", "user"]);
+    assertPackagingScope(user, "group");
     const { id } = await params;
     const record = await readableImport(id, user);
     if (!record)

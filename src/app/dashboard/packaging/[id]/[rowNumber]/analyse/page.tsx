@@ -1,3 +1,4 @@
+import { allowedPackagingScopes } from "@/lib/packaging-scopes";
 import { assertImportAccess } from "@/lib/client-access";
 import { hydrateImportSuppliers } from "@/lib/hydrate-import-suppliers";
 import PackagingBackLink from "@/components/workspace/packaging-back-link";
@@ -36,6 +37,8 @@ export default async function Page({
   const { id, rowNumber } = await params;
   const user = await currentUser();
   if (!user) redirect("/login");
+  if (!allowedPackagingScopes(user).includes("sales"))
+    redirect("/dashboard/clients");
   const number = Number(rowNumber);
   if (
     !/^[a-f0-9]{24}$/i.test(id) ||

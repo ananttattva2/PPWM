@@ -1,3 +1,4 @@
+import { assertPackagingScope } from "@/lib/packaging-scopes";
 import { readMedia } from "@/lib/cloudinary-storage";
 import { storeMedia } from "@/lib/cloudinary-storage";
 import { assertImportAccess } from "@/lib/client-access";
@@ -89,6 +90,7 @@ async function saveRow(
   try {
     checkOrigin(req);
     const user = await requireUser(["super_admin", "admin", "manager", "user"]);
+    assertPackagingScope(user, "sales");
     const { id } = await params;
     if (!/^[a-f0-9]{24}$/i.test(id))
       return Response.json({ error: "Import not found" }, { status: 404 });

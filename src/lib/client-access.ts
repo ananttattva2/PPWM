@@ -33,6 +33,7 @@ export async function assertImportAccess(
   const linkedId = record.clientId || record.draftClientId;
   if (linkedId) {
     const value = String(linkedId);
+    if (user.companyId === value) return;
     if (!/^[a-f0-9]{24}$/i.test(value)) throw new Error("FORBIDDEN");
     const client = await db()
       .collection("clients")

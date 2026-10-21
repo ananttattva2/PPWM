@@ -1,3 +1,4 @@
+import { assertPackagingScope } from "@/lib/packaging-scopes";
 import { assertImportAccess } from "@/lib/client-access";
 import { ObjectId } from "mongodb";
 import { db } from "@/lib/db";
@@ -19,6 +20,7 @@ export async function PUT(
       "user",
       "supplier",
     ]);
+    assertPackagingScope(user, "sales");
     const { id } = await params;
     if (!/^[a-f0-9]{24}$/i.test(id))
       return Response.json({ error: "Import not found" }, { status: 404 });

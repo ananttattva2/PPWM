@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/access";
 import { db } from "@/lib/db";
 import { assertImportAccess } from "@/lib/client-access";
-import { canSeeAllClients } from "@/lib/client-permissions";
+import { canSeeAllClients, clientOwnerFilter } from "@/lib/client-permissions";
 import { initialComposition } from "@/lib/packaging-composition";
 import type { PackagingRow } from "@/lib/packaging-import-schema";
 import {
@@ -27,7 +27,7 @@ export default async function Page({
     ? []
     : await db()
         .collection("clients")
-        .find({ createdBy: user.id }, { projection: { _id: 1 } })
+        .find(clientOwnerFilter(user), { projection: { _id: 1 } })
         .toArray();
   const ownedIds = clients.flatMap((client) => [
     client._id.toString(),
