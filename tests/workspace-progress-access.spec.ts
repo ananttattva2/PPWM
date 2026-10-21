@@ -195,6 +195,26 @@ test("saved component progress, mandatory sections and company packaging permiss
 
     await page.goto("/dashboard/companies");
     console.info("Company management opened");
+    const createCompanyForm = page.locator("form").filter({
+      has: page.getByRole("heading", { name: "Create company", exact: true }),
+    });
+    await expect(createCompanyForm.getByRole("checkbox")).toHaveCount(8);
+    for (const name of [
+      "Sales Packaging",
+      "Group Packaging",
+      "Transport Packaging",
+      "E-commerce",
+      "Service Packaging",
+      "Re-use / Refill",
+      "Beverage / DRS",
+      "Composite / Multi-material",
+    ])
+      await expect(
+        createCompanyForm.getByRole("checkbox", { name, exact: true }),
+      ).toBeVisible();
+    await createCompanyForm
+      .getByRole("checkbox", { name: "Sales Packaging", exact: true })
+      .uncheck();
     await page
       .getByRole("textbox", { name: "Company name", exact: true })
       .fill("Progress Company");
@@ -235,10 +255,29 @@ test("saved component progress, mandatory sections and company packaging permiss
       .collection("user")
       .findOne({ _id: new ObjectId(memberId) });
     expect(saved?.packagingScopes).toEqual(["group", "transport"]);
-    await page.getByRole("button", { name: /Add team member/ }).click();
+    const companyUserForm = page.locator("form").filter({
+      has: page.getByRole("heading", {
+        name: "Add company user",
+        exact: true,
+      }),
+    });
     await expect(
-      page.getByRole("combobox", { name: "Packaging access", exact: true }),
-    ).toBeVisible();
+      companyUserForm
+        .getByRole("group", { name: "Packaging access", exact: true })
+        .getByRole("checkbox"),
+    ).toHaveCount(8);
+    await expect(
+      companyUserForm.getByRole("checkbox", {
+        name: "Sales Packaging",
+        exact: true,
+      }),
+    ).not.toBeChecked();
+    await expect(
+      companyUserForm.getByRole("checkbox", {
+        name: "Group Packaging",
+        exact: true,
+      }),
+    ).toBeChecked();
     await expect(page.getByLabel("Initial password")).toHaveCount(0);
     memberContext = await browser.newContext();
     await login(memberContext, memberEmail);

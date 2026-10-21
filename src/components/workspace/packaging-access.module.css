@@ -1,0 +1,46 @@
+.fieldset {
+  border: 0;
+  padding: 0;
+  margin: 20px 0;
+  min-width: 0;
+  grid-column: 1 / -1;
+}
+.fieldset legend {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary, inherit);
+}
+.fieldset p {
+  font-size: 12px;
+  color: var(--text-secondary, inherit);
+  margin: 6px 0 12px;
+}
+.options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 10px;
+}
+.option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 14px;
+  border: 1px solid var(--border, #dce5ef);
+  border-radius: 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.option:has(input:checked) {
+  border-color: #ff8a30;
+  background: rgba(255, 138, 48, 0.07);
+}
+.option:has(input:focus-visible) {
+  outline: 2px solid #ff8a30;
+  outline-offset: 2px;
+}
+.option input {
+  width: 16px;
+  height: 16px;
+  accent-color: #ff7900;
+  flex-shrink: 0;
+}

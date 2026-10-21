@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import PackagingAccess from "./packaging-access";
 import { MultiSelect } from "@mantine/core";
 import { packagingScopeOptions, packagingScopes } from "@/lib/packaging-scopes";
 import { Switch } from "@mantine/core";
@@ -32,14 +33,20 @@ export default function UserManagement({
   role,
   actorId,
   companyId,
+  initialPackagingScopes,
 }: {
   role: string;
   actorId: string;
   companyId?: string;
+  initialPackagingScopes?: string[];
 }) {
   const [users, setUsers] = useState<User[]>([]);
-  const [form, setForm] = useState(initial);
-  const [show, setShow] = useState(false);
+  const companyInitial = {
+    ...initial,
+    packagingScopes: initialPackagingScopes || initial.packagingScopes,
+  };
+  const [form, setForm] = useState(companyInitial);
+  const [show, setShow] = useState(Boolean(companyId));
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [search, setSearch] = useState("");
@@ -78,6 +85,10 @@ export default function UserManagement({
   async function create(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    if (companyId && !form.packagingScopes.length) {
+      setError("Select at least one packaging type.");
+      return;
+    }
     setBusy(true);
     try {
       const r = await fetch("/api/users", {
@@ -97,8 +108,8 @@ export default function UserManagement({
         }),
       });
       if (!r.ok) throw new Error((await r.json()).error);
-      setShow(false);
-      setForm(initial);
+      setShow(Boolean(companyId));
+      setForm(companyInitial);
       await load();
     } catch (e) {
       setError((e as Error).message);
@@ -137,7 +148,12 @@ export default function UserManagement({
           <p>The right people. The right access. A better-connected team.</p>
         </div>
         <Button onClick={() => setShow(!show)}>
-          <Plus size={17} /> Add team member
+          <Plus size={17} />{" "}
+          {companyId
+            ? show
+              ? "Hide user form"
+              : "Add company user"
+            : "Add team member"}
         </Button>
       </div>
       <div className="permission-note">
@@ -154,7 +170,11 @@ export default function UserManagement({
       {show && (
         <form className="panel user-form" onSubmit={(e) => void create(e)}>
           <div className="panel-heading">
-            <h3>A new perspective for your team.</h3>
+            <h3>
+              {companyId
+                ? "Add company user"
+                : "A new perspective for your team."}
+            </h3>
             <button
               className="text-button"
               type="button"
@@ -208,11 +228,9 @@ export default function UserManagement({
               onChange={(v) => setForm({ ...form, role: v || "user" })}
             />
             {companyId && (
-              <MultiSelect
-                label="Packaging access"
-                required
-                data={packagingScopeOptions}
+              <PackagingAccess
                 value={form.packagingScopes}
+                disabled={busy}
                 onChange={(packagingScopes) =>
                   setForm({ ...form, packagingScopes })
                 }

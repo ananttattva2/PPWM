@@ -2,8 +2,15 @@
 import { useEffect, useState } from "react";
 import { TextInput, Select } from "../ui/floating-fields";
 import { Button } from "../ui/button";
+import PackagingAccess from "./packaging-access";
+import { packagingScopes } from "@/lib/packaging-scopes";
 import UserManagement from "./users";
-type Company = { id: string; name: string; email: string };
+type Company = {
+  id: string;
+  name: string;
+  email: string;
+  packagingScopes?: string[];
+};
 export default function CompanyManagement({
   role,
   actorId,
@@ -11,6 +18,9 @@ export default function CompanyManagement({
   role: string;
   actorId: string;
 }) {
+  const [defaultScopes, setDefaultScopes] = useState<string[]>([
+    ...packagingScopes,
+  ]);
   const [companies, setCompanies] = useState<Company[]>([]),
     [selected, setSelected] = useState("");
   const [name, setName] = useState(""),
@@ -32,13 +42,17 @@ export default function CompanyManagement({
   }, []);
   async function create(e: React.FormEvent) {
     e.preventDefault();
+    if (!defaultScopes.length) {
+      setError("Select at least one packaging type.");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
       const r = await fetch("/api/companies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email }),
+        body: JSON.stringify({ name, email, packagingScopes: defaultScopes }),
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error);
@@ -46,6 +60,7 @@ export default function CompanyManagement({
       setSelected(data.id);
       setName("");
       setEmail("");
+      setDefaultScopes([...packagingScopes]);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -86,6 +101,15 @@ export default function CompanyManagement({
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
+        <PackagingAccess
+          value={defaultScopes}
+          onChange={setDefaultScopes}
+          disabled={busy}
+        />
+        <p>
+          These selections are the default access for new company users. You can
+          change them for each user below.
+        </p>
         <div className="form-actions">
           <Button type="submit" disabled={busy}>
             {busy ? "Creating…" : "Create company"}
@@ -110,6 +134,10 @@ export default function CompanyManagement({
           role={role}
           actorId={actorId}
           companyId={selected}
+          initialPackagingScopes={
+            companies.find((company) => company.id === selected)
+              ?.packagingScopes
+          }
         />
       )}
     </>
