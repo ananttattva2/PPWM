@@ -1,5 +1,5 @@
 import { validMediaSignature } from "@/lib/media-types";
-import { storeMedia, type CloudinaryStorage } from "@/lib/cloudinary-storage";
+import { storeMedia, type MediaStorage } from "@/lib/cloudinary-storage";
 import { ObjectId } from "mongodb";
 import { ZodError } from "zod";
 import { db, getClient } from "@/lib/db";
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
       name: string;
       type: string;
       size: number;
-      storage: CloudinaryStorage;
+      storage: MediaStorage;
       uploadedAt: Date;
       uploadedBy: string;
     }[] = [];
