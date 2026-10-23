@@ -1679,9 +1679,9 @@ export default function Article5Assessment({
                 that contains at least one fully fluorinated methyl (CF3-)
                 carbon atom (without any H/Cl/Br/I attached to it), except
                 substances that only contain the following structural elements:
-                CF3- or methylene (-CFX-CF2-X&apos;, where X = -OR or
-                -NRR&apos; and X&apos; = methyl (-CH3), methylene (-CH2-X or
-                -), an aromatic group, a carbonyl group (-C(O)-), -OR&apos;&apos;,
+                CF3- or methylene (-CFX-CF2-X&apos;, where X = -OR or -NRR&apos;
+                and X&apos; = methyl (-CH3), methylene (-CH2-X or -), an
+                aromatic group, a carbonyl group (-C(O)-), -OR&apos;&apos;,
                 -SR&apos;&apos; or -NR&apos;&apos;R&apos;&apos;&apos;; and where
                 R/R&apos;/R&apos;&apos;/R&apos;&apos;&apos; is hydrogen (-H),
                 methyl (-CH3), methylene (-CH2-) or a carbonyl group (-C(O)-).
@@ -1733,12 +1733,14 @@ export default function Article5Assessment({
                           const value = event.target.value;
                           setPfasAnswers((current) => {
                             const next = { ...current, [questionId]: value };
-                            if (questionId === 8 && value !== "Yes") next[9] = "";
+                            if (questionId === 8 && value !== "Yes")
+                              next[9] = "";
                             return next;
                           });
                           setPfasDetails((current) => {
                             const next = { ...current, [questionId]: "" };
-                            if (questionId === 8 && value !== "Yes") next[9] = "";
+                            if (questionId === 8 && value !== "Yes")
+                              next[9] = "";
                             return next;
                           });
                           setPfasProofs((current) => {
