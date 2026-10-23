@@ -1,7 +1,8 @@
 import "server-only";
 import { v2 as cloudinary } from "cloudinary";
 import { randomUUID } from "node:crypto";
-import { extname } from "node:path";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { extname, resolve } from "node:path";
 import { Binary } from "mongodb";
 
 export type CloudinaryStorage = {
@@ -11,7 +12,15 @@ export type CloudinaryStorage = {
   deliveryType: "authenticated";
   format: string;
 };
-export type StoredMedia = { storage: CloudinaryStorage };
+export type LocalStorage = {
+  provider: "local";
+  key: string;
+  format: string;
+};
+export type MediaStorage = CloudinaryStorage | LocalStorage;
+export type StoredMedia = { storage: MediaStorage };
+const localStorageRoot = () => resolve(process.cwd(), ".local", "uploads");
+const localStorageKey = /^[a-f0-9-]{36}(?:\.[a-zA-Z0-9]{1,15})?$/;
 function client() {
   const value = process.env.CLOUDINARY_URL;
   if (!value) throw new Error("Cloudinary storage is not configured.");
@@ -44,6 +53,23 @@ export async function storeMedia(
   const extension = extname(name)
     .replace(/[^a-zA-Z0-9.]/g, "")
     .slice(0, 15);
+  if (!process.env.CLOUDINARY_URL) {
+    if (process.env.NODE_ENV === "production")
+      throw new Error("Cloudinary storage is not configured.");
+    const key = `${randomUUID()}${extension}`;
+    await mkdir(localStorageRoot(), { recursive: true });
+    await writeFile(resolve(localStorageRoot(), key), bytes);
+    return {
+      storage: {
+        provider: "local",
+        key,
+        format:
+          extension.slice(1).toLowerCase() ||
+          type.split("/").at(-1)?.toLowerCase() ||
+          "bin",
+      },
+    };
+  }
   const publicId = `ppwm/${randomUUID()}${resourceType === "raw" ? extension : ""}`;
   const api = client();
   const result = await new Promise<{ public_id: string; format?: string }>(
@@ -78,7 +104,7 @@ export async function storeMedia(
 export async function readMedia(
   file: Record<string, unknown>,
 ): Promise<Uint8Array<ArrayBuffer>> {
-  const storage = file.storage as CloudinaryStorage | undefined;
+  const storage = file.storage as MediaStorage | undefined;
   if (storage?.provider === "cloudinary") {
     const { publicId, format, resourceType } = storage;
     const url = client().utils.private_download_url(publicId, format, {
@@ -94,11 +120,26 @@ export async function readMedia(
       throw new Error("Cloudinary file could not be downloaded.");
     return new Uint8Array(await response.arrayBuffer());
   }
+  if (storage?.provider === "local") {
+    if (!localStorageKey.test(storage.key))
+      throw new Error("File content is unavailable.");
+    const contents = await readFile(resolve(localStorageRoot(), storage.key));
+    return new Uint8Array(contents);
+  }
   if (file.data instanceof Binary) return new Uint8Array(file.data.buffer);
   if (file.data instanceof Uint8Array) return new Uint8Array(file.data);
   throw new Error("File content is unavailable.");
 }
-export async function removeMedia(storage: CloudinaryStorage) {
+export async function removeMedia(storage: MediaStorage) {
+  if (storage.provider === "local") {
+    if (!localStorageKey.test(storage.key)) return;
+    await unlink(resolve(localStorageRoot(), storage.key)).catch(
+      (error: NodeJS.ErrnoException) => {
+        if (error.code !== "ENOENT") throw error;
+      },
+    );
+    return;
+  }
   await client().uploader.destroy(storage.publicId, {
     resource_type: storage.resourceType,
     type: "authenticated",

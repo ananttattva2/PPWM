@@ -1,6 +1,6 @@
 import { assertPackagingScope } from "@/lib/packaging-scopes";
 import { readMedia } from "@/lib/cloudinary-storage";
-import { storeMedia, type CloudinaryStorage } from "@/lib/cloudinary-storage";
+import { storeMedia, type MediaStorage } from "@/lib/cloudinary-storage";
 import { assertImportAccess } from "@/lib/client-access";
 import { ObjectId } from "mongodb";
 import { db, getClient } from "@/lib/db";
@@ -148,7 +148,7 @@ export async function POST(req: Request, context: Context) {
       name: string;
       type: string;
       size: number;
-      storage: CloudinaryStorage;
+      storage: MediaStorage;
       createdBy: string;
       createdAt: Date;
       expiresAt?: Date;

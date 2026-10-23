@@ -308,6 +308,16 @@
   font-weight: 550;
   white-space: nowrap;
 }
+.substanceDefinition {
+  margin: 6px 2px 12px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.substanceDefinition b {
+  color: var(--ink);
+  font-weight: 650;
+}
 .questionCard {
   position: relative;
   margin-top: 10px;
@@ -388,6 +398,22 @@
   font-weight: 600;
   line-height: 1.7;
   letter-spacing: -0.01em;
+}
+.questionNote {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+.questionNote a {
+  color: #d96d20;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.questionNote a:hover {
+  color: #b95313;
 }
 .timeline {
   display: flex;
@@ -1003,6 +1029,9 @@
   grid-row: 2;
   width: calc(100% - 46px);
   max-width: none;
+}
+.questionCard > .packagingTypeField {
+  grid-row: 3;
 }
 .questionCard > .evidenceSection {
   grid-column: 2;

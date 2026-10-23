@@ -57,26 +57,48 @@ const scopeQuestions = [
 ] as const;
 
 const principalMaterialOptions = [
-  "PET",
-  "rPET",
-  "PE",
-  "PP",
-  "HDPE",
-  "LDPE",
-  "PVC",
-  "PS",
-  "Paper/Cardboard",
   "Glass",
-  "Steel",
-  "Aluminium",
-  "Wood",
+  "Paper/cardboard",
+  "Metal",
+  "Plastic",
+  "Wood, cork",
   "Textile",
-  "Composite/Multilayer",
-  "Adhesive",
-  "Ink/Coating",
-  "Other",
-  "Unknown",
+  "Ceramics or porcelain stoneware",
 ] as const;
+
+const packagingTypesByMaterial: Record<
+  (typeof principalMaterialOptions)[number],
+  readonly string[]
+> = {
+  Glass: ["Glass and composite packaging, of which the majority is glass"],
+  "Paper/cardboard": [
+    "Paper/cardboard packaging",
+    "Composite packaging of which the majority is paper/cardboard",
+  ],
+  Metal: [
+    "Steel and composite packaging of which the majority is steel",
+    "Aluminium and composite packaging of which the majority is aluminium – rigid",
+    "Aluminium and composite packaging of which the majority is aluminium – semi-rigid and flexible",
+  ],
+  Plastic: [
+    "PET – rigid Bottles",
+    "PET – rigid",
+    "PET – flexible",
+    "PE – rigid",
+    "PE – flexible",
+    "PP – rigid",
+    "PP – flexible",
+    "HDPE and PP – rigid",
+    "PS and XPS – rigid",
+    "EPS – rigid",
+    "Other rigid plastics (e.g. PVC, PC) including multi-materials – rigid",
+    "Other flexible plastics including multi-materials – flexible",
+    "Biodegradable plastics – rigid (e.g. PLA, PHB) and flexible (e.g. PLA)",
+  ],
+  "Wood, cork": ["Wooden packaging, including cork"],
+  Textile: ["Natural and synthetic textile fibres"],
+  "Ceramics or porcelain stoneware": ["Clay, stone"],
+};
 
 const constructionQuestions = [
   {
@@ -316,10 +338,13 @@ const foodContactQuestions: ConcernQuestion[] = [
 ];
 
 const pfasQuestions: {
+  id: number;
   text: string;
   guidance: Partial<Record<string, string>>;
+  note?: string;
 }[] = [
   {
+    id: 1,
     text: "Has PFAS screening covered the packaging and relevant components, including coatings, barrier layers, adhesives, seals, inks and treatments?",
     guidance: {
       Yes: "Record method/scope.",
@@ -328,15 +353,8 @@ const pfasQuestions: {
     },
   },
   {
-    text: "Has targeted PFAS analysis been performed with polymeric PFAS excluded from quantification as specified?",
-    guidance: {
-      Yes: "Continue.",
-      No: "Obtain suitable evidence.",
-      Unknown: "Obtain suitable evidence.",
-    },
-  },
-  {
-    text: "Is any individual PFAS at or above 25 ppb?",
+    id: 3,
+    text: "Any PFAS as measured with targeted PFAS analysis (polymeric PFAS excluded from quantification) is at or above 25 ppb?",
     guidance: {
       Yes: "FAIL 5(5)(a).",
       No: "Continue.",
@@ -344,15 +362,8 @@ const pfasQuestions: {
     },
   },
   {
-    text: "Has the sum of PFAS been assessed using targeted PFAS analysis, with prior degradation of precursors where applicable and polymeric PFAS excluded from quantification?",
-    guidance: {
-      Yes: "Continue.",
-      No: "Obtain suitable evidence.",
-      Unknown: "Obtain suitable evidence.",
-    },
-  },
-  {
-    text: "Is the sum of targeted PFAS at or above 250 ppb?",
+    id: 5,
+    text: "Is PFAS measured as the sum of targeted PFAS analysis, where applicable with prior degradation of precursors (polymeric PFAS excluded from quantification) at or above 250 ppb?",
     guidance: {
       Yes: "FAIL 5(5)(b).",
       No: "Continue.",
@@ -360,14 +371,7 @@ const pfasQuestions: {
     },
   },
   {
-    text: "Has total fluorine been measured/assessed to determine whether the total-PFAS criterion and fluorine evidence trigger need to be considered?",
-    guidance: {
-      Yes: "Continue.",
-      No: "Obtain appropriate evidence where relevant.",
-      Unknown: "Obtain appropriate evidence where relevant.",
-    },
-  },
-  {
+    id: 7,
     text: "Is PFAS concentration including polymeric PFAS at or above 50 ppm?",
     guidance: {
       Yes: "FAIL 5(5)(c).",
@@ -376,39 +380,18 @@ const pfasQuestions: {
     },
   },
   {
+    id: 8,
     text: "Does total fluorine exceed 50 mg/kg?",
+    note: "Question 9 appears only when this answer is Yes.",
     guidance: {
       Yes: "Obtain proof of the quantity of fluorine measured as PFAS vs non-PFAS for Annex VII.",
       No: "Record basis.",
     },
   },
   {
+    id: 9,
     text: "Where total fluorine exceeds 50 mg/kg, has the requested PFAS vs non-PFAS fluorine proof been obtained?",
     guidance: { Yes: "Add to technical file.", No: "Evidence gap." },
-  },
-  {
-    text: "Are PFAS intentionally used for grease, oil, water, stain, barrier or another functional purpose?",
-    guidance: {
-      Yes: "Identify function and quantify.",
-      No: "Retain negative declaration.",
-      Unknown: "Investigate.",
-    },
-  },
-  {
-    text: "Could PFAS be introduced indirectly through recycled feedstock, processing aids, coatings, adhesives or conversion operations?",
-    guidance: {
-      Yes: "Trace source and seek evidence.",
-      Unknown: "Trace source and seek evidence.",
-      No: "Document supply-chain assessment.",
-    },
-  },
-  {
-    text: "After PFAS assessment, can the packaging be concluded to meet all applicable Article 5(5) thresholds and evidence requirements?",
-    guidance: {
-      Yes: "PFAS PASS.",
-      No: "FAIL + corrective action.",
-      Unknown: "Evidence gap.",
-    },
   },
 ];
 
@@ -416,17 +399,19 @@ function EvidenceProof({
   questionId,
   file,
   onChange,
+  required = true,
 }: {
   questionId: number;
   file?: File;
   onChange: (file?: File) => void;
+  required?: boolean;
 }) {
   const [error, setError] = useState("");
   return (
     <div className={styles.evidenceSection}>
       <div>
         <h4>
-          Supporting evidence <span>Required</span>
+          Supporting evidence <span>{required ? "Required" : "Optional"}</span>
         </h4>
         <p>Upload a document supporting this selected answer.</p>
       </div>
@@ -457,7 +442,7 @@ function EvidenceProof({
           </span>
           <input
             type="file"
-            required
+            required={required}
             aria-label={`Supporting evidence for question ${questionId}`}
             accept={mediaAccept}
             onChange={async (event) => {
@@ -519,9 +504,9 @@ export default function Article5Assessment({
   const [pfasProofs, setPfasProofs] = useDraftState<
     Record<number, File | undefined>
   >("pfasProofs", {});
-  const pfasConflict =
-    pfasAnswers[12] === "Yes" &&
-    [3, 5, 7].some((number) => pfasAnswers[number] === "Yes");
+  const visiblePfasQuestions = pfasQuestions.filter(
+    (question) => question.id !== 9 || pfasAnswers[8] === "Yes",
+  );
   const [active, setActive] = useDraftState("active", 0);
   const [answers, setAnswers] = useDraftState<Record<number, string>>(
     "answers",
@@ -539,10 +524,7 @@ export default function Article5Assessment({
     "principalMaterial",
     "",
   );
-  const [materialDescription, setMaterialDescription] = useDraftState(
-    "materialDescription",
-    "",
-  );
+  const [packagingType, setPackagingType] = useDraftState("packagingType", "");
   const [materialEvidence, setMaterialEvidence] = useDraftState<File | null>(
     "materialEvidence",
     null,
@@ -597,12 +579,14 @@ export default function Article5Assessment({
     active === 0
       ? Object.values(answers).filter(Boolean).length
       : active === 1
-        ? Number(Boolean(principalMaterial)) +
+        ? Number(Boolean(principalMaterial && packagingType)) +
           Object.values(constructionAnswers).filter(Boolean).length
         : active === 2
           ? Object.values(concernAnswers).filter(Boolean).length
           : active === 3
-            ? Object.values(emissionAnswers).filter(Boolean).length
+            ? Object.entries(emissionAnswers).filter(
+                ([questionId, answer]) => questionId !== "5" && Boolean(answer),
+              ).length
             : active === 4
               ? Object.values(reuseAnswers).filter(Boolean).length
               : active === 6
@@ -610,41 +594,54 @@ export default function Article5Assessment({
                 : 0;
 
   const panel = useRef<HTMLElement>(null);
-  const [completed, setCompleted] = useDraftState<boolean[]>("completed", []);
   const [navigationError, setNavigationError] = useState("");
-  function choose(index: number) {
-    if (index > active + 1) return;
-    if (index > active) {
-      if (
-        Array.from({ length: active }, (_, i) => i).some((i) => !completed[i])
-      )
-        return;
-      const fields = panel.current?.querySelectorAll<
-        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-      >("input[required],select[required],textarea[required]");
-      const invalid = Array.from(fields || []).find(
-        (field) =>
-          !field.closest("[hidden]") &&
-          (!field.checkValidity() ||
-            (field.tagName === "TEXTAREA" && !field.value.trim())),
+  function validateCurrentSection() {
+    const fields = panel.current?.querySelectorAll<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >("input[required],select[required],textarea[required]");
+    const invalid = Array.from(fields || []).find(
+      (field) =>
+        !field.closest("[hidden]") &&
+        (!field.checkValidity() ||
+          (field.tagName === "TEXTAREA" && !field.value.trim())),
+    );
+    if (invalid) {
+      const questionNumber = invalid.closest<HTMLElement>(
+        "[data-question-number]",
+      )?.dataset.questionNumber;
+      setNavigationError(
+        questionNumber
+          ? `Question ${questionNumber} is incomplete. Complete its mandatory answer, value, details and supporting evidence before continuing.`
+          : "Complete all mandatory answers, details and evidence before continuing.",
       );
-      if (invalid) {
-        setNavigationError(
-          "Complete all mandatory answers, details and evidence before continuing.",
-        );
-        invalid.reportValidity();
-        invalid.focus();
-        return;
-      }
-      setCompleted((current) =>
-        current
-          .map((value, i) => (i === active ? true : value))
-          .concat(Array(Math.max(0, active + 1 - current.length)).fill(true)),
-      );
+      invalid.reportValidity();
+      invalid.focus();
+      return false;
     }
     setNavigationError("");
+    return true;
+  }
+
+  function choose(index: number) {
+    if (index > active + 1) return;
+    if (index > active && active !== 5 && !validateCurrentSection()) return;
+    if (window.location.hash === "#heavy-metal-calculator") {
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `${window.location.pathname}${window.location.search}`,
+      );
+    }
     setActive(index);
     tabRefs.current[index]?.focus();
+    window.requestAnimationFrame(() =>
+      panel.current?.scrollIntoView({ block: "start" }),
+    );
+  }
+
+  function submitAssessment() {
+    if (!validateCurrentSection()) return;
+    window.location.assign(backHref);
   }
 
   function clearEvidence(questionId: number) {
@@ -763,13 +760,7 @@ export default function Article5Assessment({
                 aria-controls={`${id}-panel`}
                 aria-selected={active === index}
                 tabIndex={active === index ? 0 : -1}
-                disabled={
-                  index > active + 1 ||
-                  (index > active &&
-                    Array.from({ length: active }, (_, i) => i).some(
-                      (i) => !completed[i],
-                    ))
-                }
+                disabled={index > active + 1}
                 onClick={() => choose(index)}
               >
                 <span>{String(index + 1).padStart(2, "0")}</span>
@@ -792,11 +783,6 @@ export default function Article5Assessment({
 
         <section
           ref={panel}
-          onChangeCapture={() => {
-            setCompleted((current) =>
-              current.map((done, index) => (index >= active ? false : done)),
-            );
-          }}
           className={styles.panel}
           role="tabpanel"
           id={`${id}-panel`}
@@ -815,19 +801,21 @@ export default function Article5Assessment({
               <span>
                 <Check size={14} aria-hidden="true" />{" "}
                 {active === 7
-                  ? Object.values(pfasAnswers).filter(Boolean).length
+                  ? visiblePfasQuestions.filter((question) =>
+                      Boolean(pfasAnswers[question.id]),
+                    ).length
                   : active === 5
                     ? heavyAnsweredCount
                     : answeredCount}{" "}
                 of{" "}
                 {active === 7
-                  ? 12
+                  ? visiblePfasQuestions.length
                   : active === 5
-                    ? 11
+                    ? 9
                     : active === 2
                       ? 8
                       : active === 3
-                        ? 5
+                        ? 4
                         : active === 6
                           ? 3
                           : 4}{" "}
@@ -1026,10 +1014,9 @@ export default function Article5Assessment({
                     onChange={(event) => {
                       const value = event.target.value;
                       setPrincipalMaterial(value);
+                      setPackagingType("");
                       setMaterialEvidence(null);
                       setMaterialEvidenceError("");
-                      if (value !== "Other" && value !== "Unknown")
-                        setMaterialDescription("");
                     }}
                   >
                     <option value="" disabled>
@@ -1043,27 +1030,32 @@ export default function Article5Assessment({
                   </select>
                 </label>
 
-                {(principalMaterial === "Other" ||
-                  principalMaterial === "Unknown") && (
-                  <>
-                    <label className={styles.descriptionField}>
-                      Describe the material <span aria-hidden="true">*</span>
-                      <textarea
+                {principalMaterial &&
+                  principalMaterial in packagingTypesByMaterial && (
+                    <label
+                      className={`${styles.answerField} ${styles.packagingTypeField}`}
+                    >
+                      Packaging type <span aria-hidden="true">*</span>
+                      <select
                         required
-                        rows={4}
-                        value={materialDescription}
+                        value={packagingType}
                         onChange={(event) =>
-                          setMaterialDescription(event.target.value)
+                          setPackagingType(event.target.value)
                         }
-                        placeholder="Describe the material, composition, grade, or any available supplier information."
-                      />
+                      >
+                        <option value="" disabled>
+                          Select the packaging type
+                        </option>
+                        {packagingTypesByMaterial[
+                          principalMaterial as keyof typeof packagingTypesByMaterial
+                        ].map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
                     </label>
-                    <p className={styles.specificationNotice} role="note">
-                      <b>Action required:</b> Describe the material and obtain
-                      its specification before completing the assessment.
-                    </p>
-                  </>
-                )}
+                  )}
 
                 {principalMaterial && (
                   <div className={styles.evidenceSection}>
@@ -1275,6 +1267,10 @@ export default function Article5Assessment({
                 </div>
                 <b className={styles.questionCount}>8 mandatory questions</b>
               </header>
+              <p className={styles.substanceDefinition}>
+                <b>Substances of concern we are referring to:</b> Lead, Cadmium,
+                Mercury and Hexavalent Chromium.
+              </p>
               {concernQuestions.map((question) => {
                 const answer = concernAnswers[question.id] || "";
                 const guidance = question.guidance?.[answer];
@@ -1290,6 +1286,19 @@ export default function Article5Assessment({
                           <span>EU market</span>
                         </div>
                         <h3>{question.text}</h3>
+                        {question.id === 8 && (
+                          <p className={styles.questionNote}>
+                            Please check whether the substance is restricted.{" "}
+                            <a
+                              href="https://www.echa.europa.eu/substances-restricted-under-reach"
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              View substances restricted under REACH on ECHA
+                            </a>
+                            .
+                          </p>
+                        )}
                       </div>
                       <div className={styles.timeline}>
                         <CalendarDays size={17} aria-hidden="true" />
@@ -1361,7 +1370,9 @@ export default function Article5Assessment({
                   <span>EMISSIONS ASSESSMENT</span>
                   <h2>Emissions, waste fate &amp; microplastics</h2>
                 </div>
-                <b className={styles.questionCount}>5 questions</b>
+                <b className={styles.questionCount}>
+                  4 mandatory questions · 1 monitoring question
+                </b>
               </header>
               {emissionQuestions.map((question) => {
                 const answer = emissionAnswers[question.id] || "";
@@ -1388,16 +1399,17 @@ export default function Article5Assessment({
                           </small>
                           <b>
                             {question.id === 5
-                              ? "No direct company deadline"
+                              ? "No direct deadline"
                               : "12 Aug 2026"}
                           </b>
                         </span>
                       </div>
                     </div>
                     <label className={styles.answerField}>
-                      Answer <span aria-hidden="true">*</span>
+                      Answer{" "}
+                      {question.id !== 5 && <span aria-hidden="true">*</span>}
                       <select
-                        required
+                        required={question.id !== 5}
                         value={answer}
                         onChange={(event) => {
                           const value = event.target.value;
@@ -1431,6 +1443,7 @@ export default function Article5Assessment({
                         key={`${question.id}-${answer}`}
                         questionId={question.id}
                         file={emissionProofs[question.id]}
+                        required={question.id !== 5}
                         onChange={(file) =>
                           setEmissionProofs((current) => ({
                             ...current,
@@ -1657,32 +1670,52 @@ export default function Article5Assessment({
                   <span>ARTICLE 5(5) ASSESSMENT</span>
                   <h2>PFAS detailed assessment</h2>
                 </div>
-                <b className={styles.questionCount}>12 questions</b>
+                <b className={styles.questionCount}>
+                  {visiblePfasQuestions.length} questions
+                </b>
               </header>
-              {pfasQuestions.map((question, index) => {
-                const number = index + 1;
-                const answer = pfasAnswers[number] || "";
+              <p className={styles.substanceDefinition}>
+                <b>PFAS definition:</b> &quot;PFAS&quot; means any substance
+                that contains at least one fully fluorinated methyl (CF3-)
+                carbon atom (without any H/Cl/Br/I attached to it), except
+                substances that only contain the following structural elements:
+                CF3- or methylene (-CFX-CF2-X&apos;, where X = -OR or
+                -NRR&apos; and X&apos; = methyl (-CH3), methylene (-CH2-X or
+                -), an aromatic group, a carbonyl group (-C(O)-), -OR&apos;&apos;,
+                -SR&apos;&apos; or -NR&apos;&apos;R&apos;&apos;&apos;; and where
+                R/R&apos;/R&apos;&apos;/R&apos;&apos;&apos; is hydrogen (-H),
+                methyl (-CH3), methylene (-CH2-) or a carbonyl group (-C(O)-).
+              </p>
+              {visiblePfasQuestions.map((question, index) => {
+                const questionId = question.id;
+                const displayNumber = index + 1;
+                const answer = pfasAnswers[questionId] || "";
                 const guidance = question.guidance[answer];
-                const fail =
-                  (answer === "Yes" && [3, 5, 7].includes(number)) ||
-                  (number === 12 && answer === "No");
+                const fail = answer === "Yes" && [3, 5, 7].includes(questionId);
                 return (
-                  <article className={styles.questionCard} key={number}>
+                  <article
+                    className={styles.questionCard}
+                    key={questionId}
+                    data-question-number={displayNumber}
+                  >
                     <div className={styles.questionHeading}>
-                      <span>{number}</span>
+                      <span>{displayNumber}</span>
                       <div className={styles.questionCopy}>
                         <div className={styles.questionMeta}>
                           <b>Article 5(5)</b>
                           <span>EU market</span>
                         </div>
                         <h3>{question.text}</h3>
+                        {question.note && (
+                          <p className={styles.questionNote}>{question.note}</p>
+                        )}
                       </div>
                       <div className={styles.timeline}>
                         <CalendarDays size={17} aria-hidden="true" />
                         <span>
                           <small>MANDATORY FROM</small>
                           <b>12 Aug 2026</b>
-                          {[8, 9].includes(number) && (
+                          {[8, 9].includes(questionId) && (
                             <em>
                               Fluorine proof required upon request if total
                               fluorine &gt;50 mg/kg
@@ -1698,18 +1731,25 @@ export default function Article5Assessment({
                         value={answer}
                         onChange={(event) => {
                           const value = event.target.value;
-                          setPfasAnswers((current) => ({
-                            ...current,
-                            [number]: value,
-                          }));
-                          setPfasDetails((current) => ({
-                            ...current,
-                            [number]: "",
-                          }));
-                          setPfasProofs((current) => ({
-                            ...current,
-                            [number]: undefined,
-                          }));
+                          setPfasAnswers((current) => {
+                            const next = { ...current, [questionId]: value };
+                            if (questionId === 8 && value !== "Yes") next[9] = "";
+                            return next;
+                          });
+                          setPfasDetails((current) => {
+                            const next = { ...current, [questionId]: "" };
+                            if (questionId === 8 && value !== "Yes") next[9] = "";
+                            return next;
+                          });
+                          setPfasProofs((current) => {
+                            const next = {
+                              ...current,
+                              [questionId]: undefined,
+                            };
+                            if (questionId === 8 && value !== "Yes")
+                              next[9] = undefined;
+                            return next;
+                          });
                         }}
                       >
                         <option value="" disabled>
@@ -1722,13 +1762,13 @@ export default function Article5Assessment({
                     </label>
                     {answer && (
                       <EvidenceProof
-                        key={`${number}-${answer}`}
-                        questionId={number}
-                        file={pfasProofs[number]}
+                        key={`${questionId}-${answer}`}
+                        questionId={displayNumber}
+                        file={pfasProofs[questionId]}
                         onChange={(file) =>
                           setPfasProofs((current) => ({
                             ...current,
-                            [number]: file,
+                            [questionId]: file,
                           }))
                         }
                       />
@@ -1738,33 +1778,27 @@ export default function Article5Assessment({
                         className={`${styles.guidance} ${fail ? styles.error : ""}`}
                         role={fail ? "alert" : "note"}
                       >
-                        {number === 12 && pfasConflict && answer === "Yes"
-                          ? "Review required: the selected PFAS PASS conclusion conflicts with a threshold-failure answer in question 3, 5 or 7."
-                          : guidance}
+                        {guidance}
                       </p>
                     )}
                     {answer && (
                       <label className={styles.descriptionField}>
                         {answer === "N/A"
                           ? "Not-applicable justification"
-                          : number === 1 && answer === "Yes"
+                          : questionId === 1 && answer === "Yes"
                             ? "Screening method and scope"
-                            : number === 8 && answer === "No"
+                            : questionId === 8 && answer === "No"
                               ? "Total fluorine assessment basis"
-                              : number === 10 && answer === "Yes"
-                                ? "PFAS function and quantified concentration"
-                                : number === 12 && answer === "No"
-                                  ? "Corrective action and assessment basis"
-                                  : "Assessment details / supporting basis"}{" "}
+                              : "Assessment details / supporting basis"}{" "}
                         <span aria-hidden="true">*</span>
                         <textarea
                           required
                           rows={3}
-                          value={pfasDetails[number] || ""}
+                          value={pfasDetails[questionId] || ""}
                           onChange={(event) =>
                             setPfasDetails((current) => ({
                               ...current,
-                              [number]: event.target.value,
+                              [questionId]: event.target.value,
                             }))
                           }
                         />
@@ -1779,8 +1813,8 @@ export default function Article5Assessment({
                   thresholds, fluorine proof and supporting evidence before
                   recording the final conclusion.
                 </span>
-                <button type="button" onClick={() => choose(6)}>
-                  <ArrowLeft size={17} /> Food-contact gate
+                <button type="button" onClick={submitAssessment}>
+                  Submit <ArrowRight size={17} />
                 </button>
               </footer>
             </div>

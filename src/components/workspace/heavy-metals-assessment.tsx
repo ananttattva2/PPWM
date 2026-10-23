@@ -3,22 +3,24 @@ import { persistAssessmentFile } from "@/lib/upload-media-client";
 import { mediaAccept } from "@/lib/media-types";
 
 import { useDraftState } from "@/lib/use-draft-state";
-import {
-  CalendarDays,
-  Calculator,
-  FileText,
-  UploadCloud,
-  X,
-} from "lucide-react";
+import { CalendarDays, FileText, UploadCloud, X } from "lucide-react";
+import { useEffect } from "react";
 import { calculateHeavyMetals } from "@/lib/heavy-metal-calculator";
 import styles from "./article-5-assessment.module.css";
 import metalStyles from "./heavy-metals-assessment.module.css";
 
 const options = ["Yes", "No", "Unknown", "N/A"];
-const calculatorOptions = [
-  "Use calculator below",
+const analyteOptions = ["Yes", "No"];
+const legacyAvailableAnswers = ["Use calculator below"];
+const legacyUnavailableAnswers = [
   "Individual value not reported",
   "Not applicable — justify",
+];
+const metalLabels = [
+  "Lead (Pb)",
+  "Cadmium (Cd)",
+  "Mercury (Hg)",
+  "Hexavalent chromium [Cr(VI)]",
 ];
 const questions = [
   "Has the presence of lead (Pb), cadmium (Cd), mercury (Hg) and hexavalent chromium [Cr(VI)] been assessed?",
@@ -30,21 +32,24 @@ const questions = [
   "If individual-analyte results are available, what is the validated mercury (Hg) concentration for the selected sample basis?",
   "If individual-analyte results are available, what is the validated hexavalent chromium [Cr(VI)] concentration for the selected sample basis?",
   "What is the validated combined concentration of Pb + Cd + Hg + Cr(VI) for the defined test specimen/sample basis?",
-  "Does the validated combined concentration exceed 100 mg/kg?",
-  "Has a currently effective delegated act changed the Article 5(4) threshold or created a qualifying derogation that actually applies to this packaging?",
 ];
-const calculatorGuidance = [
-  "Enter the value in the Heavy-Metal Calculator below. If the laboratory provides only a validated combined total, select that input method and document why separate Pb data are unavailable.",
-  "Enter the value in the Heavy-Metal Calculator below. If using a validated combined total, document the basis in the calculator panel.",
-  "Enter the value in the Heavy-Metal Calculator below. If using a validated combined total, document the basis in the calculator panel.",
-  "Enter the value in the Heavy-Metal Calculator below. Do not substitute total chromium for Cr(VI) without a scientifically and legally valid basis.",
-  "Use the Heavy-Metal Calculator below. Choose either the four-analyte input method or a combined total explicitly reported by the laboratory.",
-];
+function normalizeAnalyteAnswer(answer: string) {
+  if (analyteOptions.includes(answer)) return answer;
+  if (legacyAvailableAnswers.includes(answer)) return "Yes";
+  if (legacyUnavailableAnswers.includes(answer)) return "No";
+  return "";
+}
 function guidanceFor(number: number, answer: string) {
+  if (number === 9)
+    return "This value is calculated automatically from Questions 5–8 and cannot be edited.";
+  if (number >= 5 && number <= 8) {
+    if (answer === "Yes")
+      return `Enter the validated ${metalLabels[number - 5]} concentration in mg/kg.`;
+    if (answer === "No")
+      return `Provide the validated ${metalLabels[number - 5]} concentration after laboratory testing.`;
+    return "";
+  }
   if (!answer) return "";
-  if (number >= 5 && number <= 9) return calculatorGuidance[number - 5];
-  if (number === 10)
-    return "PASS when the sum is ≤100 mg/kg. FAIL only when it is >100 mg/kg. Equality to 100 mg/kg does not exceed the limit. The calculator below supplies the numerical gate.";
   const branches: Record<number, Record<string, string>> = {
     1: {
       Yes: "Record results.",
@@ -60,11 +65,6 @@ function guidanceFor(number: number, answer: string) {
       Yes: "Accept for technical review.",
       No: "Obtain method details or suitable test.",
       Unknown: "Obtain method details or suitable test.",
-    },
-    11: {
-      Yes: "Record the exact act, effective date, scope and all conditions; legal review required.",
-      No: "Apply the current 100 mg/kg limit.",
-      Unknown: "Pending legal review.",
     },
   };
   return branches[number]?.[answer] || "";
@@ -91,22 +91,17 @@ export default function HeavyMetalsAssessment({
     "heavy-errors",
     {},
   );
-  const [method, setMethod] = useDraftState("heavy-method", "four");
   const [values, setValues] = useDraftState("heavy-values", ["", "", "", ""]);
-  const [combined, setCombined] = useDraftState("heavy-combined", "");
-  const [basis, setBasis] = useDraftState("heavy-basis", "");
-  const [totalBasis, setTotalBasis] = useDraftState("heavy-totalBasis", "");
-  const [act, setAct] = useDraftState("heavy-act", {
-    name: "",
-    date: "",
-    scope: "",
-    conditions: "",
-  });
-  const result = calculateHeavyMetals(method === "four" ? values : [combined]);
-  const mismatch =
-    result &&
-    ["Yes", "No"].includes(answers[10]) &&
-    (answers[10] === "Yes") !== result.exceeds;
+  const result = calculateHeavyMetals(values);
+  useEffect(() => {
+    const standardAnswers = [1, 2, 3, 4].filter((number) =>
+      Boolean(answers[number]),
+    ).length;
+    const analyteAnswers = [5, 6, 7, 8].filter((number) =>
+      Boolean(normalizeAnalyteAnswer(answers[number] || "")),
+    ).length;
+    onAnswered(standardAnswers + analyteAnswers + Number(Boolean(result)));
+  }, [answers, values, result?.total]);
   return (
     <div className={styles.scopeContent}>
       <header>
@@ -114,23 +109,30 @@ export default function HeavyMetalsAssessment({
           <span>ARTICLE 5(4) ASSESSMENT</span>
           <h2>Heavy metals</h2>
         </div>
-        <b className={styles.questionCount}>11 questions</b>
+        <b className={styles.questionCount}>9 questions</b>
       </header>
       {questions.map((text, index) => {
         const number = index + 1;
-        const answer = answers[number] || "";
+        const storedAnswer = answers[number] || "";
+        const answer =
+          number >= 5 && number <= 8
+            ? normalizeAnalyteAnswer(storedAnswer)
+            : number === 9
+              ? ""
+              : storedAnswer;
         const guidance = guidanceFor(number, answer);
-        const needsJustification =
-          answer === "Not applicable — justify" ||
-          answer === "Individual value not reported" ||
-          answer === "N/A";
+        const needsJustification = answer === "N/A";
         return (
-          <article className={styles.questionCard} key={number}>
+          <article
+            className={styles.questionCard}
+            data-question-number={number}
+            key={number}
+          >
             <div className={styles.questionHeading}>
               <span>{number}</span>
               <div className={styles.questionCopy}>
                 <div className={styles.questionMeta}>
-                  <b>{number === 11 ? "Legal review" : "Article 5(4)"}</b>
+                  <b>Article 5(4)</b>
                   <span>EU market</span>
                 </div>
                 <h3>{text}</h3>
@@ -138,50 +140,124 @@ export default function HeavyMetalsAssessment({
               <div className={`${styles.timeline} ${metalStyles.timeline}`}>
                 <CalendarDays size={17} aria-hidden="true" />
                 <span>
-                  <small>
-                    {number === 11 ? "TIMING" : "PPWR APPLIES FROM"}
-                  </small>
-                  <b>
-                    {number === 11
-                      ? "Future delegated act — no application date fixed yet"
-                      : "12 Aug 2026"}
-                  </b>
-                  {number !== 11 && (
-                    <em>
-                      Already regulated under previous EU packaging law; PPWR
-                      applies from 12 Aug 2026
-                    </em>
-                  )}
+                  <small>PPWR APPLIES FROM</small>
+                  <b>12 Aug 2026</b>
+                  <em>
+                    Already regulated under previous EU packaging law; PPWR
+                    applies from 12 Aug 2026
+                  </em>
                 </span>
               </div>
             </div>
-            <label className={styles.answerField}>
-              Answer <span aria-hidden="true">*</span>
-              <select
-                required
-                value={answer}
-                onChange={(event) => {
-                  const next = { ...answers, [number]: event.target.value };
-                  setAnswers(next);
-                  onAnswered(Object.values(next).filter(Boolean).length);
-                  setDetails((current) => ({ ...current, [number]: "" }));
-                  setProofs((current) => ({ ...current, [number]: undefined }));
-                  setErrors((current) => ({ ...current, [number]: "" }));
-                  if (number === 11)
-                    setAct({ name: "", date: "", scope: "", conditions: "" });
-                }}
+            {number !== 9 && (
+              <label className={styles.answerField}>
+                {number >= 5 && number <= 8
+                  ? "Is the validated concentration available?"
+                  : "Answer"}{" "}
+                <span aria-hidden="true">*</span>
+                <select
+                  required
+                  value={answer}
+                  onChange={(event) => {
+                    const next = { ...answers, [number]: event.target.value };
+                    setAnswers(next);
+                    setDetails((current) => ({ ...current, [number]: "" }));
+                    setProofs((current) => ({
+                      ...current,
+                      [number]: undefined,
+                    }));
+                    setErrors((current) => ({ ...current, [number]: "" }));
+                    if (
+                      number >= 5 &&
+                      number <= 8 &&
+                      event.target.value === "No"
+                    )
+                      setValues((current) =>
+                        current.map((value, valueIndex) =>
+                          valueIndex === number - 5 ? "" : value,
+                        ),
+                      );
+                  }}
+                >
+                  <option value="" disabled>
+                    Select an answer
+                  </option>
+                  {(number >= 5 && number <= 8 ? analyteOptions : options).map(
+                    (option) => (
+                      <option key={option}>{option}</option>
+                    ),
+                  )}
+                </select>
+              </label>
+            )}
+            {number >= 5 && number <= 8 && answer === "Yes" && (
+              <label
+                className={`${styles.descriptionField} ${metalStyles.inlineValue}`}
               >
-                <option value="" disabled>
-                  Select an answer
-                </option>
-                {(number >= 5 && number <= 9 ? calculatorOptions : options).map(
-                  (option) => (
-                    <option key={option}>{option}</option>
-                  ),
-                )}
-              </select>
-            </label>
-            {answer && (
+                Validated {metalLabels[number - 5]} concentration <span>*</span>
+                <input
+                  required
+                  inputMode="decimal"
+                  pattern="\\d{1,18}(?:\\.\\d{1,12})?"
+                  title="Enter a non-negative concentration with up to 12 decimal places."
+                  value={values[number - 5]}
+                  onChange={(event) =>
+                    setValues((current) =>
+                      current.map((value, valueIndex) =>
+                        valueIndex === number - 5 ? event.target.value : value,
+                      ),
+                    )
+                  }
+                  placeholder="Enter validated value"
+                />
+                <small>mg/kg</small>
+              </label>
+            )}
+            {number === 9 && (
+              <div className={metalStyles.questionResult}>
+                <div className={metalStyles.sourceValues}>
+                  {metalLabels.map((label, valueIndex) => (
+                    <span key={label}>
+                      <small>{label}</small>
+                      <b>
+                        {values[valueIndex] || "Pending"}
+                        {values[valueIndex] ? " mg/kg" : ""}
+                      </b>
+                    </span>
+                  ))}
+                </div>
+                <label className={styles.descriptionField}>
+                  Combined concentration
+                  <input
+                    readOnly
+                    value={result?.total || ""}
+                    placeholder="Awaiting Questions 5–8"
+                  />
+                  <small>mg/kg</small>
+                </label>
+                <div
+                  className={metalStyles.result}
+                  role="status"
+                  data-status={
+                    !result ? "pending" : result.exceeds ? "fail" : "pass"
+                  }
+                >
+                  <b>
+                    {!result
+                      ? "PENDING — laboratory results required"
+                      : result.exceeds
+                        ? "NOT COMPLIANT"
+                        : "COMPLIANT"}
+                  </b>
+                  <span>
+                    {!result
+                      ? "All four validated values are required."
+                      : `${result.total} mg/kg ${result.exceeds ? "exceeds" : "does not exceed"} the 100 mg/kg limit.`}
+                  </span>
+                </div>
+              </div>
+            )}
+            {answer && !(number >= 5 && number <= 8 && answer === "No") && (
               <div className={styles.evidenceSection}>
                 <h4>
                   Supporting evidence <span>Required</span>
@@ -264,12 +340,6 @@ export default function HeavyMetalsAssessment({
             {guidance && (
               <p className={styles.guidance} role="note">
                 {guidance}
-                {number >= 5 && number <= 10 && (
-                  <>
-                    {" "}
-                    <a href="#heavy-metal-calculator">Open calculator ↓</a>
-                  </>
-                )}
               </p>
             )}
             {(needsJustification || (number === 1 && answer === "Yes")) && (
@@ -291,168 +361,9 @@ export default function HeavyMetalsAssessment({
                 />
               </label>
             )}
-            {number === 10 && mismatch && (
-              <p className={styles.guidance} role="alert">
-                Your answer differs from the calculator result. Review the
-                answer and validated laboratory data.
-              </p>
-            )}
-            {number === 11 && answer === "Yes" && (
-              <div className={metalStyles.legalFields}>
-                {(
-                  [
-                    ["name", "Exact delegated act"],
-                    ["date", "Effective date"],
-                    ["scope", "Applicable scope"],
-                    ["conditions", "All qualifying conditions"],
-                  ] as const
-                ).map(([key, label]) => (
-                  <label className={styles.descriptionField} key={key}>
-                    {label} <span>*</span>
-                    <input
-                      required
-                      type={key === "date" ? "date" : "text"}
-                      value={act[key]}
-                      onChange={(event) =>
-                        setAct((current) => ({
-                          ...current,
-                          [key]: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                ))}
-                <p className={styles.guidance}>
-                  Legal review required. The calculator retains the 100 mg/kg
-                  baseline and does not automatically apply a derogation.
-                </p>
-              </div>
-            )}
           </article>
         );
       })}
-      <section
-        id="heavy-metal-calculator"
-        className={metalStyles.calculator}
-        aria-labelledby="heavy-calculator-heading"
-      >
-        <header>
-          <Calculator size={25} aria-hidden="true" />
-          <div>
-            <span>NUMERICAL GATE · ARTICLE 5(4)</span>
-            <h2 id="heavy-calculator-heading">Heavy-Metal Calculator</h2>
-          </div>
-        </header>
-        <p>
-          Use validated concentrations in mg/kg for the same defined specimen.
-          Do not treat unreported values as zero.
-        </p>
-        <label className={styles.descriptionField}>
-          Test specimen / sample basis <span>*</span>
-          <input
-            required
-            value={basis}
-            onChange={(event) => setBasis(event.target.value)}
-            placeholder="Material grade, formulation, component and production source"
-          />
-        </label>
-        <label className={styles.answerField}>
-          Input method
-          <select
-            value={method}
-            onChange={(event) => setMethod(event.target.value)}
-          >
-            <option value="four">Four-analyte input method</option>
-            <option value="combined">
-              Validated combined total reported by laboratory
-            </option>
-          </select>
-        </label>
-        {method === "four" ? (
-          <div className={metalStyles.inputs}>
-            {[
-              "Lead (Pb)",
-              "Cadmium (Cd)",
-              "Mercury (Hg)",
-              "Hexavalent chromium [Cr(VI)]",
-            ].map((label, index) => (
-              <label className={styles.descriptionField} key={label}>
-                {label} · mg/kg
-                <input
-                  inputMode="decimal"
-                  required
-                  value={values[index]}
-                  onChange={(event) =>
-                    setValues((current) =>
-                      current.map((value, i) =>
-                        i === index ? event.target.value : value,
-                      ),
-                    )
-                  }
-                  placeholder="Enter validated value"
-                />
-              </label>
-            ))}
-          </div>
-        ) : (
-          <>
-            <label className={styles.descriptionField}>
-              Combined Pb + Cd + Hg + Cr(VI) · mg/kg
-              <input
-                inputMode="decimal"
-                required
-                value={combined}
-                onChange={(event) => setCombined(event.target.value)}
-              />
-            </label>
-            <label className={styles.descriptionField}>
-              Laboratory reporting basis / unavailable individual results{" "}
-              <span>*</span>
-              <textarea
-                required
-                rows={4}
-                value={totalBasis}
-                onChange={(event) => setTotalBasis(event.target.value)}
-                placeholder="Cite the validated laboratory combined total and explain why separate Pb / Cd / Hg / Cr(VI) results are unavailable."
-              />
-            </label>
-          </>
-        )}
-        <p className={styles.guidance}>
-          Do not substitute total chromium for Cr(VI) without a scientifically
-          and legally valid basis. Values must be non-negative mg/kg
-          concentrations, with up to 12 decimal places.
-        </p>
-        <div
-          className={metalStyles.result}
-          role="status"
-          data-status={!result ? "pending" : result.exceeds ? "fail" : "pass"}
-        >
-          <b>
-            {!result
-              ? "PENDING — enter all validated concentrations"
-              : `${result.exceeds ? "FAIL" : "PASS"} · ${result.total} mg/kg`}
-          </b>
-          <span>
-            Baseline: Pb + Cd + Hg + Cr(VI) ≤100 mg/kg. Exactly 100 mg/kg passes
-            the numerical gate.
-          </span>
-        </div>
-        {result &&
-          (!basis.trim() || (method === "combined" && !totalBasis.trim())) && (
-            <p className={styles.guidance}>
-              Documentation incomplete: record the sample basis
-              {method === "combined"
-                ? " and laboratory reporting basis"
-                : ""}{" "}
-              before completing the review.
-            </p>
-          )}
-        <p>
-          Numerical gate only. Evidence suitability, sample traceability and any
-          applicable delegated act still require review.
-        </p>
-      </section>
     </div>
   );
 }

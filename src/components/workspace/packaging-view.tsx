@@ -233,7 +233,15 @@ export default function PackagingView({
                   </div>
                   <div className="composition-component-fields">
                     <div className="component-view-heading">
-                      <h4>{component.name || `Component ${index + 1}`}</h4>
+                      <div className="component-view-title">
+                        <h4>{component.name || `Component ${index + 1}`}</h4>
+                        <p className="component-view-weight">
+                          Weight:{" "}
+                          {component.weight?.trim()
+                            ? `${Number(component.weight).toFixed(2)} g`
+                            : "—"}
+                        </p>
+                      </div>
                       <div className="component-view-actions">
                         <Link
                           className="gallery-analyse-link component-analyse-link"
