@@ -1015,8 +1015,12 @@ export default function PackagingImport({
                           <th>Supplier Contact Number</th>
                           <th>Supplier Email</th>
                           <th>Supplier Authorised Person Name</th>
-                          <th>Total Weight (g)</th>
-                          <th>Components</th>
+                          <th className="import-weight-cell">
+                            Total Weight (g)
+                          </th>
+                          <th className="import-component-count-cell">
+                            Components
+                          </th>
                           {details && (
                             <>
                               <th>Label Coverage (%)</th>
@@ -1049,29 +1053,47 @@ export default function PackagingImport({
                                 "supplierEmail",
                                 "supplierAuthorisedPersonName",
                               ] as const
-                            ).map((key) => (
-                              <td key={key}>
-                                {row.componentSuppliers ||
+                            ).map((key) => {
+                              const showComponentSuppliers = Boolean(
+                                row.componentSuppliers ||
                                 row.composition?.components.some((component) =>
                                   Boolean(component[key]),
-                                ) ? (
-                                  <div className="import-component-suppliers">
-                                    {row.composition?.components.map(
-                                      (component) => (
-                                        <span key={component.id}>
-                                          <strong>{component.name}:</strong>{" "}
-                                          {component[key] || "—"}
-                                        </span>
-                                      ),
-                                    )}
-                                  </div>
-                                ) : (
-                                  row[key] || "—"
-                                )}
-                              </td>
-                            ))}
-                            <td>{row.weight?.toFixed(2) ?? "—"}</td>
-                            <td>{row.components ?? "—"}</td>
+                                ),
+                              );
+                              return (
+                                <td
+                                  className={
+                                    showComponentSuppliers
+                                      ? "import-component-supplier-cell"
+                                      : undefined
+                                  }
+                                  key={key}
+                                >
+                                  {showComponentSuppliers ? (
+                                    <div className="import-component-suppliers">
+                                      {row.composition?.components.map(
+                                        (component) => (
+                                          <span key={component.id}>
+                                            <strong>{component.name}:</strong>{" "}
+                                            {component[key] || "—"}
+                                          </span>
+                                        ),
+                                      )}
+                                    </div>
+                                  ) : (
+                                    row[key] || "—"
+                                  )}
+                                </td>
+                              );
+                            })}
+                            <td className="import-weight-cell">
+                              <strong>{row.weight?.toFixed(2) ?? "—"}</strong>
+                              {row.weight !== null &&
+                                row.weight !== undefined && <small>g</small>}
+                            </td>
+                            <td className="import-component-count-cell">
+                              {row.components ?? "—"}
+                            </td>
                             {details && (
                               <>
                                 <td>{row.labelCoverage || "—"}</td>
@@ -1239,99 +1261,6 @@ export default function PackagingImport({
             </motion.div>
           </AnimatePresence>
         </section>
-        <aside className="import-issue-side">
-          <section className="import-panel">
-            <h4>
-              Missing Fields{" "}
-              <span>
-                (
-                {
-                  rows.filter((row) =>
-                    row.issues.some((issue) => issue.kind === "missing"),
-                  ).length
-                }
-                {" SKUs)"}
-              </span>
-              <button type="button" onClick={() => openTab("Missing Fields")}>
-                View all
-              </button>
-            </h4>
-            {result?.analysis.missingFields.length ? (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Field Name</th>
-                    <th>No. of SKUs</th>
-                    <th>% Impact</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.analysis.missingFields.map((field) => (
-                    <tr key={field.field}>
-                      <td>{field.field}</td>
-                      <td>{field.count}</td>
-                      <td>{field.impact}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p>No missing fields detected{result ? "." : " yet."}</p>
-            )}
-          </section>
-          <section className="import-panel">
-            <h4>
-              Validation Errors <span>({summary.errors} SKUs)</span>
-              <button
-                type="button"
-                onClick={() => openTab("Validation Issues")}
-              >
-                View all
-              </button>
-            </h4>
-            {result?.analysis.validationErrors.length ? (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Error Type</th>
-                    <th>No. of SKUs</th>
-                    <th>Example</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.analysis.validationErrors.map((error, index) => (
-                    <tr key={index}>
-                      <td>{error.message}</td>
-                      <td>{error.count}</td>
-                      <td>
-                        {result.analysis.issues.find(
-                          (issue) =>
-                            issue.kind === "error" &&
-                            issue.field === error.field &&
-                            issue.message === error.message,
-                        )?.sku || "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p>
-                {result
-                  ? "All supplied values passed validation."
-                  : "Process a file to validate its data."}
-              </p>
-            )}
-          </section>
-          <div className="import-save-note">
-            <CheckCircle2 size={16} />
-            <p>
-              {result
-                ? "Your data is saved. Missing details can be completed later with the edit icon. Validation errors must be corrected before creating the client."
-                : "Your file and results will be saved when you process the import."}
-            </p>
-          </div>
-        </aside>
       </div>
     </div>
   );

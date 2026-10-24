@@ -1501,7 +1501,7 @@
   white-space: nowrap;
 }
 .packaging-import-workspace .import-bottom-grid {
-  grid-template-columns: minmax(0, 3fr) minmax(270px, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   scroll-margin-top: 24px;
 }
@@ -1597,29 +1597,106 @@
   min-width: 1580px;
 }
 .workspace .packaging-import-workspace .import-preview-table th {
-  font-size: 11px;
-  padding: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  padding: 13px 10px;
   color: var(--import-muted);
   background: var(--import-soft);
   border-bottom: 1px solid var(--import-border);
+  border-right: 1px solid var(--import-border);
   text-align: left;
 }
+.workspace .packaging-import-workspace .import-preview-table th:first-child {
+  border-left: 1px solid var(--import-border);
+}
 .workspace .packaging-import-workspace .import-preview-table td {
-  padding: 12px;
-  font-size: 12px;
+  padding: 9px 10px;
+  font-size: 11px;
+  line-height: 1.4;
   color: var(--import-text);
   border-bottom: 1px solid var(--import-border);
+  border-right: 1px solid var(--import-border);
   background: var(--import-surface);
+  vertical-align: middle;
+}
+.workspace .packaging-import-workspace .import-preview-table td:first-child {
+  border-left: 1px solid var(--import-border);
+}
+.workspace
+  .packaging-import-workspace
+  .import-preview-table
+  .import-weight-cell {
+  min-width: 120px;
+  text-align: center;
+  white-space: nowrap;
+}
+.workspace
+  .packaging-import-workspace
+  .import-preview-table
+  td.import-weight-cell
+  strong {
+  display: inline;
+  min-width: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--import-text);
+}
+.workspace
+  .packaging-import-workspace
+  .import-preview-table
+  td.import-weight-cell
+  small {
+  display: inline;
+  margin-left: 4px;
+  font-size: 10px;
+}
+.workspace
+  .packaging-import-workspace
+  .import-preview-table
+  .import-component-count-cell {
+  min-width: 92px;
+  text-align: center;
 }
 .workspace .packaging-import-workspace .import-preview-table td b {
-  font-size: 12px;
+  min-width: 0;
+  font-size: 11px;
   font-weight: 600;
   line-height: 1.4;
 }
 .workspace .packaging-import-workspace .import-preview-table td small {
-  font-size: 11px;
+  font-size: 10px;
   margin-top: 4px;
   color: var(--import-muted);
+}
+.workspace
+  .packaging-import-workspace
+  .import-preview-table
+  td.import-component-supplier-cell {
+  padding: 0;
+  vertical-align: top;
+}
+.import-component-suppliers {
+  display: grid;
+}
+.import-component-suppliers > span {
+  display: block;
+  box-sizing: border-box;
+  height: 42px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--import-border);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.import-component-suppliers > span:last-child {
+  border-bottom: 0;
+}
+.import-component-suppliers strong {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--import-text);
 }
 .workspace .packaging-import-workspace .import-preview-table tbody tr:hover td {
   background: var(--import-soft);

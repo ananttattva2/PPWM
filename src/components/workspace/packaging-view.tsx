@@ -3,7 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { rememberPackagingWorkspace } from "@/lib/packaging-navigation";
 import PackagingGallery from "./packaging-gallery";
-import type { PackagingComposition } from "@/lib/packaging-composition";
+import {
+  distinctPhysicalComponents,
+  type PackagingComposition,
+} from "@/lib/packaging-composition";
 import { motion, useReducedMotion } from "motion/react";
 import {
   ArrowLeft,
@@ -47,7 +50,8 @@ export default function PackagingView({
   }, []);
   const composition = row.composition;
   const components = composition?.components || [];
-  const total = components.reduce(
+  const physicalComponents = distinctPhysicalComponents(components);
+  const total = physicalComponents.reduce(
     (sum, component) => sum + (Number(component.weight) || 0),
     0,
   );
@@ -241,6 +245,11 @@ export default function PackagingView({
                             ? `${Number(component.weight).toFixed(2)} g`
                             : "—"}
                         </p>
+                        {component.supplierName && (
+                          <p className="component-view-supplier">
+                            Supplier: {component.supplierName}
+                          </p>
+                        )}
                       </div>
                       <div className="component-view-actions">
                         <Link

@@ -24,6 +24,16 @@ export const componentImportKeys: ImportField[] = [
   "barrierLayer",
   "printingInk",
 ];
+export function uniqueComponentCount(
+  rows: Record<string, string>[],
+  mapping: ColumnMapping,
+) {
+  const header = mapping.componentName;
+  if (!header) return rows.length;
+  return new Set(
+    rows.map((row) => (row[header] || "").trim().toLowerCase()).filter(Boolean),
+  ).size;
+}
 export function componentSources(
   row: Record<string, string>,
 ): Record<string, string>[] | null {
@@ -52,7 +62,9 @@ export function groupComponentRows(
           rows.find((row) => row[header]?.trim())?.[header] || "";
     }
     if (mapping.components && !canonical[mapping.components])
-      canonical[mapping.components] = String(rows.length);
+      canonical[mapping.components] = String(
+        uniqueComponentCount(rows, mapping),
+      );
     if (
       mapping.weight &&
       !canonical[mapping.weight] &&

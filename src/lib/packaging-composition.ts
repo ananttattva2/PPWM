@@ -72,6 +72,23 @@ export const compositionSchema = z.object({
 });
 export type PackagingComposition = z.infer<typeof compositionSchema>;
 export type CompositionComponent = z.infer<typeof compositionComponentSchema>;
+export function distinctPhysicalComponents(
+  components: CompositionComponent[],
+): CompositionComponent[] {
+  const distinct = new Map<string, CompositionComponent>();
+  for (const component of components) {
+    const name = component.name.trim().toLowerCase();
+    const key = name || component.id;
+    const existing = distinct.get(key);
+    if (!existing) {
+      distinct.set(key, component);
+      continue;
+    }
+    if (!existing.image && component.image)
+      distinct.set(key, { ...existing, image: component.image });
+  }
+  return [...distinct.values()];
+}
 export const compositionUpdateSchema = z.object({
   rowNumber: z.number().int().min(1).max(1001),
   fields: z.record(

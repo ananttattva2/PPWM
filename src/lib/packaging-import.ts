@@ -6,6 +6,7 @@ import {
   groupComponentRows,
   productImportKeys,
   componentImportKeys,
+  uniqueComponentCount,
 } from "./component-import";
 import JSZip from "jszip";
 import { posix } from "node:path";
@@ -362,7 +363,7 @@ export function analysePackaging(
       );
     let composition: PackagingRow["composition"];
     if (sources) {
-      const names = new Set<string>();
+      const componentSuppliers = new Set<string>();
       const importedComponents = sources.map((source, componentIndex) => {
         const inherited = { ...source };
         delete inherited[COMPONENT_SOURCE];
@@ -372,15 +373,30 @@ export function analysePackaging(
         const analysed = analysePackaging([inherited], mapping, settings)
           .rows[0];
         const name = source[mapping.componentName || ""]?.trim() || "";
+        const supplierIdentity = [
+          mapping.supplierName,
+          mapping.supplierEmail,
+          mapping.supplierAddress,
+          mapping.supplierContactNumber,
+          mapping.supplierAuthorisedPersonName,
+        ]
+          .map((header) => (header ? source[header]?.trim().toLowerCase() : ""))
+          .filter(Boolean)
+          .join("|");
+        const componentSupplierKey = `${name.toLowerCase()}|${supplierIdentity}`;
         if (!name)
           add(
             "Component Name",
             `Component ${componentIndex + 1} name is missing`,
             "missing",
           );
-        else if (names.has(name.toLowerCase()))
-          add("Component Name", `Duplicate component name: ${name}`, "error");
-        names.add(name.toLowerCase());
+        else if (componentSuppliers.has(componentSupplierKey))
+          add(
+            "Component Name",
+            `Duplicate component and supplier combination: ${name}`,
+            "error",
+          );
+        componentSuppliers.add(componentSupplierKey);
         for (const issue of analysed.issues) {
           const field = importFields.find(
             (field) => field.label === issue.field,
@@ -426,10 +442,11 @@ export function analysePackaging(
           supplierAuthorisedPersonName: analysed.supplierAuthorisedPersonName,
         };
       });
-      if (components !== null && components !== sources.length)
+      const distinctComponents = uniqueComponentCount(sources, mapping);
+      if (components !== null && components !== distinctComponents)
         add(
           "Components",
-          `Expected ${components} components but found ${sources.length} component rows`,
+          `Expected ${components} components but found ${distinctComponents} distinct components across ${sources.length} supplier rows`,
           "error",
         );
       composition = {

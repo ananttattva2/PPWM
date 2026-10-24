@@ -68,10 +68,10 @@ export function packagingTemplateWorkbook() {
   instructions.getColumn(1).width = 115;
   [
     "HOW TO FILL THIS TEMPLATE",
-    "One row = one physical packaging component and its own supplier.",
+    "One row = one packaging component and supplier combination.",
     "Repeat the same SKU, product name, category, packaging type, total product packaging weight and component count on all rows for that SKU.",
     "Example: Mineral Water 500ml / SKU-001 has 3 components: Bottle, Cap and Label. Each has a different supplier.",
-    "Component Name must be unique within its SKU. Different SKUs may share a component name.",
+    "A component may appear on multiple rows when it has multiple suppliers. The same component and supplier combination should not be repeated within an SKU.",
     "Component weight (g) is the weight of this component. Total weight (g) is the product's full packaging weight; do not multiply it by the number of rows.",
     "Food Grade: select Yes or No for this component. Phone numbers are text so + prefixes and leading zeros remain intact.",
     "Supplier fields belong only to the component on that row. Leave optional fields blank when not known.",

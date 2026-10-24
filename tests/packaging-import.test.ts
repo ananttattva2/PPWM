@@ -304,7 +304,10 @@ import {
   groupComponentRows,
   syncComponentSources,
 } from "../src/lib/component-import";
-import { compositionUpdateSchema } from "../src/lib/packaging-composition";
+import {
+  compositionUpdateSchema,
+  distinctPhysicalComponents,
+} from "../src/lib/packaging-composition";
 async function componentTemplate() {
   return parsePackagingFile(
     Buffer.from(packagingTemplateCsv()),
@@ -372,6 +375,38 @@ test("Excel template has seven component rows, instructions, dropdowns and CSV-e
 });
 test("component validation identifies supplier errors, count mismatches and conflicting SKU fields", async () => {
   const parsed = await componentTemplate();
+  const supplierAlternatives = componentSources(parsed.rawRows[0])!;
+  supplierAlternatives.push({
+    ...supplierAlternatives[0],
+    "Supplier Name": "Alternative Bottle Supplier",
+    "Supplier Email": "alternative-bottle@example.com",
+  });
+  const alternatives = analysePackaging(
+    groupComponentRows(supplierAlternatives, parsed.suggested),
+    parsed.suggested,
+    settings,
+  );
+  assert.equal(
+    alternatives.issues.some((issue) =>
+      issue.message.includes("Duplicate component"),
+    ),
+    false,
+  );
+  assert.equal(
+    alternatives.issues.some((issue) => issue.field === "Components"),
+    false,
+  );
+  const physicalComponents = distinctPhysicalComponents(
+    alternatives.rows[0].composition!.components,
+  );
+  assert.equal(physicalComponents.length, 3);
+  assert.equal(
+    physicalComponents.reduce(
+      (total, component) => total + Number(component.weight),
+      0,
+    ),
+    23.5,
+  );
   const sources = componentSources(parsed.rawRows[0])!;
   sources[1]["Supplier Email"] = "bad-email";
   sources[1]["Food Grade (Yes/No)"] = "Maybe";
@@ -388,10 +423,9 @@ test("component validation identifies supplier errors, count mismatches and conf
     parsed.suggested,
     settings,
   );
-  assert.ok(
-    conflicts.issues.some((i) =>
-      i.message.includes("Duplicate component name"),
-    ),
+  assert.equal(
+    conflicts.issues.some((i) => i.message.includes("Duplicate component")),
+    false,
   );
   assert.ok(conflicts.issues.some((i) => i.message.includes("must agree")));
   const count = analysePackaging(

@@ -341,7 +341,6 @@ const pfasQuestions: {
   id: number;
   text: string;
   guidance: Partial<Record<string, string>>;
-  note?: string;
 }[] = [
   {
     id: 1,
@@ -382,7 +381,6 @@ const pfasQuestions: {
   {
     id: 8,
     text: "Does total fluorine exceed 50 mg/kg?",
-    note: "Question 9 appears only when this answer is Yes.",
     guidance: {
       Yes: "Obtain proof of the quantity of fluorine measured as PFAS vs non-PFAS for Annex VII.",
       No: "Record basis.",
@@ -525,6 +523,10 @@ export default function Article5Assessment({
     "",
   );
   const [packagingType, setPackagingType] = useDraftState("packagingType", "");
+  const [otherPackagingType, setOtherPackagingType] = useDraftState(
+    "otherPackagingType",
+    "",
+  );
   const [materialEvidence, setMaterialEvidence] = useDraftState<File | null>(
     "materialEvidence",
     null,
@@ -579,8 +581,13 @@ export default function Article5Assessment({
     active === 0
       ? Object.values(answers).filter(Boolean).length
       : active === 1
-        ? Number(Boolean(principalMaterial && packagingType)) +
-          Object.values(constructionAnswers).filter(Boolean).length
+        ? Number(
+            Boolean(
+              principalMaterial &&
+              packagingType &&
+              (packagingType !== "Other" || otherPackagingType.trim()),
+            ),
+          ) + Object.values(constructionAnswers).filter(Boolean).length
         : active === 2
           ? Object.values(concernAnswers).filter(Boolean).length
           : active === 3
@@ -1015,6 +1022,7 @@ export default function Article5Assessment({
                       const value = event.target.value;
                       setPrincipalMaterial(value);
                       setPackagingType("");
+                      setOtherPackagingType("");
                       setMaterialEvidence(null);
                       setMaterialEvidenceError("");
                     }}
@@ -1039,9 +1047,11 @@ export default function Article5Assessment({
                       <select
                         required
                         value={packagingType}
-                        onChange={(event) =>
-                          setPackagingType(event.target.value)
-                        }
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setPackagingType(value);
+                          if (value !== "Other") setOtherPackagingType("");
+                        }}
                       >
                         <option value="" disabled>
                           Select the packaging type
@@ -1053,9 +1063,25 @@ export default function Article5Assessment({
                             {option}
                           </option>
                         ))}
+                        <option value="Other">Other</option>
                       </select>
                     </label>
                   )}
+
+                {packagingType === "Other" && (
+                  <label className={styles.descriptionField}>
+                    Please mention the packaging type{" "}
+                    <span aria-hidden="true">*</span>
+                    <input
+                      required
+                      value={otherPackagingType}
+                      onChange={(event) =>
+                        setOtherPackagingType(event.target.value)
+                      }
+                      placeholder="Enter the packaging type"
+                    />
+                  </label>
+                )}
 
                 {principalMaterial && (
                   <div className={styles.evidenceSection}>
@@ -1706,9 +1732,6 @@ export default function Article5Assessment({
                           <span>EU market</span>
                         </div>
                         <h3>{question.text}</h3>
-                        {question.note && (
-                          <p className={styles.questionNote}>{question.note}</p>
-                        )}
                       </div>
                       <div className={styles.timeline}>
                         <CalendarDays size={17} aria-hidden="true" />
