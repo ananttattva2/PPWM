@@ -6,6 +6,8 @@ import {
   ArrowLeft,
   ArrowRight,
   Boxes,
+  ChartNoAxesCombined,
+  Eye,
   Package,
   Search,
   Sparkles,
@@ -19,7 +21,19 @@ export type SkuAnalysisItem = {
   name: string;
   image: string;
 };
-export function SkuAnalysisDirectory({ items }: { items: SkuAnalysisItem[] }) {
+export function SkuAnalysisDirectory({
+  items,
+  backHref = "/dashboard/clients",
+  backLabel = "Client onboarding",
+  title = "SKU Analyse",
+  description = "Explore your SKUs and open saved packaging details.",
+}: {
+  items: SkuAnalysisItem[];
+  backHref?: string;
+  backLabel?: string;
+  title?: string;
+  description?: string;
+}) {
   const [query, setQuery] = useState("");
   const shown = items.filter((item) =>
     `${item.sku} ${item.name}`
@@ -31,8 +45,8 @@ export function SkuAnalysisDirectory({ items }: { items: SkuAnalysisItem[] }) {
       <header className={styles.heading}>
         <div>
           <span>PACKAGING INTELLIGENCE</span>
-          <h1>SKU Analyse</h1>
-          <p>Explore your SKUs and open SKU analysis.</p>
+          <h1>{title}</h1>
+          <p>{description}</p>
         </div>
         <label className={styles.search}>
           <Search size={17} />
@@ -44,33 +58,71 @@ export function SkuAnalysisDirectory({ items }: { items: SkuAnalysisItem[] }) {
           />
         </label>
       </header>
-      <div className={styles.directory}>
-        {shown.map((item) => (
-          <Link
-            key={`${item.importId}-${item.rowNumber}`}
-            href={`/dashboard/packaging/${item.importId}/${item.rowNumber}/analyse`}
-            className={styles.skuCard}
-          >
-            <div className={styles.preview}>
-              {item.image ? (
-                <img
-                  src={`/api/packaging-imports/${item.importId}/assets/${item.image}`}
-                  alt={item.name}
-                />
-              ) : (
-                <Package size={45} strokeWidth={1.2} />
-              )}
-            </div>
-            <div>
-              <small>{item.sku || "SKU pending"}</small>
-              <h2>{item.name || "Unnamed product"}</h2>
-            </div>
-            <span className={styles.open}>
-              <ArrowRight size={17} />
-            </span>
-          </Link>
-        ))}
-      </div>
+      <section className={styles.listCard}>
+        <div className={styles.listHeader}>
+          <div>
+            <h2>SKU list</h2>
+            <p>Open saved packaging details or jump straight to articles.</p>
+          </div>
+          <b>{shown.length}</b>
+        </div>
+        <div className={`table-scroll ${styles.tableScroll}`}>
+          <table className={styles.skuTable}>
+            <thead>
+              <tr>
+                <th>Preview</th>
+                <th>SKU</th>
+                <th>Product</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((item) => (
+                <tr key={`${item.importId}-${item.rowNumber}`}>
+                  <td>
+                    <div className={styles.previewCell}>
+                      {item.image ? (
+                        <img
+                          src={`/api/packaging-imports/${item.importId}/assets/${item.image}`}
+                          alt={item.name}
+                        />
+                      ) : (
+                        <Package size={28} strokeWidth={1.4} />
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <b>{item.sku || "SKU pending"}</b>
+                  </td>
+                  <td>
+                    <b>{item.name || "Unnamed product"}</b>
+                  </td>
+                  <td>
+                    <div className={styles.actionGroup}>
+                      <Link
+                        href={`/dashboard/packaging/${item.importId}/${item.rowNumber}/analyse?view=sku-assessment`}
+                        className={styles.actionButton}
+                        aria-label={`Open article analysis for ${item.name || item.sku || "SKU"}`}
+                        title="Open article analysis"
+                      >
+                        <ChartNoAxesCombined size={16} />
+                      </Link>
+                      <Link
+                        href={`/dashboard/clients?packaging=${item.importId}&row=${item.rowNumber}&returnTo=sku-analysis`}
+                        className={styles.actionButton}
+                        aria-label={`View packaging details for ${item.name || item.sku || "SKU"}`}
+                        title="View packaging details"
+                      >
+                        <Eye size={16} />
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
       {!shown.length && (
         <div className={styles.empty}>
           <Boxes size={38} />
@@ -80,8 +132,8 @@ export function SkuAnalysisDirectory({ items }: { items: SkuAnalysisItem[] }) {
               ? "Try another product name or SKU."
               : "Add packaging in Client onboarding to see its SKUs here."}
           </p>
-          <Link href="/dashboard/clients">
-            Client onboarding <ArrowRight size={15} />
+          <Link href={backHref}>
+            {backLabel} <ArrowRight size={15} />
           </Link>
         </div>
       )}

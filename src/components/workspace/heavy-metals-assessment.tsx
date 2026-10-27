@@ -9,7 +9,7 @@ import { calculateHeavyMetals } from "@/lib/heavy-metal-calculator";
 import styles from "./article-5-assessment.module.css";
 import metalStyles from "./heavy-metals-assessment.module.css";
 
-const options = ["Yes", "No", "Unknown", "N/A"];
+const options = ["Yes", "No", "Unknown"];
 const analyteOptions = ["Yes", "No"];
 const legacyAvailableAnswers = ["Use calculator below"];
 const legacyUnavailableAnswers = [
@@ -113,7 +113,8 @@ export default function HeavyMetalsAssessment({
       </header>
       {questions.map((text, index) => {
         const number = index + 1;
-        const storedAnswer = answers[number] || "";
+        const storedAnswer =
+          answers[number] === "N/A" ? "Unknown" : answers[number] || "";
         const answer =
           number >= 5 && number <= 8
             ? normalizeAnalyteAnswer(storedAnswer)
@@ -121,7 +122,7 @@ export default function HeavyMetalsAssessment({
               ? ""
               : storedAnswer;
         const guidance = guidanceFor(number, answer);
-        const needsJustification = answer === "N/A";
+        const needsJustification = answer === "Unknown";
         return (
           <article
             className={styles.questionCard}
@@ -184,7 +185,9 @@ export default function HeavyMetalsAssessment({
                   </option>
                   {(number >= 5 && number <= 8 ? analyteOptions : options).map(
                     (option) => (
-                      <option key={option}>{option}</option>
+                      <option key={option} value={option}>
+                        {option === "Unknown" ? "Not Available" : option}
+                      </option>
                     ),
                   )}
                 </select>

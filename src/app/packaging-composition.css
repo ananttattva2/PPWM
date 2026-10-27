@@ -1199,6 +1199,13 @@
 .client-row-actions button:hover {
   background: #f9731618;
 }
+.client-row-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  background: #f6f7f9;
+  color: #b2bcc8;
+  border-color: #d9e0e8;
+}
 .client-profile-heading {
   display: flex;
   align-items: center;
@@ -1474,20 +1481,220 @@
     transform: none;
   }
 }
-/* Saved packaging: components on the left, product preview on the right. */
+/* Saved packaging: compact product summary and preview in the heading. */
+.composition-view-topbar {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.composition-view-heading-copy {
+  min-width: 0;
+}
+.composition-view-heading-copy h2 {
+  margin: 5px 0;
+}
+.composition-view-topbar .composition-heading-actions {
+  align-items: center;
+}
+.composition-view-topbar .composition-heading-actions > .btn,
+.composition-view-topbar .composition-heading-actions > .gallery-analyse-link {
+  height: 38px;
+  min-height: 38px;
+  padding-top: 0;
+  padding-bottom: 0;
+  align-self: center;
+}
+.composition-view-product-identity {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  max-width: 230px;
+  margin-top: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--composition-border);
+  border-radius: 8px;
+  background: var(--composition-soft);
+}
+.composition-view-product-identity > svg {
+  flex-shrink: 0;
+  color: #ed7b29;
+}
+.composition-view-product-identity b,
+.composition-view-product-identity small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.composition-view-product-identity b {
+  font-size: 12px;
+}
+.composition-view-product-identity small {
+  margin-top: 3px;
+  color: var(--composition-muted);
+  font-size: 10px;
+}
+.composition-heading-preview .packaging-gallery {
+  width: 118px;
+  padding: 6px;
+  border-radius: 8px;
+}
+.composition-heading-preview .composition-card-title {
+  margin-bottom: 5px;
+}
+.composition-heading-preview .composition-card-title h3 {
+  font-size: 10px;
+}
+.composition-heading-preview .gallery-count {
+  font-size: 8px;
+}
+.composition-heading-preview .gallery-stage {
+  width: 104px;
+  height: 46px;
+  min-height: 46px;
+  border-radius: 6px;
+}
+.composition-heading-preview .gallery-stage > img {
+  max-height: 46px;
+  padding: 3px;
+}
+.composition-heading-preview .gallery-stage .composition-view-placeholder {
+  padding: 4px;
+}
+.composition-heading-preview .gallery-stage .composition-view-placeholder svg {
+  width: 20px;
+}
+.composition-heading-preview .gallery-stage .composition-view-placeholder p,
+.composition-heading-preview .gallery-thumbnail-nav,
+.composition-heading-preview .gallery-footer > span,
+.composition-heading-preview .composition-help {
+  display: none;
+}
+.composition-heading-preview .gallery-expand {
+  top: 4px;
+  right: 4px;
+  padding: 3px;
+}
+.composition-heading-preview .gallery-expand svg {
+  width: 13px;
+}
+.composition-heading-preview .gallery-footer {
+  justify-content: flex-end;
+  margin-top: 3px;
+}
+.composition-heading-preview .gallery-upload {
+  padding: 3px 5px;
+  font-size: 8px;
+}
 .composition-view .composition-view-grid {
-  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.8fr);
+  display: block;
 }
 .composition-view .composition-middle {
-  grid-column: 1;
-  grid-row: 1;
+  display: grid;
+  gap: 10px;
 }
-.composition-view .composition-left {
-  grid-column: 2;
-  grid-row: 1;
+.composition-view .composition-middle > .composition-card {
+  padding: 14px;
 }
-.product-identity .composition-sku-title {
+.composition-view .composition-card-title {
+  margin-bottom: 10px;
+}
+.composition-compact-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+.composition-view .composition-compact-grid .composition-saved-component {
+  min-height: 104px;
   margin: 0;
+  padding: 11px 10px;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+.composition-view .composition-compact-grid .composition-component-number {
+  top: 5px;
+  left: 5px;
+  width: 17px;
+  height: 17px;
+  font-size: 9px;
+}
+.composition-view .composition-compact-grid .composition-view-component-photo {
+  width: 70px;
+  min-height: 80px;
+  border-radius: 8px;
+}
+.composition-view
+  .composition-compact-grid
+  .composition-view-component-photo
+  img {
+  width: 66px;
+  height: 76px;
+}
+.composition-view .composition-compact-grid .component-photo-upload {
+  min-height: 80px;
+  border-radius: 8px;
+}
+.composition-view .composition-compact-grid .component-photo-upload-action {
+  padding: 5px 3px;
+  font-size: 9px;
+}
+.composition-view .composition-compact-grid .component-view-heading {
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+}
+.composition-view .composition-compact-grid .component-view-title h4 {
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+.composition-view .composition-compact-grid .component-view-weight,
+.composition-view .composition-compact-grid .component-view-supplier {
+  margin-top: 3px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.composition-view .composition-compact-grid .component-view-supplier {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.composition-view .composition-compact-grid .component-analyse-link {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+  font-size: 0;
+}
+@media (max-width: 1100px) {
+  .composition-compact-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 650px) {
+  .composition-view-topbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .composition-view-topbar .composition-heading-actions {
+    grid-column: 1;
+    grid-row: auto;
+    width: 100%;
+  }
+  .composition-view-product-identity {
+    max-width: 100%;
+  }
+  .composition-compact-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 420px) {
+  .composition-compact-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 .component-view-actions {
   display: flex;

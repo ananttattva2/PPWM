@@ -101,6 +101,7 @@ export default function PackagingImport({
   const [editingRow, setEditingRow] = useState<number | null>(null);
   const [addingRow, setAddingRow] = useState(false);
   const returnParams = useSearchParams();
+  const returnTo = returnParams.get("returnTo");
   const [viewingRow, setViewingRow] = useState<number | null>(() => {
     const row = Number(returnParams.get("row"));
     return returnParams.get("packaging") === parentResult?.id &&
@@ -282,6 +283,10 @@ export default function PackagingImport({
   const viewedRow = result?.analysis.rows.find(
     (row) => row.rowNumber === viewingRow,
   );
+  const skuAnalysisHref =
+    returnTo === "sku-analysis" && result?.id
+      ? `/dashboard/sku-analysis?packaging=${result.id}`
+      : null;
   if (result && viewedRow)
     return (
       <PackagingTabs
@@ -390,6 +395,7 @@ export default function PackagingImport({
           key={`${result.id}-${viewedRow.rowNumber}`}
           row={viewedRow}
           importId={result.id}
+          backLabel={skuAnalysisHref ? "Back to SKU analysis" : "Back to list"}
           onBusy={onBusy}
           onPhotosSaved={(composition) => {
             const updated = {
@@ -407,6 +413,10 @@ export default function PackagingImport({
             onChange(updated);
           }}
           onBack={() => {
+            if (skuAnalysisHref) {
+              window.location.assign(skuAnalysisHref);
+              return;
+            }
             rememberPackagingWorkspace(result.id);
             setViewingRow(null);
             setPackagingScope("sales");

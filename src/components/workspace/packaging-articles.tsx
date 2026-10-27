@@ -126,6 +126,13 @@ export default function PackagingArticles({
       </header>
       <div className={styles.grid}>
         {articles.map(({ number, title, icon: Icon, color, topic }, index) => {
+          const href = articleHref
+            ? articleHref(number)
+            : number === 5
+              ? `/dashboard/packaging/${importId}/${rowNumber}/article-5?component=${encodeURIComponent(componentId || "")}`
+              : number === 6
+                ? `/dashboard/packaging/${importId}/${rowNumber}/article-6?component=${encodeURIComponent(componentId || "")}`
+                : undefined;
           const content = (
             <>
               <span className={styles.orb} aria-hidden="true" />
@@ -142,7 +149,7 @@ export default function PackagingArticles({
                   ARTICLE <b>{String(number).padStart(2, "0")}</b>
                 </span>
                 <span className={styles.line} aria-hidden="true" />
-                {(number === 5 || articleHref) && (
+                {href && (
                   <ArrowRight
                     className={styles.openIcon}
                     size={18}
@@ -166,14 +173,10 @@ export default function PackagingArticles({
               }}
               className={styles.cardMotion}
             >
-              {number === 5 || articleHref ? (
+              {href ? (
                 <Link
                   className={`${styles.card} ${styles.clickable}`}
-                  href={
-                    articleHref
-                      ? articleHref(number)
-                      : `/dashboard/packaging/${importId}/${rowNumber}/article-5?component=${encodeURIComponent(componentId || "")}`
-                  }
+                  href={href}
                   aria-label={`Open Article ${number} assessment for ${componentName}`}
                 >
                   {content}

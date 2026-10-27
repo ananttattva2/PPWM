@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Building2,
+  ChartNoAxesCombined,
   Plus,
   Search,
   UploadCloud,
@@ -118,6 +119,7 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [viewingClient, setViewingClient] = useState<Client | null>(null);
   const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
   const requestedImportId = searchParams.get("packaging");
   const [restoringPackaging, setRestoringPackaging] = useState(
     Boolean(requestedImportId),
@@ -615,12 +617,21 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
             variant="outline"
             disabled={importBusy || editorOpen}
             onClick={() => {
+              if (returnTo === "sku-analysis") {
+                window.location.assign(
+                  `/dashboard/sku-analysis?packaging=${managedImport.id}`,
+                );
+                return;
+              }
               clearPackagingWorkspaceLocation();
               setManagedImport(null);
               void load();
             }}
           >
-            <ArrowLeft size={16} /> Back to clients
+            <ArrowLeft size={16} />{" "}
+            {returnTo === "sku-analysis"
+              ? "Back to SKU analysis"
+              : "Back to clients"}
           </Button>
         </div>
         <section
@@ -1204,105 +1215,125 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((c) => (
-                    <tr key={c._id}>
-                      <td>
-                        <b>{c.legalName || c.company}</b>
-                        {c.packagingImport && (
+                  {filtered.map((c) => {
+                    const packagingLinkId =
+                      c.packagingImport?.id || c.packagingDraftId || "";
+                    return (
+                      <tr key={c._id}>
+                        <td>
+                          <b>{c.legalName || c.company}</b>
+                          {c.packagingImport && (
+                            <small>
+                              {c.packagingImport.summary.total} packaging SKUs
+                            </small>
+                          )}
                           <small>
-                            {c.packagingImport.summary.total} packaging SKUs
+                            {c.tradeName || c.industry} · {c.country}
                           </small>
-                        )}
-                        <small>
-                          {c.tradeName || c.industry} · {c.country}
-                        </small>
-                      </td>
-                      <td>
-                        {c.gstNumber || "Not provided"}
-                        <small>
-                          {c.organisationRole || "Role not provided"}
-                        </small>
-                      </td>
-                      <td>
-                        {c.authorisedPerson || c.contact}
-                        <small>{c.email}</small>
-                      </td>
-                      <td>
-                        {c.packagingImport && (
-                          <div className="client-document-links">
-                            <a
-                              href={`/api/packaging-imports/${c.packagingImport.id}?download=true`}
-                              title={c.packagingImport.fileName}
-                            >
-                              <Download size={13} />
-                              {c.packagingImport.fileName}
-                            </a>
-                          </div>
-                        )}
-                        {c.documents?.length ? (
-                          <div className="client-document-links">
-                            {c.documents.map((d, i) => (
-                              <a
-                                key={i}
-                                href={`/api/clients/${c._id}/documents/${i}`}
-                                title={d.name}
-                              >
-                                <Download size={13} />
-                                {d.name}
-                              </a>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="muted">—</span>
-                        )}
-                      </td>
-                      <td>
-                        <span className="status-badge">
-                          {c.packagingImport
-                            ? "Onboarding"
-                            : "Packaging pending"}
-                        </span>
-                      </td>
-                      {canEdit && (
+                        </td>
+                        <td>
+                          {c.gstNumber || "Not provided"}
+                          <small>
+                            {c.organisationRole || "Role not provided"}
+                          </small>
+                        </td>
+                        <td>
+                          {c.authorisedPerson || c.contact}
+                          <small>{c.email}</small>
+                        </td>
                         <td>
                           {c.packagingImport && (
-                            <button
-                              type="button"
-                              className="import-manage-button"
-                              disabled={importBusy}
-                              onClick={async () => {
-                                setImportBusy(true);
-                                try {
-                                  const response = await fetch(
-                                    `/api/packaging-imports/${c.packagingImport!.id}`,
-                                  );
-                                  const data = await response.json();
-                                  if (!response.ok) throw new Error(data.error);
-                                  setManagedImport(data);
-                                } catch (failure) {
-                                  toast.error((failure as Error).message);
-                                } finally {
-                                  setImportBusy(false);
-                                }
-                              }}
-                            >
-                              Manage packaging <ArrowRight size={14} />
-                            </button>
+                            <div className="client-document-links">
+                              <a
+                                href={`/api/packaging-imports/${c.packagingImport.id}?download=true`}
+                                title={c.packagingImport.fileName}
+                              >
+                                <Download size={13} />
+                                {c.packagingImport.fileName}
+                              </a>
+                            </div>
                           )}
-                          {!c.packagingImport && (
-                            <button
-                              type="button"
-                              className="import-manage-button"
-                              disabled={busy}
-                              onClick={() => void editClient(c)}
-                            >
-                              Add packaging <ArrowRight size={14} />
-                            </button>
+                          {c.documents?.length ? (
+                            <div className="client-document-links">
+                              {c.documents.map((d, i) => (
+                                <a
+                                  key={i}
+                                  href={`/api/clients/${c._id}/documents/${i}`}
+                                  title={d.name}
+                                >
+                                  <Download size={13} />
+                                  {d.name}
+                                </a>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="muted">—</span>
                           )}
                         </td>
-                      )}
-                      <td>
-                        <div className="client-row-actions">
+                        <td>
+                          <span className="status-badge">
+                            {packagingLinkId
+                              ? "Onboarding"
+                              : "Packaging pending"}
+                          </span>
+                        </td>
+                        {canEdit && (
+                          <td>
+                            {packagingLinkId && (
+                              <button
+                                type="button"
+                                className="import-manage-button"
+                                disabled={importBusy}
+                                onClick={async () => {
+                                  setImportBusy(true);
+                                  try {
+                                    const response = await fetch(
+                                      `/api/packaging-imports/${packagingLinkId}`,
+                                    );
+                                    const data = await response.json();
+                                    if (!response.ok) throw new Error(data.error);
+                                    setManagedImport(data);
+                                  } catch (failure) {
+                                    toast.error((failure as Error).message);
+                                  } finally {
+                                    setImportBusy(false);
+                                  }
+                                }}
+                              >
+                                Manage packaging <ArrowRight size={14} />
+                              </button>
+                            )}
+                            {!packagingLinkId && (
+                              <button
+                                type="button"
+                                className="import-manage-button"
+                                disabled={busy}
+                                onClick={() => void editClient(c)}
+                              >
+                                Add packaging <ArrowRight size={14} />
+                              </button>
+                            )}
+                          </td>
+                        )}
+                        <td>
+                          <div className="client-row-actions">
+                          <button
+                            type="button"
+                            aria-label={`Open SKU analysis list for ${c.legalName || c.company}`}
+                            title={
+                              packagingLinkId
+                                ? "Open SKU analysis list"
+                                : "Add packaging first to open SKU analysis"
+                            }
+                            disabled={busy || importBusy || !packagingLinkId}
+                            onClick={() =>
+                              window.location.assign(
+                                `/dashboard/sku-analysis?packaging=${packagingLinkId}`,
+                              )
+                            }
+                          >
+                            <ChartNoAxesCombined size={16} />
+                          </button>
                           <button
                             type="button"
                             aria-label={`View client ${c.legalName || c.company}`}
@@ -1323,10 +1354,11 @@ export default function Clients({ canEdit }: { canEdit: boolean }) {
                               <Pencil size={16} />
                             </button>
                           )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

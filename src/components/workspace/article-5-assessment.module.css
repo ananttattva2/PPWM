@@ -520,6 +520,23 @@
   margin: 6px 0 14px;
   color: var(--muted);
 }
+.evidenceSection .evidenceCollectionDetails {
+  max-width: 650px;
+  margin: 10px 0 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--soft);
+}
+.evidenceSection .evidenceCollectionDetails p {
+  margin: 0;
+}
+.evidenceSection .evidenceCollectionDetails p + p {
+  margin-top: 4px;
+}
+.evidenceCollectionDetails b {
+  color: var(--ink);
+  font-weight: 600;
+}
 .evidenceUpload {
   position: relative;
   display: flex;

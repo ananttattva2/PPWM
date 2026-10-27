@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Clock3 } from "lucide-react";
 import PackagingArticles from "./packaging-articles";
+import SkuArticle6Assessment from "./sku-article-6-assessment";
 import styles from "./sku-analysis.module.css";
 
 export default function SkuArticles({
@@ -20,6 +21,10 @@ export default function SkuArticles({
   const router = useRouter();
   const overview = `/dashboard/packaging/${importId}/${rowNumber}/analyse`;
   const selection = `${overview}?view=sku-assessment`;
+  if (article === 6)
+    return (
+      <SkuArticle6Assessment productName={productName} backHref={selection} />
+    );
   if (article)
     return (
       <div className={styles.page}>

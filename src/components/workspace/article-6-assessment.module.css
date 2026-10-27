@@ -1,0 +1,82 @@
+.sectionIntro {
+  margin: 6px 2px 12px;
+  color: #738298;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.summaryCard {
+  display: block;
+}
+
+.guidance {
+  margin: 12px 0 0 46px;
+  max-width: 780px;
+}
+
+.cardBody {
+  margin: 14px 0 0 46px;
+}
+
+.bulletList {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bulletList li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid #e5eaf1;
+  border-radius: 12px;
+  background: #f7f9fc;
+  color: #172b49;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.bulletList li svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #2d8b57;
+}
+
+.outcomeBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid #dce9de;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f3fbf5, #fbfdfc);
+}
+
+.outcomeBox svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #2d8b57;
+}
+
+.outcomeBox p {
+  margin: 0;
+  color: #172b49;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+@media (min-width: 900px) {
+  .bulletList {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .guidance,
+  .cardBody {
+    margin-left: 0;
+  }
+}

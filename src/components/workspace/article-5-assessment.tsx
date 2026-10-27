@@ -29,23 +29,35 @@ const tabs = [
   "Food-contact gate",
   "PFAS detailed assessment",
 ] as const;
+const normalizeAvailabilityAnswer = (answer: string) =>
+  answer === "N/A" ? "Unknown" : answer;
+const availabilityLabel = (answer: string) =>
+  answer === "Unknown" ? "Not Available" : answer;
 
 const scopeQuestions = [
   {
     id: 1,
     text: "Is this item a constituent of the packaging material or a packaging component of the assessed unit?",
     timeline: "12 Aug 2026",
+    evidenceOnNotAvailable: true,
+    evidenceExamples: "Packaging BOM; assembly drawing; component list",
+    evidenceSource: "Engineering / packaging designer",
   },
   {
     id: 2,
     text: "Has this component been given a unique ID that can be traced to the SKU, drawing and supplier material code?",
     timeline: "12 Aug 2026",
+    evidenceExamples: "Component ID; BOM; drawing; supplier material code",
+    evidenceSource: "Engineering / supplier",
   },
   {
     id: 3,
     text: "Is the intended use of the component clearly defined?",
     timeline: "12 Aug 2026",
     timelineNote: "Food-contact and PFAS rule, where applicable",
+    evidenceOnNotAvailable: true,
+    evidenceExamples: "Intended-use specification; product/package description",
+    evidenceSource: "Product owner / engineering",
     noGuidance:
       "Define the intended use before deciding food-contact/PFAS or life-cycle pathways.",
   },
@@ -53,6 +65,10 @@ const scopeQuestions = [
     id: 4,
     text: "Is the component composition known at the level needed for chemical/substance screening?",
     timeline: "12 Aug 2026",
+    evidenceOnNotAvailable: true,
+    evidenceExamples:
+      "Material specification; formulation; supplier declaration",
+    evidenceSource: "Supplier / raw-material manufacturer",
   },
 ] as const;
 
@@ -105,16 +121,24 @@ const constructionQuestions = [
     id: 2,
     text: "Is the component homogeneous, or does it contain multiple layers/materials/formulations?",
     options: ["Homogeneous", "Multilayer", "Composite", "Formulated"],
+    evidenceExamples: "Layer structure; cross-section; formulation; BOM",
+    evidenceSource: "Engineering / supplier",
   },
   {
     id: 3,
     text: "Are there coatings, lacquers, varnishes, barrier layers, surface treatments or functional layers?",
-    options: ["Yes", "No", "Unknown", "N/A"],
+    options: ["Yes", "No", "Unknown"],
+    evidenceExamples:
+      "Coating/treatment specification; formulation/declaration",
+    evidenceSource: "Supplier / converter",
   },
   {
     id: 4,
     text: "Are there adhesives, sealants, liners, gaskets, printing inks, primers, pigments or processing aids associated with this component?",
-    options: ["Yes", "No", "Unknown", "N/A"],
+    options: ["Yes", "No", "Unknown"],
+    evidenceExamples:
+      "Adhesive/ink/primer specification; supplier declaration; SDS where relevant",
+    evidenceSource: "Supplier / converter",
   },
 ] as const;
 
@@ -123,10 +147,12 @@ type ConcernQuestion = {
   text: string;
   options: readonly string[];
   evidenceAnswers: readonly string[];
+  evidenceExamples?: string;
+  evidenceSource?: string;
   guidance?: Partial<Record<string, string>>;
 };
 
-const standardConcernOptions = ["Yes", "No", "Unknown", "N/A"] as const;
+const standardConcernOptions = ["Yes", "No", "Unknown"] as const;
 
 const concernQuestions: ConcernQuestion[] = [
   {
@@ -134,6 +160,9 @@ const concernQuestions: ConcernQuestion[] = [
     text: "Have intentionally added substances beyond the base material been identified?",
     options: standardConcernOptions,
     evidenceAnswers: ["Yes"],
+    evidenceExamples:
+      "Formulation; additive list; supplier chemical declaration",
+    evidenceSource: "Supplier / formulation owner",
     guidance: { No: "Obtain a substantiating declaration." },
   },
   {
@@ -141,6 +170,9 @@ const concernQuestions: ConcernQuestion[] = [
     text: "Are plasticisers, stabilisers, antioxidants, UV stabilisers, flame retardants, pigments, dyes, slip agents, lubricants, processing aids or similar additives present?",
     options: standardConcernOptions,
     evidenceAnswers: ["Yes"],
+    evidenceExamples:
+      "Additive list; formulation; supplier declaration; analytical report if needed",
+    evidenceSource: "Supplier / chemical compliance",
     guidance: {
       No: "Document supplier confirmation.",
       Unknown: "Escalate this evidence gap for review.",
@@ -151,6 +183,9 @@ const concernQuestions: ConcernQuestion[] = [
     text: "Are any substances of concern known or reasonably expected to be present?",
     options: standardConcernOptions,
     evidenceAnswers: ["Yes", "No"],
+    evidenceExamples:
+      "Substance register; supplier declaration; formulation; analysis where needed",
+    evidenceSource: "Supplier / chemical compliance",
     guidance: {
       No: "Retain the evidence supporting the negative conclusion.",
       Unknown:
@@ -162,6 +197,8 @@ const concernQuestions: ConcernQuestion[] = [
     text: "For each identified substance of concern, is the substance identity known?",
     options: standardConcernOptions,
     evidenceAnswers: ["Yes"],
+    evidenceExamples: "Substance name; CAS/EC identifier where available",
+    evidenceSource: "Supplier / chemical compliance",
     guidance: { No: "Obtain sufficient identity information." },
   },
   {
@@ -169,6 +206,9 @@ const concernQuestions: ConcernQuestion[] = [
     text: "For each identified substance of concern, is its concentration or concentration range known?",
     options: standardConcernOptions,
     evidenceAnswers: ["Yes"],
+    evidenceExamples:
+      "Formulation concentration; test result; supplier declaration",
+    evidenceSource: "Supplier / laboratory",
     guidance: { No: "Obtain suitable evidence." },
   },
   {
@@ -180,7 +220,6 @@ const concernQuestions: ConcernQuestion[] = [
       "Generated during processing/use",
       "Multiple sources",
       "Unknown",
-      "N/A",
     ],
     evidenceAnswers: [
       "Intentionally added",
@@ -188,20 +227,28 @@ const concernQuestions: ConcernQuestion[] = [
       "Generated during processing/use",
       "Multiple sources",
       "Unknown",
-      "N/A",
     ],
+    evidenceExamples:
+      "Manufacturing information; impurity/residual data; analytical evidence",
+    evidenceSource: "Supplier / process engineer / lab",
   },
   {
     id: 7,
     text: "Has reduction or substitution potential been considered for an identified substance of concern?",
     options: standardConcernOptions,
     evidenceAnswers: ["Yes", "No"],
+    evidenceExamples:
+      "Design rationale; alternatives study; supplier technical justification",
+    evidenceSource: "Engineering / product owner / supplier",
   },
   {
     id: 8,
     text: "Is the substance subject to another applicable Union restriction or specific measure relevant to the packaging/use?",
     options: standardConcernOptions,
     evidenceAnswers: ["Yes", "No"],
+    evidenceExamples:
+      "Legal assessment; applicable chemical/food-contact restriction",
+    evidenceSource: "EU regulatory reviewer / supplier",
   },
 ];
 
@@ -210,6 +257,8 @@ type EmissionQuestion = {
   text: string;
   guidance: Partial<Record<string, string>>;
   detailLabels: Partial<Record<string, string>>;
+  evidenceExamples: string;
+  evidenceSource: string;
 };
 
 const emissionQuestions: EmissionQuestion[] = [
@@ -224,6 +273,9 @@ const emissionQuestions: EmissionQuestion[] = [
       Yes: "Release pathway and potential impact",
       No: "Rationale for no release or emissions",
     },
+    evidenceExamples:
+      "Migration/emission information; process/use assessment; supplier data",
+    evidenceSource: "Process engineer / supplier / lab",
   },
   {
     id: 2,
@@ -236,6 +288,9 @@ const emissionQuestions: EmissionQuestion[] = [
       Yes: "Waste-management pathway and potential impact",
       No: "Rationale for no remaining substance or transformation products",
     },
+    evidenceExamples:
+      "Recycling/waste-treatment fate assessment; relevant chemical fate data",
+    evidenceSource: "Recycler / waste expert / supplier",
   },
   {
     id: 3,
@@ -250,6 +305,9 @@ const emissionQuestions: EmissionQuestion[] = [
       Unknown: "Pathway assessment and evidence gaps",
       No: "Basis for no microplastic release",
     },
+    evidenceExamples:
+      "Durability/fragmentation information; studies/test data; process/use assessment",
+    evidenceSource: "Materials specialist / supplier / laboratory",
   },
   {
     id: 4,
@@ -262,6 +320,9 @@ const emissionQuestions: EmissionQuestion[] = [
       Yes: "Mechanism and mitigation",
       Unknown: "Information needed and follow-up actions",
     },
+    evidenceExamples:
+      "Coating/label/additive assessment; supplier technical data",
+    evidenceSource: "Supplier / recycler / engineer",
   },
   {
     id: 5,
@@ -271,6 +332,8 @@ const emissionQuestions: EmissionQuestion[] = [
       No: "Record monitoring date.",
     },
     detailLabels: { Yes: "Legal impact assessment / re-assessment" },
+    evidenceExamples: "Official report/restriction; regulatory watch log",
+    evidenceSource: "EU regulatory reviewer",
   },
 ];
 
@@ -333,7 +396,7 @@ const foodContactQuestions: ConcernQuestion[] = [
     id: 3,
     text: "Is placing this packaging on the market already prohibited or restricted by another Union legal act in a way that affects the PFAS assessment?",
     options: standardConcernOptions,
-    evidenceAnswers: ["Yes", "No", "Unknown", "N/A"],
+    evidenceAnswers: ["Yes", "No", "Unknown"],
   },
 ];
 
@@ -398,11 +461,15 @@ function EvidenceProof({
   file,
   onChange,
   required = true,
+  evidenceExamples,
+  evidenceSource,
 }: {
   questionId: number;
   file?: File;
   onChange: (file?: File) => void;
   required?: boolean;
+  evidenceExamples?: string;
+  evidenceSource?: string;
 }) {
   const [error, setError] = useState("");
   return (
@@ -412,6 +479,16 @@ function EvidenceProof({
           Supporting evidence <span>{required ? "Required" : "Optional"}</span>
         </h4>
         <p>Upload a document supporting this selected answer.</p>
+        {evidenceExamples && evidenceSource && (
+          <div className={styles.evidenceCollectionDetails}>
+            <p>
+              <b>Evidence to collect e.g.:</b> {evidenceExamples}
+            </p>
+            <p>
+              <b>From whom to collect:</b> {evidenceSource}
+            </p>
+          </div>
+        )}
       </div>
       {file ? (
         <div className={styles.evidenceFile}>
@@ -840,8 +917,15 @@ export default function Article5Assessment({
                 <b className={styles.questionCount}>4 mandatory questions</b>
               </header>
               {scopeQuestions.map((question) => {
-                const answer = answers[question.id] || "";
+                const answer = normalizeAvailabilityAnswer(
+                  answers[question.id] || "",
+                );
                 const document = evidence[question.id];
+                const evidenceRequired =
+                  answer === "Yes" ||
+                  (answer === "Unknown" &&
+                    "evidenceOnNotAvailable" in question &&
+                    question.evidenceOnNotAvailable);
                 return (
                   <article className={styles.questionCard} key={question.id}>
                     <div className={styles.questionHeading}>
@@ -876,7 +960,12 @@ export default function Article5Assessment({
                             ...current,
                             [question.id]: value,
                           }));
-                          if (value !== "Yes") clearEvidence(question.id);
+                          const keepEvidence =
+                            value === "Yes" ||
+                            (value === "Unknown" &&
+                              "evidenceOnNotAvailable" in question &&
+                              question.evidenceOnNotAvailable);
+                          if (!keepEvidence) clearEvidence(question.id);
                         }}
                       >
                         <option value="" disabled>
@@ -884,8 +973,7 @@ export default function Article5Assessment({
                         </option>
                         <option>Yes</option>
                         <option>No</option>
-                        <option>Unknown</option>
-                        <option>N/A</option>
+                        <option value="Unknown">Not Available</option>
                       </select>
                     </label>
 
@@ -895,7 +983,7 @@ export default function Article5Assessment({
                       </p>
                     )}
 
-                    {answer === "Yes" && (
+                    {evidenceRequired && (
                       <div className={styles.evidenceSection}>
                         <div>
                           <h4>
@@ -904,6 +992,16 @@ export default function Article5Assessment({
                           <p>
                             Upload a document that supports the selected answer.
                           </p>
+                          <div className={styles.evidenceCollectionDetails}>
+                            <p>
+                              <b>Evidence to collect e.g.:</b>{" "}
+                              {question.evidenceExamples}
+                            </p>
+                            <p>
+                              <b>From whom to collect:</b>{" "}
+                              {question.evidenceSource}
+                            </p>
+                          </div>
                         </div>
                         {document ? (
                           <div className={styles.evidenceFile}>
@@ -1093,6 +1191,15 @@ export default function Article5Assessment({
                         Upload the material specification or another document
                         that supports the selected principal material.
                       </p>
+                      <div className={styles.evidenceCollectionDetails}>
+                        <p>
+                          <b>Evidence to collect e.g.:</b> Material
+                          grade/specification; resin/paper/metal/glass grade
+                        </p>
+                        <p>
+                          <b>From whom to collect:</b> Supplier / manufacturer
+                        </p>
+                      </div>
                     </div>
                     {materialEvidence ? (
                       <div className={styles.evidenceFile}>
@@ -1163,7 +1270,9 @@ export default function Article5Assessment({
                 )}
               </article>
               {constructionQuestions.map((question) => {
-                const answer = constructionAnswers[question.id] || "";
+                const answer = normalizeAvailabilityAnswer(
+                  constructionAnswers[question.id] || "",
+                );
                 const separateScreening =
                   question.id === 2 &&
                   ["Multilayer", "Composite", "Formulated"].includes(answer);
@@ -1213,7 +1322,7 @@ export default function Article5Assessment({
                         </option>
                         {question.options.map((option) => (
                           <option key={option} value={option}>
-                            {option}
+                            {availabilityLabel(option)}
                           </option>
                         ))}
                       </select>
@@ -1229,6 +1338,8 @@ export default function Article5Assessment({
                             [question.id]: file,
                           }))
                         }
+                        evidenceExamples={question.evidenceExamples}
+                        evidenceSource={question.evidenceSource}
                       />
                     )}
                     {question.id === 2 && answer === "Homogeneous" && (
@@ -1298,7 +1409,9 @@ export default function Article5Assessment({
                 Mercury and Hexavalent Chromium.
               </p>
               {concernQuestions.map((question) => {
-                const answer = concernAnswers[question.id] || "";
+                const answer = normalizeAvailabilityAnswer(
+                  concernAnswers[question.id] || "",
+                );
                 const guidance = question.guidance?.[answer];
                 const requiresEvidence =
                   question.evidenceAnswers.includes(answer);
@@ -1359,7 +1472,7 @@ export default function Article5Assessment({
                         </option>
                         {question.options.map((option) => (
                           <option key={option} value={option}>
-                            {option}
+                            {availabilityLabel(option)}
                           </option>
                         ))}
                       </select>
@@ -1382,6 +1495,8 @@ export default function Article5Assessment({
                             [question.id]: file,
                           }))
                         }
+                        evidenceExamples={question.evidenceExamples}
+                        evidenceSource={question.evidenceSource}
                       />
                     )}
                   </article>
@@ -1401,7 +1516,9 @@ export default function Article5Assessment({
                 </b>
               </header>
               {emissionQuestions.map((question) => {
-                const answer = emissionAnswers[question.id] || "";
+                const answer = normalizeAvailabilityAnswer(
+                  emissionAnswers[question.id] || "",
+                );
                 const guidance = question.guidance[answer];
                 const detailLabel = question.detailLabels[answer];
                 return (
@@ -1459,7 +1576,7 @@ export default function Article5Assessment({
                         </option>
                         {standardConcernOptions.map((option) => (
                           <option key={option} value={option}>
-                            {option}
+                            {availabilityLabel(option)}
                           </option>
                         ))}
                       </select>
@@ -1476,6 +1593,8 @@ export default function Article5Assessment({
                             [question.id]: file,
                           }))
                         }
+                        evidenceExamples={question.evidenceExamples}
+                        evidenceSource={question.evidenceSource}
                       />
                     )}
                     {guidance && (
@@ -1533,7 +1652,9 @@ export default function Article5Assessment({
                 <b className={styles.questionCount}>4 mandatory questions</b>
               </header>
               {reuseRecyclingQuestions.map((question) => {
-                const answer = reuseAnswers[question.id] || "";
+                const answer = normalizeAvailabilityAnswer(
+                  reuseAnswers[question.id] || "",
+                );
                 const requiresEvidence =
                   question.evidenceAnswers.includes(answer);
                 return (
@@ -1578,7 +1699,7 @@ export default function Article5Assessment({
                         </option>
                         {question.options.map((option) => (
                           <option key={option} value={option}>
-                            {option}
+                            {availabilityLabel(option)}
                           </option>
                         ))}
                       </select>
@@ -1614,7 +1735,9 @@ export default function Article5Assessment({
                 <b className={styles.questionCount}>3 mandatory questions</b>
               </header>
               {foodContactQuestions.map((question) => {
-                const answer = foodContactAnswers[question.id] || "";
+                const answer = normalizeAvailabilityAnswer(
+                  foodContactAnswers[question.id] || "",
+                );
                 const requiresEvidence =
                   question.evidenceAnswers.includes(answer);
                 const guidance = question.guidance?.[answer];
@@ -1661,7 +1784,7 @@ export default function Article5Assessment({
                         </option>
                         {question.options.map((option) => (
                           <option key={option} value={option}>
-                            {option}
+                            {availabilityLabel(option)}
                           </option>
                         ))}
                       </select>
@@ -1715,7 +1838,9 @@ export default function Article5Assessment({
               {visiblePfasQuestions.map((question, index) => {
                 const questionId = question.id;
                 const displayNumber = index + 1;
-                const answer = pfasAnswers[questionId] || "";
+                const answer = normalizeAvailabilityAnswer(
+                  pfasAnswers[questionId] || "",
+                );
                 const guidance = question.guidance[answer];
                 const fail = answer === "Yes" && [3, 5, 7].includes(questionId);
                 return (
@@ -1781,7 +1906,9 @@ export default function Article5Assessment({
                           Select an answer
                         </option>
                         {standardConcernOptions.map((option) => (
-                          <option key={option}>{option}</option>
+                          <option key={option} value={option}>
+                            {availabilityLabel(option)}
+                          </option>
                         ))}
                       </select>
                     </label>
@@ -1808,8 +1935,8 @@ export default function Article5Assessment({
                     )}
                     {answer && (
                       <label className={styles.descriptionField}>
-                        {answer === "N/A"
-                          ? "Not-applicable justification"
+                        {answer === "Unknown"
+                          ? "Not-available justification"
                           : questionId === 1 && answer === "Yes"
                             ? "Screening method and scope"
                             : questionId === 8 && answer === "No"

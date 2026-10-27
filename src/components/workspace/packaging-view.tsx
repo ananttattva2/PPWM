@@ -25,6 +25,7 @@ export default function PackagingView({
   row,
   importId,
   onBack,
+  backLabel = "Back to list",
   onEdit,
   onPhotosSaved,
   onBusy,
@@ -34,6 +35,7 @@ export default function PackagingView({
   row: PackagingRow;
   importId: string;
   onBack: () => void;
+  backLabel?: string;
   onEdit: () => void;
   onPhotosSaved: (composition: PackagingComposition) => void;
   onBusy: (busy: boolean) => void;
@@ -100,8 +102,8 @@ export default function PackagingView({
       initial={{ opacity: 0, y: reducedMotion ? 0 : 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <header className="composition-heading">
-        <div>
+      <header className="composition-heading composition-view-topbar">
+        <div className="composition-view-heading-copy">
           <span className="composition-eyebrow">
             PACKAGING WORKSPACE / {row.sku || "SKU PENDING"}
           </span>
@@ -110,15 +112,37 @@ export default function PackagingView({
             View saved product information, component details and uploaded
             photos.
           </p>
+          <section
+            className="composition-view-product-identity"
+            aria-label="Product identity"
+          >
+            <Package size={20} />
+            <div>
+              <b>{row.productName || "Product name pending"}</b>
+              <small>{row.sku || "SKU pending"}</small>
+            </div>
+          </section>
         </div>
         <div className="composition-heading-actions">
+          <div className="composition-heading-preview">
+            <PackagingGallery
+              row={row}
+              disabled={Boolean(uploadingComponent) || !canEdit}
+              importId={importId}
+              onSaved={onPhotosSaved}
+              onBusy={(busy) => {
+                setUploading(busy);
+                onBusy(busy);
+              }}
+            />
+          </div>
           <Button
             type="button"
             variant="outline"
             onClick={onBack}
             disabled={uploading}
           >
-            <ArrowLeft size={16} /> Back to list
+            <ArrowLeft size={16} /> {backLabel}
           </Button>
           <Link
             className="gallery-analyse-link"
@@ -137,27 +161,6 @@ export default function PackagingView({
         </div>
       </header>
       <div className="composition-view-grid">
-        <aside className="composition-left">
-          <section className="composition-card product-identity">
-            <div className="composition-sku-title">
-              <Package size={24} />
-              <div>
-                <b>{row.productName || "Product name pending"}</b>
-                <small>{row.sku || "SKU pending"}</small>
-              </div>
-            </div>
-          </section>
-          <PackagingGallery
-            row={row}
-            disabled={Boolean(uploadingComponent) || !canEdit}
-            importId={importId}
-            onSaved={onPhotosSaved}
-            onBusy={(busy) => {
-              setUploading(busy);
-              onBusy(busy);
-            }}
-          />
-        </aside>
         <section
           className="composition-middle"
           aria-label="Saved packaging components"
@@ -178,96 +181,101 @@ export default function PackagingView({
               </span>
             </div>
             {components.length ? (
-              components.map((component, index) => (
-                <article
-                  className="composition-component composition-saved-component"
-                  key={component.id}
-                >
-                  <div className="composition-component-number">
-                    {index + 1}
-                  </div>
-                  <div className="composition-view-component-photo">
-                    {canEdit ? (
-                      <label
-                        className={`component-photo-upload ${uploading ? "is-busy" : ""}`}
-                      >
-                        <input
-                          type="file"
-                          className="sr-only"
-                          accept="image/png,image/jpeg"
-                          disabled={uploading}
-                          aria-label={`Upload ${component.name || `component ${index + 1}`} photo`}
-                          onChange={(event) => {
-                            const file = event.target.files?.[0];
-                            event.target.value = "";
-                            void uploadComponent(component.id, file);
-                          }}
-                        />
-                        {component.image ? (
-                          <img
-                            src={image(component.image)}
-                            alt={component.name || `Component ${index + 1}`}
-                          />
-                        ) : (
-                          <Package size={28} aria-hidden="true" />
-                        )}
-                        <span className="component-photo-upload-action">
-                          {uploadingComponent === component.id ? (
-                            <LoaderCircle size={16} className="spin" />
-                          ) : (
-                            <Upload size={16} />
-                          )}
-                          <span>
-                            {uploadingComponent === component.id
-                              ? "Saving…"
-                              : component.image
-                                ? "Replace"
-                                : "Upload"}
-                          </span>
-                        </span>
-                      </label>
-                    ) : component.image ? (
-                      <img
-                        src={image(component.image)}
-                        alt={component.name || `Component ${index + 1}`}
-                      />
-                    ) : (
-                      <Package size={28} />
-                    )}
-                  </div>
-                  <div className="composition-component-fields">
-                    <div className="component-view-heading">
-                      <div className="component-view-title">
-                        <h4>{component.name || `Component ${index + 1}`}</h4>
-                        <p className="component-view-weight">
-                          Weight:{" "}
-                          {component.weight?.trim()
-                            ? `${Number(component.weight).toFixed(2)} g`
-                            : "—"}
-                        </p>
-                        {component.supplierName && (
-                          <p className="component-view-supplier">
-                            Supplier: {component.supplierName}
-                          </p>
-                        )}
-                      </div>
-                      <div className="component-view-actions">
-                        <Link
-                          className="gallery-analyse-link component-analyse-link"
-                          href={`/dashboard/packaging/${importId}/${row.rowNumber}/analyse?component=${encodeURIComponent(component.id)}`}
-                          target="_self"
-                          onNavigate={() =>
-                            rememberPackagingWorkspace(importId, row.rowNumber)
-                          }
-                          aria-label={`Analyse ${component.name || `component ${index + 1}`}`}
+              <div className="composition-compact-grid">
+                {components.map((component, index) => (
+                  <article
+                    className="composition-component composition-saved-component"
+                    key={component.id}
+                  >
+                    <div className="composition-component-number">
+                      {index + 1}
+                    </div>
+                    <div className="composition-view-component-photo">
+                      {canEdit ? (
+                        <label
+                          className={`component-photo-upload ${uploading ? "is-busy" : ""}`}
                         >
-                          <ChartNoAxesCombined size={15} /> Analyse
-                        </Link>
+                          <input
+                            type="file"
+                            className="sr-only"
+                            accept="image/png,image/jpeg"
+                            disabled={uploading}
+                            aria-label={`Upload ${component.name || `component ${index + 1}`} photo`}
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              event.target.value = "";
+                              void uploadComponent(component.id, file);
+                            }}
+                          />
+                          {component.image ? (
+                            <img
+                              src={image(component.image)}
+                              alt={component.name || `Component ${index + 1}`}
+                            />
+                          ) : (
+                            <Package size={28} aria-hidden="true" />
+                          )}
+                          <span className="component-photo-upload-action">
+                            {uploadingComponent === component.id ? (
+                              <LoaderCircle size={16} className="spin" />
+                            ) : (
+                              <Upload size={16} />
+                            )}
+                            <span>
+                              {uploadingComponent === component.id
+                                ? "Saving…"
+                                : component.image
+                                  ? "Replace"
+                                  : "Upload"}
+                            </span>
+                          </span>
+                        </label>
+                      ) : component.image ? (
+                        <img
+                          src={image(component.image)}
+                          alt={component.name || `Component ${index + 1}`}
+                        />
+                      ) : (
+                        <Package size={28} />
+                      )}
+                    </div>
+                    <div className="composition-component-fields">
+                      <div className="component-view-heading">
+                        <div className="component-view-title">
+                          <h4>{component.name || `Component ${index + 1}`}</h4>
+                          <p className="component-view-weight">
+                            Weight:{" "}
+                            {component.weight?.trim()
+                              ? `${Number(component.weight).toFixed(2)} g`
+                              : "—"}
+                          </p>
+                          {component.supplierName && (
+                            <p className="component-view-supplier">
+                              Supplier: {component.supplierName}
+                            </p>
+                          )}
+                        </div>
+                        <div className="component-view-actions">
+                          <Link
+                            className="gallery-analyse-link component-analyse-link"
+                            href={`/dashboard/packaging/${importId}/${row.rowNumber}/analyse?component=${encodeURIComponent(component.id)}`}
+                            target="_self"
+                            onNavigate={() =>
+                              rememberPackagingWorkspace(
+                                importId,
+                                row.rowNumber,
+                              )
+                            }
+                            aria-label={`Analyse ${component.name || `component ${index + 1}`}`}
+                          >
+                            <ChartNoAxesCombined size={15} /> Analyse
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </article>
-              ))
+                  </article>
+                ))}
+              </div>
             ) : (
               <div className="composition-view-placeholder">
                 <Package size={35} />
