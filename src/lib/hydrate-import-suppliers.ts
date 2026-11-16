@@ -5,8 +5,13 @@ import type {
   ImportSettings,
 } from "./packaging-import-schema";
 const supplierKeys = [
+  "componentSeparation",
+  "componentCodeAvailable",
+  "componentCode",
   "foodGrade",
   "supplierName",
+  "supplierCodeAvailable",
+  "supplierCode",
   "supplierAddress",
   "supplierContactNumber",
   "supplierEmail",

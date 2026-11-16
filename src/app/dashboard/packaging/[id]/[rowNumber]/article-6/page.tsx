@@ -83,12 +83,15 @@ export default async function Page({
       ? classification.family
       : component.material;
   const backHref = `/dashboard/packaging/${id}/${number}/analyse?component=${encodeURIComponent(componentId)}&section=articles`;
+  const article5Href = `/dashboard/packaging/${id}/${number}/article-5?component=${encodeURIComponent(componentId)}&section=5`;
   return (
     <Article6Assessment
       key={`${user.id}-${id}-${number}-${componentId}`}
       componentName={component.name || "Unnamed component"}
       productName={row.productName || "Product name pending"}
       material={material}
+      componentSeparation={component.componentSeparation}
+      article5Href={article5Href}
       backHref={backHref}
     />
   );

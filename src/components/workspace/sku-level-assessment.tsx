@@ -20,16 +20,37 @@ const sections = [
     question:
       "Is the item within the PPWR definition of packaging under Article 3(1)(1)?",
   },
-  {
-    name: "Material & construction",
-    question:
-      "Can the conceptual design, manufacturing drawings and materials of components be linked to this assessment?",
-  },
-  {
-    name: "Reuse & recycling interaction",
-    question:
-      "Could interactions between components increase a substance-related concern compared with assessing each component alone?",
-  },
+] as const;
+
+const packagingDefinitions = [
+  [
+    "Main packaging",
+    "An item used to contain, protect, support or preserve a product during its life, which is not an integral part of the product and is intended to be used or disposed of with it.",
+  ],
+  [
+    "Integrated packaging component",
+    "A component that forms part of the main packaging itself.",
+  ],
+  [
+    "Attached packaging element",
+    "An item attached to or hung directly on the product that performs a packaging function but is not an integral part of the product.",
+  ],
+  [
+    "Service packaging",
+    "Packaging designed to be filled at the point of sale to provide or dispense a product.",
+  ],
+  [
+    "Disposable point-of-sale item",
+    "A disposable item sold and filled, or intended to be filled, at the point of sale that performs a packaging function.",
+  ],
+  [
+    "Permeable beverage bags or soft pods",
+    "Tea, coffee or similar beverage bags or soft single-serve units that contain the product, allow liquid to pass through where applicable, and are disposed of with the product after use.",
+  ],
+  [
+    "Non-permeable beverage capsules",
+    "Single-serve tea, coffee or similar beverage units used in a machine and disposed of with the product after use.",
+  ],
 ] as const;
 
 const options = ["Yes", "No", "Unknown", "N/A"] as const;
@@ -109,10 +130,10 @@ export default function SkuLevelAssessment({
             event.key === "Home"
               ? 0
               : event.key === "End"
-                ? 2
+                ? sections.length - 1
                 : event.key === "ArrowRight"
-                  ? (active + 1) % 3
-                  : (active + 2) % 3,
+                  ? (active + 1) % sections.length
+                  : (active - 1 + sections.length) % sections.length,
           );
         }}
       >
@@ -158,6 +179,17 @@ export default function SkuLevelAssessment({
                 <em>EU market</em>
               </div>
               <h3>{sections[active].question}</h3>
+              <div className={styles.definitionGuidance}>
+                <p>Answer Yes when the item falls within one of these types:</p>
+                <ol>
+                  {packagingDefinitions.map(([name, description]) => (
+                    <li key={name}>
+                      <b>{name}</b>
+                      <span>{description}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
             </div>
             <div className={styles.timeline}>
               <CalendarDays size={18} />

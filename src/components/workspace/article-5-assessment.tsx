@@ -3,7 +3,7 @@ import { persistAssessmentFile } from "@/lib/upload-media-client";
 import { mediaAccept } from "@/lib/media-types";
 
 import { useDraftState } from "@/lib/use-draft-state";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -556,11 +556,13 @@ export default function Article5Assessment({
   componentName,
   productName,
   material,
+  initialSection = 0,
   backHref,
 }: {
   componentName: string;
   productName: string;
   material: string;
+  initialSection?: number;
   backHref: string;
 }) {
   const id = useId();
@@ -583,6 +585,10 @@ export default function Article5Assessment({
     (question) => question.id !== 9 || pfasAnswers[8] === "Yes",
   );
   const [active, setActive] = useDraftState("active", 0);
+  useEffect(() => {
+    if (initialSection >= 0 && initialSection < tabs.length)
+      setActive(initialSection);
+  }, [initialSection, setActive]);
   const [answers, setAnswers] = useDraftState<Record<number, string>>(
     "answers",
     {},

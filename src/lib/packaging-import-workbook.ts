@@ -33,22 +33,29 @@ export function packagingTemplateWorkbook() {
     };
     cell.alignment = { vertical: "middle", wrapText: true };
   });
-  const foodColumn =
-    packagingTemplateFields.findIndex((field) => field.key === "foodGrade") + 1;
+  const yesNoColumns = [
+    "foodGrade",
+    "componentCodeAvailable",
+    "supplierCodeAvailable",
+  ].map(
+    (key) =>
+      packagingTemplateFields.findIndex((field) => field.key === key) + 1,
+  );
   const phoneColumn =
     packagingTemplateFields.findIndex(
       (field) => field.key === "supplierContactNumber",
     ) + 1;
   sheet.getColumn(phoneColumn).numFmt = "@";
   for (let row = 2; row <= 1001; row++)
-    sheet.getCell(row, foodColumn).dataValidation = {
-      type: "list",
-      allowBlank: true,
-      formulae: ['"Yes,No"'],
-      showErrorMessage: true,
-      errorTitle: "Choose Yes or No",
-      error: "Food Grade must be Yes or No.",
-    };
+    for (const column of yesNoColumns)
+      sheet.getCell(row, column).dataValidation = {
+        type: "list",
+        allowBlank: true,
+        formulae: ['"Yes,No"'],
+        showErrorMessage: true,
+        errorTitle: "Choose Yes or No",
+        error: "Select Yes or No.",
+      };
   sheet.eachRow((row, index) => {
     if (index === 1) return;
     row.height = 30;
@@ -74,6 +81,7 @@ export function packagingTemplateWorkbook() {
     "A component may appear on multiple rows when it has multiple suppliers. The same component and supplier combination should not be repeated within an SKU.",
     "Component weight (g) is the weight of this component. Total weight (g) is the product's full packaging weight; do not multiply it by the number of rows.",
     "Food Grade: select Yes or No for this component. Phone numbers are text so + prefixes and leading zeros remain intact.",
+    "Component and supplier codes: select Yes when you are supplying an existing code. Select No to let the importer generate and reuse one code for every matching name. Material does not affect code generation.",
     "Supplier fields belong only to the component on that row. Leave optional fields blank when not known.",
     "Keep the header names. Replace or delete the sample rows before uploading. Upload the Packaging Components sheet first.",
     "Maximum 1,000 component rows per file and 30 components per SKU. Polymer is not required in this template.",

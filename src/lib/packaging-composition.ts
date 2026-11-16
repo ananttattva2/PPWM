@@ -12,6 +12,14 @@ export const compositionComponentSchema = z.object({
     .regex(/^[a-zA-Z0-9-]{1,60}$/)
     .refine((value) => value !== "product"),
   name: text,
+  componentSeparation: text.optional(),
+  componentCodeAvailable: text
+    .refine(
+      (value) => ["", "Yes", "No"].includes(value),
+      "Component code availability must be Yes or No",
+    )
+    .optional(),
+  componentCode: text.optional(),
   foodGrade: text
     .refine(
       (value) => ["", "Yes", "No"].includes(value),
@@ -19,6 +27,13 @@ export const compositionComponentSchema = z.object({
     )
     .optional(),
   supplierName: text.optional(),
+  supplierCodeAvailable: text
+    .refine(
+      (value) => ["", "Yes", "No"].includes(value),
+      "Supplier code availability must be Yes or No",
+    )
+    .optional(),
+  supplierCode: text.optional(),
   supplierAddress: text.optional(),
   supplierContactNumber: text
     .refine(
@@ -120,6 +135,9 @@ export function initialComposition(row: PackagingRow): PackagingComposition {
         {
           id: "main",
           name: "Main packaging",
+          componentSeparation: row.componentSeparation || "",
+          componentCodeAvailable: row.componentCodeAvailable || "",
+          componentCode: row.componentCode || "",
           material: row.material,
           colour: "",
           weight: String(row.componentWeight ?? ""),
@@ -127,6 +145,8 @@ export function initialComposition(row: PackagingRow): PackagingComposition {
           adhesiveType: row.adhesiveType,
           barrierLayer: row.barrierLayer,
           printingInk: row.printingInk,
+          supplierCodeAvailable: row.supplierCodeAvailable || "",
+          supplierCode: row.supplierCode || "",
           image: "",
         },
       ],

@@ -67,6 +67,16 @@ const aliases: Record<ImportField, string[]> = {
   category: ["category", "productcategory"],
   packagingType: ["packagingtype", "packaging", "packtype"],
   componentName: ["componentname", "packagingcomponent", "component"],
+  componentSeparation: [
+    "componentseparation",
+    "componentseparationtype",
+    "separation",
+  ],
+  componentCodeAvailable: [
+    "componentcodeavailable",
+    "componentcodeavailableyesno",
+  ],
+  componentCode: ["componentcode"],
   material: ["polymer", "material", "packagingmaterial"],
   foodGrade: [
     "foodgrade",
@@ -77,6 +87,11 @@ const aliases: Record<ImportField, string[]> = {
     "foodcontact",
   ],
   supplierName: ["suppliername", "suppliercompanyname", "vendorname"],
+  supplierCodeAvailable: [
+    "suppliercodeavailable",
+    "suppliercodeavailableyesno",
+  ],
+  supplierCode: ["suppliercode", "vendorcode"],
   supplierAddress: ["supplieraddress"],
   supplierContactNumber: [
     "suppliercontactnumber",
@@ -295,6 +310,32 @@ export function analysePackaging(
     const foodGrade = values.foodGrade.trim().toLowerCase();
     if (foodGrade && !["yes", "no"].includes(foodGrade))
       add("Food Grade (Yes/No)", "Food grade must be Yes or No", "error");
+    for (const [key, label] of [
+      ["componentCodeAvailable", "Component Code Available? (Yes/No)"],
+      ["supplierCodeAvailable", "Supplier Code Available? (Yes/No)"],
+    ] as const) {
+      const value = values[key].trim().toLowerCase();
+      if (value && !["yes", "no"].includes(value))
+        add(label, `${label} must be Yes or No`, "error");
+    }
+    if (
+      values.componentCodeAvailable.trim().toLowerCase() === "yes" &&
+      !values.componentCode
+    )
+      add(
+        "Component Code",
+        "Component Code is required when a component code is available",
+        "error",
+      );
+    if (
+      values.supplierCodeAvailable.trim().toLowerCase() === "yes" &&
+      !values.supplierCode
+    )
+      add(
+        "Supplier Code",
+        "Supplier Code is required when a supplier code is available",
+        "error",
+      );
     if (
       values.supplierEmail &&
       !z.email().safeParse(values.supplierEmail).success
@@ -426,6 +467,9 @@ export function analysePackaging(
         return {
           id: `component-${componentIndex + 1}`,
           name,
+          componentSeparation: analysed.componentSeparation,
+          componentCodeAvailable: analysed.componentCodeAvailable,
+          componentCode: analysed.componentCode,
           material: analysed.material,
           colour: "",
           weight: source[mapping.componentWeight || ""] || "",
@@ -436,6 +480,8 @@ export function analysePackaging(
           image: "",
           foodGrade: analysed.foodGrade,
           supplierName: analysed.supplierName,
+          supplierCodeAvailable: analysed.supplierCodeAvailable,
+          supplierCode: analysed.supplierCode,
           supplierAddress: analysed.supplierAddress,
           supplierContactNumber: analysed.supplierContactNumber,
           supplierEmail: analysed.supplierEmail,
@@ -465,6 +511,14 @@ export function analysePackaging(
       productName: values.productName,
       category: category || values.category,
       packagingType: values.packagingType,
+      componentSeparation: values.componentSeparation,
+      componentCodeAvailable:
+        values.componentCodeAvailable.trim().toLowerCase() === "yes"
+          ? "Yes"
+          : values.componentCodeAvailable.trim().toLowerCase() === "no"
+            ? "No"
+            : values.componentCodeAvailable,
+      componentCode: values.componentCode,
       material: material || values.material,
       foodGrade:
         foodGrade === "yes"
@@ -473,6 +527,13 @@ export function analysePackaging(
             ? "No"
             : values.foodGrade,
       supplierName: values.supplierName,
+      supplierCodeAvailable:
+        values.supplierCodeAvailable.trim().toLowerCase() === "yes"
+          ? "Yes"
+          : values.supplierCodeAvailable.trim().toLowerCase() === "no"
+            ? "No"
+            : values.supplierCodeAvailable,
+      supplierCode: values.supplierCode,
       supplierAddress: values.supplierAddress,
       supplierContactNumber: values.supplierContactNumber,
       supplierEmail: values.supplierEmail,

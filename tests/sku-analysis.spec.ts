@@ -207,10 +207,10 @@ test("component Analyse restores classification while SKU analysis stays separat
     ).toBeVisible();
     await expect(
       page.getByRole("tab", { name: /Material & construction/ }),
-    ).toBeVisible();
+    ).toHaveCount(0);
     await expect(
       page.getByRole("tab", { name: /Reuse & recycling interaction/ }),
-    ).toBeVisible();
+    ).toHaveCount(0);
     await page
       .getByRole("link", { name: "Back to Articles", exact: true })
       .click();

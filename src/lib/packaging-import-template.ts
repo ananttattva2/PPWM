@@ -98,9 +98,19 @@ export function packagingTemplateRows(): Record<string, string>[] {
         weight: product.weight,
         components: product.components,
         componentName,
+        componentSeparation:
+          componentName === "Cap" ||
+          componentName === "Zip Closure" ||
+          componentName === "Seal"
+            ? "Separated"
+            : "Integrated",
+        componentCodeAvailable: "No",
+        componentCode: "",
         componentWeight,
         foodGrade: componentName === "Label" ? "No" : "Yes",
         supplierName,
+        supplierCodeAvailable: "No",
+        supplierCode: "",
         supplierAddress,
         supplierEmail,
         supplierAuthorisedPersonName,

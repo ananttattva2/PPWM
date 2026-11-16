@@ -16,9 +16,26 @@ export const importFields = [
   { key: "category", label: "Category", required: true },
   { key: "packagingType", label: "Packaging type", required: true },
   { key: "componentName", label: "Component Name", required: false },
+  {
+    key: "componentSeparation",
+    label: "Component Separation",
+    required: false,
+  },
+  {
+    key: "componentCodeAvailable",
+    label: "Component Code Available? (Yes/No)",
+    required: false,
+  },
+  { key: "componentCode", label: "Component Code", required: false },
   { key: "material", label: "Material (legacy)", required: false },
   { key: "foodGrade", label: "Food Grade (Yes/No)", required: false },
   { key: "supplierName", label: "Supplier Name", required: false },
+  {
+    key: "supplierCodeAvailable",
+    label: "Supplier Code Available? (Yes/No)",
+    required: false,
+  },
+  { key: "supplierCode", label: "Supplier Code", required: false },
   { key: "supplierAddress", label: "Supplier Address", required: false },
   {
     key: "supplierContactNumber",
@@ -70,9 +87,14 @@ export type PackagingRow = {
   packagingType: string;
   componentSuppliers?: boolean;
   componentName?: string;
+  componentSeparation?: string;
+  componentCodeAvailable?: string;
+  componentCode?: string;
   material: string;
   foodGrade?: string;
   supplierName?: string;
+  supplierCodeAvailable?: string;
+  supplierCode?: string;
   supplierAddress?: string;
   supplierContactNumber?: string;
   supplierEmail?: string;

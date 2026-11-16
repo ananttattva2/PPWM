@@ -97,7 +97,7 @@ export default function PackagingImport({
     [all, setAll] = useState(false);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [details, setDetails] = useState(false);
+  const [details, setDetails] = useState(true);
   const [editingRow, setEditingRow] = useState<number | null>(null);
   const [addingRow, setAddingRow] = useState(false);
   const returnParams = useSearchParams();
@@ -139,6 +139,7 @@ export default function PackagingImport({
     setAll(false);
     setQuery("");
     setStatusFilter("all");
+    setDetails(true);
   }
   function updateSettings(next: ImportSettings) {
     setSettings(next);
@@ -161,6 +162,7 @@ export default function PackagingImport({
       const body = new FormData();
       body.append("file", selected);
       body.append("settings", JSON.stringify(settings));
+      body.append("companyName", organisationName);
       if (Object.keys(mapping).length)
         body.append("mapping", JSON.stringify(mapping));
       if (id.current) body.append("importId", id.current);
@@ -1033,6 +1035,11 @@ export default function PackagingImport({
                           </th>
                           {details && (
                             <>
+                              <th>Component Separation</th>
+                              <th>Component Code Available? (Yes/No)</th>
+                              <th>Component Code</th>
+                              <th>Supplier Code Available? (Yes/No)</th>
+                              <th>Supplier Code</th>
                               <th>Label Coverage (%)</th>
                               <th>Adhesive Type</th>
                               <th>Barrier Layer Details</th>
@@ -1106,6 +1113,41 @@ export default function PackagingImport({
                             </td>
                             {details && (
                               <>
+                                {(
+                                  [
+                                    "componentSeparation",
+                                    "componentCodeAvailable",
+                                    "componentCode",
+                                    "supplierCodeAvailable",
+                                    "supplierCode",
+                                  ] as const
+                                ).map((key) => {
+                                  const components =
+                                    row.composition?.components || [];
+                                  return (
+                                    <td
+                                      className={
+                                        components.length
+                                          ? "import-component-supplier-cell"
+                                          : undefined
+                                      }
+                                      key={key}
+                                    >
+                                      {components.length ? (
+                                        <div className="import-component-suppliers">
+                                          {components.map((component) => (
+                                            <span key={component.id}>
+                                              <strong>{component.name}:</strong>{" "}
+                                              {component[key] || "—"}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        row[key] || "—"
+                                      )}
+                                    </td>
+                                  );
+                                })}
                                 <td>{row.labelCoverage || "—"}</td>
                                 <td>{row.adhesiveType || "—"}</td>
                                 <td>{row.barrierLayer || "—"}</td>

@@ -1,3 +1,7 @@
+.identityWithSeparation {
+  grid-template-columns: auto repeat(4, minmax(0, 1fr));
+}
+
 .sectionIntro {
   margin: 6px 2px 12px;
   color: #738298;
@@ -75,6 +79,10 @@
 }
 
 @media (max-width: 700px) {
+  .identityWithSeparation {
+    grid-template-columns: 36px minmax(0, 1fr);
+  }
+
   .guidance,
   .cardBody {
     margin-left: 0;

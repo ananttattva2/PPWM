@@ -23,8 +23,6 @@ const tabs = [
   "Design for recycling (DfR)",
   "Collection, sorting & recycled-at-scale",
   "Component-level rules",
-  "Grades & market-placement dates",
-  "EPR fee modulation & records",
 ] as const;
 
 type Article6Question = {
@@ -42,26 +40,6 @@ type Article6Question = {
 const sectionOneQuestions: readonly Article6Question[] = [
   {
     id: 1,
-    text: "Are components classified as integrated, separate, or mixed (integrated and separate)?",
-    options: [
-      "Integrated components",
-      "Separate components",
-      "Mixed (integrated + separate)",
-      "Unknown",
-    ],
-    guidance: {
-      "Integrated components":
-        "Integrated -> assess with unit, subject to separation-under-stress rule.",
-      "Separate components": "Separate -> assess each separate component.",
-      "Mixed (integrated + separate)":
-        "Mixed -> apply both approaches by component.",
-      Unknown: "Unknown -> investigate physical design.",
-    },
-    evidence: "Assembly drawing; component tree; BOM; disassembly description",
-    source: "Packaging engineer / converter",
-  },
-  {
-    id: 2,
     text: "Could an integrated component become separated from other integrated components due to mechanical stress during transport or sorting?",
     options: ["Yes", "No", "Unknown"],
     labels: { Unknown: "Not available" },
@@ -75,7 +53,7 @@ const sectionOneQuestions: readonly Article6Question[] = [
     source: "Packaging engineer / test lab",
   },
   {
-    id: 3,
+    id: 2,
     text: "For each separate component, has a separate design-for-recycling / recycled-at-scale assessment record been opened?",
     options: ["Yes", "No", "Unknown"],
     labels: { Unknown: "Not available" },
@@ -87,7 +65,7 @@ const sectionOneQuestions: readonly Article6Question[] = [
     source: "Compliance team / packaging engineer",
   },
   {
-    id: 4,
+    id: 3,
     text: "Is every component compatible with established collection, sorting and recycling processes proven in an operational environment?",
     options: ["Yes", "No", "Unknown"],
     labels: { Unknown: "Not available" },
@@ -101,7 +79,7 @@ const sectionOneQuestions: readonly Article6Question[] = [
     source: "Packaging engineer / recycler / technical assessor",
   },
   {
-    id: 5,
+    id: 4,
     text: "Could any component hinder the recyclability of the packaging unit's main body?",
     options: ["Yes", "No", "Unknown"],
     labels: { Unknown: "Not available" },
@@ -151,7 +129,6 @@ const sectionThreeQuestions: readonly Article6Question[] = [
     id: 1,
     text: "Can the packaging be collected separately through relevant collection systems when it becomes waste?",
     options: ["Yes", "No", "Not available"],
-    optional: true,
     evidence:
       "Effective implementing act; Annex II category mapping; methodology reference",
     source: "Compliance team / EU regulatory reviewer",
@@ -160,7 +137,6 @@ const sectionThreeQuestions: readonly Article6Question[] = [
     id: 2,
     text: "Once the applicable Article 6(5) implementing act and application date are effective, can the packaging be shown to meet the prescribed recycled-at-scale methodology for the relevant category?",
     options: ["Yes", "No", "Not available"],
-    optional: true,
     evidence:
       "Recycled tonnage data; category/material data; territory and reporting period",
     source: "PRO / recycler / sorting operator / system operator",
@@ -169,7 +145,6 @@ const sectionThreeQuestions: readonly Article6Question[] = [
     id: 3,
     text: "When the Article 6(5) methodology applies, can the required data on quantities effectively recycled in the Union as a whole and in each relevant Member State be obtained for this category?",
     options: ["Yes", "No", "Not available"],
-    optional: true,
     evidence:
       "Collected-waste-to-facility quantity records; transfer notes; downstream records",
     source: "Collector / PRO / sorting facility",
@@ -178,7 +153,6 @@ const sectionThreeQuestions: readonly Article6Question[] = [
     id: 4,
     text: "When the Article 6(5) methodology applies, is technical documentation available for the quantity of collected packaging waste sent to sorting and recycling facilities?",
     options: ["Yes", "No", "Not available"],
-    optional: true,
     evidence:
       "Verification procedure; downstream confirmations; audit/assurance data",
     source: "Manufacturer / PRO / downstream operators",
@@ -187,7 +161,6 @@ const sectionThreeQuestions: readonly Article6Question[] = [
     id: 5,
     text: "When the Article 6(5) methodology applies, is a verification process in place that allows the manufacturer to obtain the required data from downstream operators?",
     options: ["Yes", "No", "Not available"],
-    optional: true,
     evidence:
       "Public data source/link; publication record; methodology reference",
     source: "Responsible data holder / compliance team",
@@ -209,23 +182,6 @@ const sectionFourQuestions: readonly Article6Question[] = [
   },
   {
     id: 2,
-    text: "Could an integrated component separate from another through mechanical stress in transport/sorting?",
-    options: ["Yes", "No", "Not available"],
-    optional: true,
-    evidence:
-      "Mechanical stress analysis/test; component retention/attachment evidence",
-    source: "Packaging engineer / test lab",
-  },
-  {
-    id: 3,
-    text: "Has each separate component been assessed separately for DfR and recycled-at-scale requirements?",
-    options: ["Yes", "No", "Not available"],
-    optional: true,
-    evidence: "Separate component reports; evidence IDs; component BOM",
-    source: "Technical assessor",
-  },
-  {
-    id: 4,
     text: "Have component-level findings been rolled up to confirm no component hinders recyclability of the main body?",
     options: ["Yes", "No", "Not available"],
     optional: true,
@@ -233,73 +189,12 @@ const sectionFourQuestions: readonly Article6Question[] = [
     source: "Packaging engineer / recycler",
   },
   {
-    id: 5,
+    id: 3,
     text: "Have relevant components such as cap/closure, label/sleeve, adhesive, ink, coating, liner, seal and other attached parts each been identified and linked to their material data?",
     options: ["Yes", "No", "Not available"],
     optional: true,
     evidence: "BOM; material declarations; drawings; supplier specifications",
     source: "Exporter / suppliers",
-  },
-];
-
-const sectionFiveQuestions: readonly Article6Question[] = [
-  {
-    id: 1,
-    text: "Has the recycled-at-scale start date been established as the later of 1 January 2035 or five years after entry into force of the relevant Article 6(5) implementing act?",
-    options: ["Yes", "No", "Not available"],
-    optional: true,
-    mandatory: {
-      primary:
-        "Later of 1 Jan 2035 or 5 years after the Art. 6(5) implementing act enters into force",
-    },
-    evidence: "Implementing-act effective date; timeline calculation",
-    source: "Compliance / EU regulatory reviewer",
-  },
-  {
-    id: 2,
-    text: "For market placement on or after 1 January 2038, is the packaging Grade A or B under the applicable methodology?",
-    options: ["Yes", "No", "Not available"],
-    optional: true,
-    mandatory: {
-      primary: "1 Jan 2038 (Grade A or B required)",
-    },
-    evidence:
-      "Official delegated act; current EU legal register; category scope",
-    source: "EU regulatory reviewer",
-  },
-  {
-    id: 3,
-    text: "Has the relevant Article 6(4) delegated act been published, entered into force and reached its application date for this assessment?",
-    options: ["Yes", "No", "Not available"],
-    optional: true,
-    mandatory: {
-      primary: "Commission DfR delegated-act deadline: 1 Jan 2028",
-      secondary:
-        "Operator criteria apply from later of 1 Jan 2030 or 24 months after the Art. 6(4) delegated act enters into force",
-    },
-    evidence:
-      "Official implementing act; methodology; chain-of-custody requirements",
-    source: "EU regulatory reviewer",
-  },
-];
-
-const sectionSixQuestions: readonly Article6Question[] = [
-  {
-    id: 1,
-    text: "Has the start date for grade-based EPR fee modulation been determined as 18 months after entry into force of the Article 6(4) delegated acts and Article 6(5) implementing acts?",
-    options: ["Yes", "No", "Not available"],
-    optional: true,
-    evidence: "Act dates; legal timeline; EPR scheme notification",
-    source: "Producer / EPR adviser",
-  },
-  {
-    id: 2,
-    text: "If this packaging falls under Article 6(11)(g), has the Member State's consideration of technical feasibility and economic viability of recycling been checked for EPR contributions?",
-    options: ["Yes", "No", "Not available"],
-    optional: true,
-    evidence:
-      "Member State EPR rules/fee schedule; technical/economic evidence where required",
-    source: "Producer / PRO / EPR adviser",
   },
 ];
 
@@ -341,20 +236,6 @@ const article6Questionnaire: Partial<
         "Recycled-at-scale: later of 1 Jan 2035 / 5 years after Art. 6(5) act",
     },
     questions: sectionFourQuestions,
-  },
-  4: {
-    mandatory: {
-      primary:
-        "Later of 1 Jan 2035 or 5 years after the Art. 6(5) implementing act enters into force",
-    },
-    questions: sectionFiveQuestions,
-  },
-  5: {
-    mandatory: {
-      primary:
-        "Later of 1 Jan 2035 or 5 years after the Art. 6(5) implementing act enters into force",
-    },
-    questions: sectionSixQuestions,
   },
 };
 
@@ -558,108 +439,21 @@ const article6Sections: Record<
       },
     ],
   },
-  "Grades & market-placement dates": {
-    intro:
-      "Relate the component result to recyclability grades and the relevant market-placement milestones under Article 6.",
-    cards: [
-      {
-        id: 1,
-        title: "Grade assignment",
-        badge: "Mandatory",
-        summary:
-          "Assign the provisional recyclability grade for the component based on the evidence collected so far.",
-        timeline: "Grade review",
-        timelineNote: "Keep assumptions visible for later validation",
-        items: [
-          "Record the provisional recyclability grade for the component.",
-          "Check which future market-placement milestone applies.",
-          "Identify any remediation needed before the grade becomes mandatory.",
-        ],
-      },
-      {
-        id: 2,
-        title: "Evidence to retain",
-        badge: "Timeline",
-        summary:
-          "Keep the grade rationale and timing references together in the assessment record.",
-        timeline: "Date tracking",
-        timelineNote: "Link the grade to the relevant compliance milestone",
-        items: [
-          "Grade assessment record.",
-          "Timeline or compliance calendar.",
-          "Gap-remediation tracker where needed.",
-        ],
-      },
-      {
-        id: 3,
-        title: "Expected outcome",
-        badge: "Result",
-        summary:
-          "This section should leave the component with a dated recyclability-grade position.",
-        timeline: "Grade result",
-        timelineNote:
-          "Carry forward the grade and date logic into the final validation",
-        outcome:
-          "A recyclability-grade result with a clear market-placement timing view.",
-      },
-    ],
-  },
-  "EPR fee modulation & records": {
-    intro:
-      "Prepare the evidence set needed to support EPR fee modulation and the wider Article 6 audit trail.",
-    cards: [
-      {
-        id: 1,
-        title: "Record set",
-        badge: "Mandatory",
-        summary:
-          "Organise the material needed to support both the recyclability decision and the fee-modulation logic.",
-        timeline: "Records review",
-        timelineNote: "Make the evidence easy to retrieve during audits",
-        items: [
-          "Record the evidence pack supporting recyclability conclusions.",
-          "Map the component result to any EPR fee-modulation logic in use.",
-          "Confirm ownership of the supporting records and review frequency.",
-        ],
-      },
-      {
-        id: 2,
-        title: "Evidence to retain",
-        badge: "Records",
-        summary:
-          "Keep a clean evidence index so the Article 6 result can be defended later.",
-        timeline: "Evidence pack",
-        timelineNote: "Include the owner and review cadence in the record",
-        items: [
-          "Assessment summary and evidence file index.",
-          "EPR fee-modulation mapping or internal tracker.",
-          "Document owner and review log.",
-        ],
-      },
-      {
-        id: 3,
-        title: "Expected outcome",
-        badge: "Result",
-        summary:
-          "This section should confirm that the Article 6 result can be supported operationally.",
-        timeline: "Records result",
-        timelineNote: "Use this as the bridge into the final validation step",
-        outcome:
-          "A traceable record set that supports fees, evidence requests and compliance audits.",
-      },
-    ],
-  },
 };
 
 export default function Article6Assessment({
   componentName,
   productName,
   material,
+  componentSeparation,
+  article5Href,
   backHref,
 }: {
   componentName: string;
   productName: string;
   material?: string | null;
+  componentSeparation?: string | null;
+  article5Href: string;
   backHref: string;
 }) {
   const [active, setActive] = useState(0);
@@ -744,7 +538,10 @@ export default function Article6Assessment({
         </Link>
       </header>
 
-      <section className={shell.identity} aria-label="Assessment context">
+      <section
+        className={`${shell.identity} ${styles.identityWithSeparation}`}
+        aria-label="Assessment context"
+      >
         <span>
           <Recycle size={20} />
         </span>
@@ -760,13 +557,17 @@ export default function Article6Assessment({
           <small>MATERIAL</small>
           <b>{material || "Not provided"}</b>
         </div>
+        <div>
+          <small>COMPONENT SEPARATION</small>
+          <b>{componentSeparation || "Not provided"}</b>
+        </div>
       </section>
 
       <div className={shell.workspace}>
         <aside className={shell.sidebar}>
           <div className={shell.navigationHeading}>
             <span>YOUR ASSESSMENT</span>
-            <small>6 sections</small>
+            <small>{tabs.length} sections</small>
           </div>
           <nav
             className={shell.tabs}
@@ -830,7 +631,8 @@ export default function Article6Assessment({
         >
           <div className={shell.sectionOverview}>
             <span>
-              SECTION {String(active + 1).padStart(2, "0")} <i>/ 06</i>
+              SECTION {String(active + 1).padStart(2, "0")}{" "}
+              <i>/ {String(tabs.length).padStart(2, "0")}</i>
             </span>
             <span>
               <Check size={14} aria-hidden="true" />{" "}
@@ -936,6 +738,19 @@ export default function Article6Assessment({
                           <b>{answerLabel}:</b> {guidance}
                         </p>
                       )}
+
+                      {active === 1 &&
+                        question.id === 2 &&
+                        answer === "Yes" && (
+                          <p className={shell.questionNote}>
+                            Continue this finding in{" "}
+                            <Link href={article5Href}>
+                              Article 5, Section 5: Reuse & recycling
+                              interaction
+                            </Link>
+                            .
+                          </p>
+                        )}
 
                       {answer && (
                         <div className={shell.evidenceSection}>

@@ -13,6 +13,7 @@ import {
   parsePackagingFile,
   resolvePackagingMapping,
 } from "@/lib/packaging-import";
+import { applyPackagingCodesToImportRows } from "@/lib/packaging-codes";
 export const runtime = "nodejs";
 export async function GET() {
   try {
@@ -76,6 +77,14 @@ export async function POST(req: Request) {
         ? (JSON.parse(rawMapping) as ColumnMapping)
         : undefined,
     );
+    const companyName = String(body.get("companyName") || "")
+      .trim()
+      .slice(0, 200);
+    applyPackagingCodesToImportRows(
+      parsed.rawRows,
+      mapping,
+      companyName || settings.plant,
+    );
     parsed.rawRows = groupComponentRows(parsed.rawRows, mapping);
     const analysis = analysePackaging(parsed.rawRows, mapping, settings);
     if (
@@ -102,6 +111,7 @@ export async function POST(req: Request) {
       rawRows: parsed.rawRows,
       mapping,
       settings,
+      codeCompanyName: companyName || settings.plant,
       analysis,
       createdBy: user.id,
       status: "draft",

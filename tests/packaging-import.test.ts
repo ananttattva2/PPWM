@@ -71,7 +71,7 @@ test("composition drafts preserve source values without inventing component weig
   const draft = initialComposition(row);
   assert.equal(draft.components[0].weight, "");
   assert.equal(rowFields(row).weight, "23.5");
-  assert.equal(Object.keys(rowFields(row)).length, 19);
+  assert.equal(Object.keys(rowFields(row)).length, 24);
   assert.ok(compositionSchema.safeParse(draft).success);
   assert.ok(
     !compositionSchema.safeParse({
@@ -308,6 +308,7 @@ import {
   compositionUpdateSchema,
   distinctPhysicalComponents,
 } from "../src/lib/packaging-composition";
+import { applyPackagingCodes } from "../src/lib/packaging-codes";
 async function componentTemplate() {
   return parsePackagingFile(
     Buffer.from(packagingTemplateCsv()),
@@ -319,7 +320,7 @@ test("component rows group into two SKUs with independent suppliers and correct 
   const parsed = await componentTemplate();
   const analysis = analysePackaging(parsed.rawRows, parsed.suggested, settings);
   assert.equal(parsed.headers.includes("Polymer"), false);
-  assert.equal(parsed.headers.length, 18);
+  assert.equal(parsed.headers.length, 23);
   assert.equal(parsed.rawRows.length, 2);
   assert.deepEqual(analysis.summary, {
     total: 2,
@@ -372,6 +373,44 @@ test("Excel template has seven component rows, instructions, dropdowns and CSV-e
     analysePackaging(xlsx.rawRows, xlsx.suggested, settings),
     analysePackaging(csv.rawRows, csv.suggested, settings),
   );
+});
+test("component and supplier codes map, generate and reuse without using material", async () => {
+  const file = [
+    "SKU,Product Name,Category,Packaging Type,Component Name,Component Separation,Component Code Available? (Yes/No),Component Code,Supplier Name,Supplier Code Available? (Yes/No),Supplier Code,Total Weight (g),Components,Component Weight (g)",
+    "S1,Water,Beverages,Bottle,Bottle,Integrated,No,,NovaFlex Packaging,No,,20,1,20",
+    "S2,Juice,Beverages,Bottle,Bottle,Integrated,No,,NovaFlex Packaging,No,,20,1,20",
+  ].join("\n");
+  const parsed = await parsePackagingFile(
+    Buffer.from(file),
+    "codes.csv",
+    settings,
+    false,
+  );
+  applyPackagingCodes(parsed.rawRows, parsed.suggested, "Cano Company");
+  assert.equal(
+    parsed.rawRows[0][parsed.suggested.componentCode!],
+    "CANO/BOTTL/001",
+  );
+  assert.equal(
+    parsed.rawRows[1][parsed.suggested.componentCode!],
+    "CANO/BOTTL/001",
+  );
+  assert.equal(
+    parsed.rawRows[0][parsed.suggested.supplierCode!],
+    "CANO/NOVAF/001",
+  );
+  assert.equal(
+    parsed.rawRows[1][parsed.suggested.supplierCode!],
+    "CANO/NOVAF/001",
+  );
+  const grouped = groupComponentRows(parsed.rawRows, parsed.suggested);
+  const row = analysePackaging(grouped, parsed.suggested, settings).rows[0];
+  assert.equal(
+    row.composition!.components[0].componentSeparation,
+    "Integrated",
+  );
+  assert.equal(row.composition!.components[0].componentCode, "CANO/BOTTL/001");
+  assert.equal(row.composition!.components[0].supplierCode, "CANO/NOVAF/001");
 });
 test("component validation identifies supplier errors, count mismatches and conflicting SKU fields", async () => {
   const parsed = await componentTemplate();

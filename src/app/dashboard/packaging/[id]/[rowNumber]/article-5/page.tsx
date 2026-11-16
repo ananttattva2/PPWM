@@ -16,10 +16,13 @@ export default async function Page({
   searchParams,
 }: {
   params: Promise<{ id: string; rowNumber: string }>;
-  searchParams: Promise<{ component?: string | string[] }>;
+  searchParams: Promise<{
+    component?: string | string[];
+    section?: string | string[];
+  }>;
 }) {
   const { id, rowNumber } = await params;
-  const { component: componentId } = await searchParams;
+  const { component: componentId, section } = await searchParams;
   const user = await currentUser();
   if (!user) redirect("/login");
   if (!allowedPackagingScopes(user).includes("sales"))
@@ -89,6 +92,7 @@ export default async function Page({
       componentName={component.name || "Unnamed component"}
       productName={row.productName || "Product name pending"}
       material={material}
+      initialSection={section === "5" ? 4 : 0}
       backHref={backHref}
     />
   );

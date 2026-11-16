@@ -11,10 +11,15 @@ export const productImportKeys: ImportField[] = [
 ];
 export const componentImportKeys: ImportField[] = [
   "componentName",
+  "componentSeparation",
+  "componentCodeAvailable",
+  "componentCode",
   "material",
   "componentWeight",
   "foodGrade",
   "supplierName",
+  "supplierCodeAvailable",
+  "supplierCode",
   "supplierAddress",
   "supplierContactNumber",
   "supplierEmail",

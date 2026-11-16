@@ -182,6 +182,9 @@ export default function PackagingComposition({
         {
           id: crypto.randomUUID(),
           name: "",
+          componentSeparation: "",
+          componentCodeAvailable: "",
+          componentCode: "",
           material: "",
           colour: "",
           weight: "",
@@ -189,6 +192,8 @@ export default function PackagingComposition({
           adhesiveType: "",
           barrierLayer: "",
           printingInk: "",
+          supplierCodeAvailable: "",
+          supplierCode: "",
           image: "",
         },
       ],
@@ -336,6 +341,11 @@ export default function PackagingComposition({
                       "printingInk",
                       "material",
                       "componentName",
+                      "componentSeparation",
+                      "componentCodeAvailable",
+                      "componentCode",
+                      "supplierCodeAvailable",
+                      "supplierCode",
                     ].includes(item.key) &&
                     !(
                       row.componentSuppliers &&
@@ -559,6 +569,60 @@ export default function PackagingComposition({
                           }
                         />
                       </label>
+                      <label>
+                        Component separation
+                        <select
+                          aria-label={`Component ${index + 1} separation`}
+                          disabled={busy}
+                          value={item.componentSeparation || ""}
+                          onChange={(event) =>
+                            component(
+                              item.id,
+                              "componentSeparation",
+                              event.target.value,
+                            )
+                          }
+                        >
+                          <option value="">Not provided</option>
+                          <option value="Integrated">Integrated</option>
+                          <option value="Separated">Separated</option>
+                        </select>
+                      </label>
+                      <label>
+                        Component code available?
+                        <select
+                          aria-label={`Component ${index + 1} code available`}
+                          disabled={busy}
+                          value={item.componentCodeAvailable || ""}
+                          onChange={(event) =>
+                            component(
+                              item.id,
+                              "componentCodeAvailable",
+                              event.target.value,
+                            )
+                          }
+                        >
+                          <option value="">Not provided</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                      </label>
+                      <label>
+                        Component code
+                        <input
+                          aria-label={`Component ${index + 1} code`}
+                          disabled={busy}
+                          maxLength={200}
+                          value={item.componentCode || ""}
+                          onChange={(event) =>
+                            component(
+                              item.id,
+                              "componentCode",
+                              event.target.value,
+                            )
+                          }
+                        />
+                      </label>
                     </div>
                     <fieldset className="component-supplier-fields">
                       <legend>
@@ -584,6 +648,41 @@ export default function PackagingComposition({
                             <option value="Yes">Yes</option>
                             <option value="No">No</option>
                           </select>
+                        </label>
+                        <label>
+                          Supplier code available? (Yes/No)
+                          <select
+                            aria-label={`Component ${index + 1} supplier code available`}
+                            disabled={busy}
+                            value={item.supplierCodeAvailable || ""}
+                            onChange={(event) =>
+                              component(
+                                item.id,
+                                "supplierCodeAvailable",
+                                event.target.value,
+                              )
+                            }
+                          >
+                            <option value="">Not provided</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                          </select>
+                        </label>
+                        <label>
+                          Supplier code
+                          <input
+                            aria-label={`Component ${index + 1} supplier code`}
+                            disabled={busy}
+                            maxLength={200}
+                            value={item.supplierCode || ""}
+                            onChange={(event) =>
+                              component(
+                                item.id,
+                                "supplierCode",
+                                event.target.value,
+                              )
+                            }
+                          />
                         </label>
                         {(
                           [
