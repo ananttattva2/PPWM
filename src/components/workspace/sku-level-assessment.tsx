@@ -53,8 +53,6 @@ const packagingDefinitions = [
   ],
 ] as const;
 
-const options = ["Yes", "No", "Unknown", "N/A"] as const;
-
 export default function SkuLevelAssessment({
   productName,
   sku,
@@ -67,12 +65,19 @@ export default function SkuLevelAssessment({
   const id = useId();
   const [active, setActive] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [classifications, setClassifications] = useState<
+    Record<number, string>
+  >({});
   const [files, setFiles] = useState<Record<number, File | undefined>>({});
   const [errors, setErrors] = useState<Record<number, string>>({});
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const answer = answers[active] || "";
+  const classification = classifications[active] || "";
+  const selectedDefinition = packagingDefinitions.find(
+    ([name]) => name === classification,
+  );
   const file = files[active];
-  const needsEvidence = answer === "Yes" || answer === "No";
+  const needsEvidence = answer === "No" || Boolean(selectedDefinition);
 
   function choose(index: number) {
     setActive(index);
@@ -179,17 +184,6 @@ export default function SkuLevelAssessment({
                 <em>EU market</em>
               </div>
               <h3>{sections[active].question}</h3>
-              <div className={styles.definitionGuidance}>
-                <p>Answer Yes when the item falls within one of these types:</p>
-                <ol>
-                  {packagingDefinitions.map(([name, description]) => (
-                    <li key={name}>
-                      <b>{name}</b>
-                      <span>{description}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
             </div>
             <div className={styles.timeline}>
               <CalendarDays size={18} />
@@ -206,18 +200,54 @@ export default function SkuLevelAssessment({
               value={answer}
               onChange={(event) => {
                 const value = event.target.value;
+                if (value !== answer) clearFile(active);
                 setAnswers((current) => ({ ...current, [active]: value }));
-                if (value !== "Yes" && value !== "No") clearFile(active);
+                if (value !== "Yes")
+                  setClassifications((current) => ({
+                    ...current,
+                    [active]: "",
+                  }));
               }}
             >
               <option value="" disabled>
                 Select an answer
               </option>
-              {options.map((option) => (
-                <option key={option}>{option}</option>
-              ))}
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
             </select>
           </label>
+          {answer === "Yes" && (
+            <label className={styles.answer}>
+              Packaging type <i>*</i>
+              <select
+                required
+                value={classification}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  if (value !== classification) clearFile(active);
+                  setClassifications((current) => ({
+                    ...current,
+                    [active]: value,
+                  }));
+                }}
+              >
+                <option value="" disabled>
+                  Select the applicable packaging type
+                </option>
+                {packagingDefinitions.map(([name]) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {selectedDefinition && (
+            <div className={styles.selectedDefinition}>
+              <b>{selectedDefinition[0]}</b>
+              <p>{selectedDefinition[1]}</p>
+            </div>
+          )}
           {needsEvidence && (
             <div className={styles.evidence}>
               <div>

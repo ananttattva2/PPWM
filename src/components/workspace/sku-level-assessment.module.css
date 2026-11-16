@@ -255,37 +255,23 @@
   font-size: 16px;
   line-height: 1.5;
 }
-.definitionGuidance {
+.selectedDefinition {
   max-width: 900px;
-  margin-top: 14px;
+  margin: 14px 0 0 43px;
   padding: 14px 16px;
   border: 1px solid #dce5ef;
   border-radius: 10px;
   background: #fff;
 }
-.definitionGuidance p {
-  margin: 0 0 10px;
-  color: #53667d;
+.selectedDefinition > b {
+  color: #172b49;
   font-size: 12px;
 }
-.definitionGuidance ol {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding-left: 20px;
-}
-.definitionGuidance li {
-  padding-left: 4px;
-  color: #172b49;
+.selectedDefinition p {
+  margin: 5px 0 0;
+  color: #53667d;
   font-size: 11px;
-  line-height: 1.5;
-}
-.definitionGuidance li b,
-.definitionGuidance li span {
-  display: block;
-}
-.definitionGuidance li span {
-  color: #60728d;
+  line-height: 1.6;
 }
 .badges {
   display: flex;
@@ -478,7 +464,8 @@
     margin-left: 43px;
   }
   .answer,
-  .evidence {
+  .evidence,
+  .selectedDefinition {
     margin-left: 0;
   }
 }
